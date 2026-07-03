@@ -29,7 +29,7 @@ export const STEWARD: Archetype = {
 // The high-grader: keeps everything it hauls (illegal tiles included), and eats
 // the reputation cost — until rep sinks to repFloor, when it plays clean.
 export const GREEDY: Archetype = {
-  name: 'greedy', haulPolicy: 'greedy', stealPolicy: 'greedy', targetGrounds: ['mid', 'offshore', 'deep', 'inshore'],
+  name: 'greedy', haulPolicy: 'greedy', stealPolicy: 'greedy', targetGrounds: ['mid', 'inshore'],
   minKeep: 1, sellThreshold: 2, steals: false, refuelBelow: 2, repFloor: 2, quitHour: 99,
 };
 
@@ -38,6 +38,14 @@ export const GREEDY: Archetype = {
 export const THIEF: Archetype = {
   name: 'thief', haulPolicy: 'clean', stealPolicy: 'greedy', targetGrounds: ['inshore', 'mid'],
   minKeep: 1, sellThreshold: 2, steals: true, refuelBelow: 2, repFloor: 6, quitHour: 99,
+};
+
+// The highliner: works the outer water — the deep edge, then offshore — for the
+// heavy/rare catch. Commits to the long run (only far grounds in its lane), keeps
+// a fuller tank for the round trips, hauls whatever's ready given the narrow prime.
+export const HIGHLINER: Archetype = {
+  name: 'highliner', haulPolicy: 'clean', stealPolicy: 'clean', targetGrounds: ['deep', 'offshore'],
+  minKeep: 2, sellThreshold: 3, steals: false, refuelBelow: 5, repFloor: -Infinity, quitHour: 99,
 };
 
 export function makePolicy(arch: Archetype): Policy {
@@ -138,13 +146,16 @@ function chooseTarget(
   const ripe = buoys.filter((b) => (last || b.keep >= arch.minKeep) && reach[b.node]?.safe);
   if (ripe.length) return nearest(state, p.node, ripe.map((b) => b.node)) ?? anyPort;
 
-  // Deploy an idle pot to the nearest safe, empty zone of a ground type we fish.
+  // Deploy an idle pot, honoring targetGrounds PRIORITY: the first ground type we
+  // fish that has a safe, empty zone we can reach — nearest such zone of that type.
   if (p.buoysAvailable > 0 && state.day < cfg.days) {
-    const candidates = arch.targetGrounds
-      .flatMap((g) => groundNodesOfType(state, g))
-      .filter((node) => reach[node]?.safe && !buoys.some((b) => b.node === node));
-    const pick = nearest(state, p.node, candidates);
-    if (pick) return pick;
+    for (const g of arch.targetGrounds) {
+      const zones = groundNodesOfType(state, g).filter(
+        (node) => reach[node]?.safe && !buoys.some((b) => b.node === node),
+      );
+      const pick = nearest(state, p.node, zones);
+      if (pick) return pick;
+    }
   }
   return home();
 }

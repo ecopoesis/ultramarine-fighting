@@ -82,7 +82,7 @@ export const defaultConfig: Config = {
     inshore: { KEEPER_1lb: 14, KEEPER_2lb: 6, SHORT: 14, JUMBO: 2, EGGER: 4 }, // 40 — light, forgiving
     mid: { KEEPER_2lb: 12, KEEPER_3lb: 6, RARE_2lb: 2, SHORT: 8, JUMBO: 3, EGGER: 4 }, // 35
     offshore: { KEEPER_3lb: 12, RARE_3lb: 4, SHORT: 4, JUMBO: 5, EGGER: 5 }, // 30 — heavy, some rare
-    deep: { KEEPER_4lb: 10, RARE_4lb: 6, SHORT: 2, JUMBO: 6, EGGER: 6 }, // 30 — heaviest + most rare + most breeders (v-notch matters here)
+    deep: { KEEPER_4lb: 6, RARE_4lb: 3, SHORT: 6, JUMBO: 6, EGGER: 9 }, // 30 — big lobsters but you mostly pull junk & breeders: a gamble, and v-notch matters
   },
 
   // stage indexed by daysSoaked; time+place => different curve shapes per ground

@@ -1,17 +1,18 @@
 import { defaultConfig } from '../src/config';
-import { runTournament, ARCHES } from '../src/bots/tournament';
+import { runTournament } from '../src/bots/tournament';
 import type { Config } from '../src/types';
 
-// Archetype tournament. The three captains play each other; seats are rotated
-// so the seat-order confound (later seats winning) is averaged out and any
-// remaining win-skew is strategy, not position.
+// Archetype tournament. The captains play each other; seats are rotated so the
+// seat-order confound (later seats winning) is averaged out and any remaining
+// win-skew is strategy, not position.
+const FLEET = ['steward', 'greedy', 'thief', 'highliner'];
 
 function report(mode: Config['scoring']['combineMode'], seeds: number) {
   const config: Config = { ...defaultConfig, scoring: { ...defaultConfig.scoring, combineMode: mode } };
-  const { byArch, healthSum, games } = runTournament(config, seeds);
+  const { byArch, healthSum, games } = runTournament(config, seeds, FLEET);
 
   console.log(`\n=== combineMode: ${mode}  (${games} games, seats rotated) ===`);
-  const table = ARCHES.map((arch) => {
+  const table = FLEET.map((arch) => {
     const a = byArch[arch];
     const n = Math.max(1, a.games);
     return {
@@ -29,7 +30,7 @@ function report(mode: Config['scoring']['combineMode'], seeds: number) {
 }
 
 const seeds = Number(process.argv[2] ?? 100);
-console.log(`Lobsters archetype arena — ${seeds} seeds × ${ARCHES.length} seat-rotations per mode`);
+console.log(`Lobsters archetype arena — ${seeds} seeds × ${FLEET.length} seat-rotations per mode`);
 report(defaultConfig.scoring.combineMode, seeds); // the live scoring mode
 if (defaultConfig.scoring.combineMode !== 'sum') report('sum', seeds); // extraction baseline for contrast
 console.log(

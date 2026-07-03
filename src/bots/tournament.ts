@@ -7,10 +7,10 @@ import { BOTS } from './index';
 import type { Policy } from './index';
 import type { Config } from '../types';
 
-// The three archetypes, played against each other. Reused by the arena and the
-// rep-economy sweep so both measure the same thing.
+// The archetypes played against each other. Default set is the settled three;
+// the arena passes a wider list (adds 'highliner') via the arches argument.
 export const ARCHES = ['steward', 'greedy', 'thief'] as const;
-export type Arch = (typeof ARCHES)[number];
+export type Arch = string;
 
 export interface Agg {
   wins: number;
@@ -25,7 +25,7 @@ export interface Agg {
 const blank = (): Agg => ({ wins: 0, games: 0, total: 0, moneyVP: 0, conservationVP: 0, reputationVP: 0, berthSlotSum: 0, berthCount: 0 });
 
 export interface TournamentResult {
-  byArch: Record<Arch, Agg>;
+  byArch: Record<string, Agg>;
   healthSum: number;
   games: number;
 }
@@ -54,16 +54,18 @@ function playOne(config: Config, seed: number, seatArch: Arch[]) {
   return { rows, winnerId: rows[0].playerId, health: avgBagHealth(state), ids, berthSlot };
 }
 
-// Rotate all three archetypes through all three seats to average out the
-// seat-order confound; any remaining win-skew is strategy, not position.
-export function runTournament(config: Config, seeds: number): TournamentResult {
-  const byArch: Record<Arch, Agg> = { steward: blank(), greedy: blank(), thief: blank() };
+// Rotate the archetypes through the three seats to average out the seat-order
+// confound. With more than 3 archetypes, each rotation seats a sliding window of
+// 3, so every archetype plays the same number of games and each seat equally.
+export function runTournament(config: Config, seeds: number, arches: readonly string[] = ARCHES): TournamentResult {
+  const byArch: Record<string, Agg> = {};
+  for (const a of arches) byArch[a] = blank();
   let healthSum = 0;
   let games = 0;
 
   for (let s = 0; s < seeds; s++) {
-    for (let rot = 0; rot < ARCHES.length; rot++) {
-      const seatArch: Arch[] = [0, 1, 2].map((i) => ARCHES[(i + rot) % ARCHES.length]);
+    for (let rot = 0; rot < arches.length; rot++) {
+      const seatArch: Arch[] = [0, 1, 2].map((i) => arches[(i + rot) % arches.length]);
       const r = playOne(config, 1000 + s, seatArch);
       games++;
       healthSum += r.health;
