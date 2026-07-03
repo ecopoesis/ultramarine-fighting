@@ -73,6 +73,8 @@ export const defaultConfig: Config = {
   holdDecayLbPerDay: 1,
   reportBountyShare: 0.5,
 
+  vToken: { insuranceDraws: 1 }, // spend a token on a lean haul → draw 1 extra, keep best keeper (dial #4)
+
   scoring: {
     moneyPerVP: 5,
     vNotchTokenValue: 1,

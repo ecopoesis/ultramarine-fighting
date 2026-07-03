@@ -4,6 +4,7 @@ import { createInitialState } from '../src/state';
 import { reduce } from '../src/reducer';
 import { legalActions } from '../src/actions';
 import { activePlayerId } from '../src/selectors';
+import { BOTS } from '../src/bots';
 import type { GameState } from '../src/types';
 
 function totalTilesInWorld(s: GameState): number {
@@ -60,5 +61,33 @@ describe('depletion accounting', () => {
   it('terminates and reaches GAME_OVER', () => {
     const h = playToEnd(99);
     expect(h[h.length - 1].phase).toBe('GAME_OVER');
+  });
+});
+
+describe('v-token draw insurance keeps accounting honest', () => {
+  it('tiles still only leave via sales when insurance is spent (all-steward table)', () => {
+    let insuranceFired = 0;
+    for (const seed of [7, 42, 101, 2024, 55555]) {
+      let state = createInitialState(defaultConfig, seed);
+      const startTotal = totalTilesInWorld(state);
+      let soldTiles = 0;
+      let guard = 0;
+      while (state.phase === 'PLAYING' && guard++ < 200000) {
+        const pid = activePlayerId(state);
+        // stewards v-notch eggers (earning tokens) then spend them on lean hauls
+        const action = BOTS.steward(state, pid, legalActions(state, pid));
+        const before = state.players[pid].hold.length;
+        const willSell = action.type === 'SELL';
+        state = reduce(state, action);
+        if (willSell) soldTiles += before;
+      }
+      insuranceFired += state.log.filter((l) => l.includes('v-token')).length;
+      const endTotal = totalTilesInWorld(state);
+      // spending a token draws from + returns to the bag; nothing is minted or lost
+      expect(endTotal).toBeLessThanOrEqual(startTotal);
+      expect(startTotal - endTotal).toBe(soldTiles);
+    }
+    // guard against a vacuous test: the insurance path must actually execute
+    expect(insuranceFired).toBeGreaterThan(0);
   });
 });

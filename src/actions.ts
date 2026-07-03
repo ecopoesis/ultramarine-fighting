@@ -5,8 +5,8 @@ import type { HaulPolicy } from './engine/buoys';
 export type Action =
   | { type: 'STEAM'; playerId: string; to: string }
   | { type: 'DROP'; playerId: string }
-  | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy }
-  | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy }
+  | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy; useToken?: boolean }
+  | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy; useToken?: boolean }
   | { type: 'SELL'; playerId: string; buyerId: BuyerId }
   | { type: 'REFUEL'; playerId: string; units: number }
   | { type: 'REPORT'; playerId: string }

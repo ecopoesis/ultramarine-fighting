@@ -16,7 +16,7 @@ export interface Archetype {
   sellThreshold: number;       // sell once hold reaches this many tiles (always sells before leaving harbor)
   steals: boolean;             // pursue and steal rival buoys when adjacent
   refuelBelow: number;         // top up fuel at harbor when at/under this
-  repFloor: number;            // ration rep-burning theft: only steal while reputation is above this
+  repFloor: number;            // ration rep-burning actions (theft AND high-grading): stop once rep sinks to here
   quitHour: number;            // stop fishing at/after this hour and head home to berth (initiative dial #1).
                                // low = grab an early slot, sacrifice late-day fishing; high = fish to the end.
 }
@@ -30,7 +30,7 @@ export const STEWARD: Archetype = {
 // weight, and eats the reputation cost of doing so.
 export const GREEDY: Archetype = {
   name: 'greedy', haulPolicy: 'greedy', stealPolicy: 'greedy', targetGrounds: ['mid', 'offshore', 'inshore'],
-  minKeep: 1, sellThreshold: 2, steals: false, refuelBelow: 2, repFloor: -Infinity, quitHour: 99,
+  minKeep: 1, sellThreshold: 2, steals: false, refuelBelow: 2, repFloor: 2, quitHour: 99,
 };
 
 // A measured thief: lawful on its OWN catch, but keeps what it steals — and
@@ -57,17 +57,21 @@ export function makePolicy(arch: Archetype): Policy {
     //    but only while we can still absorb the reputation hit (ration theft).
     if (arch.steals && p.tracks.reputation > arch.repFloor) {
       const steals = ofType(legal, 'STEAL');
-      if (steals.length) return { ...steals[0], policy: arch.stealPolicy };
+      if (steals.length) return { ...steals[0], policy: arch.stealPolicy, useToken: true };
     }
 
     // 2) HAUL our own buoys that are worth pulling now (patience = archetype.minKeep).
+    //    A measured high-grader keeps illegal tiles only while it can still
+    //    absorb the rep hit; once rep sinks to repFloor it hauls clean.
     const hauls = ofType(legal, 'HAUL');
     if (hauls.length) {
+      const effHaul: HaulPolicy =
+        arch.haulPolicy === 'greedy' && p.tracks.reputation <= arch.repFloor ? 'clean' : arch.haulPolicy;
       const ranked = hauls
         .map((h) => ({ h, keep: buoys.find((b) => b.buoyId === h.buoyId)?.keep ?? 0 }))
         .filter((x) => last || x.keep >= arch.minKeep)
         .sort((a, b) => b.keep - a.keep);
-      if (ranked.length) return { ...ranked[0].h, policy: arch.haulPolicy };
+      if (ranked.length) return { ...ranked[0].h, policy: effHaul, useToken: true };
     }
 
     // Where do we want to be? Harvest ripe gear first, else deploy, else go home.

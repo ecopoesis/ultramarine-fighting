@@ -26,7 +26,7 @@ export function dropBuoy(d: GameState, playerId: string): void {
 export type HaulPolicy = 'clean' | 'greedy';
 
 function resolveDraw(
-  d: GameState, playerId: string, ground: Ground, stage: Stage, policy: HaulPolicy,
+  d: GameState, playerId: string, ground: Ground, stage: Stage, policy: HaulPolicy, useToken: boolean,
 ): void {
   const p = d.players[playerId];
   const rule = d.config.drawByStage[stage];
@@ -64,10 +64,30 @@ function resolveDraw(
       }
     }
   }
+
+  // v-token draw insurance: a lean haul (drew no keeper) can be rescued by
+  // spending one token to draw extra tiles and keep the best keeper found.
+  // The extra draws are random, so it's insurance with a little regret — the
+  // token (worth end-VP) is spent whether or not a keeper turns up.
+  if (useToken && kept === 0 && p.vTokens > 0 && d.config.vToken.insuranceDraws > 0) {
+    p.vTokens -= 1;
+    const extra: Tile[] = [];
+    for (let i = 0; i < d.config.vToken.insuranceDraws; i++) {
+      const t = takeRandom(d, d.bags[ground]);
+      if (t) extra.push(t);
+    }
+    const extraKeepers = extra.filter(isKeeper).sort((a, b) => b.weightLb - a.weightLb);
+    for (const t of extraKeepers) {
+      if (kept < rule.keep) { p.hold.push(t); kept++; } else d.bags[ground].push(t);
+    }
+    for (const t of extra) if (!isKeeper(t)) d.bags[ground].push(t); // non-keepers go back
+    d.log.push(`${p.name} spends a v-token (insurance): rescued ${kept} keeper(s)`);
+  }
+
   d.log.push(`${p.name} hauls (${ground}/${stage}): kept ${kept}, vTokens ${p.vTokens}`);
 }
 
-export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean'): void {
+export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean', useToken = false): void {
   const p = d.players[playerId];
   const idx = p.deployed.findIndex((b) => b.buoyId === buoyId);
   if (idx < 0) throw new Error('Not your buoy / not deployed');
@@ -75,14 +95,14 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
   if (buoy.node !== p.node) throw new Error('Buoy is elsewhere');
   const rec = p.soak[buoyId];
   const stage = stageFor(d, rec.ground, rec.daysSoaked);
-  resolveDraw(d, playerId, rec.ground, stage, policy);
+  resolveDraw(d, playerId, rec.ground, stage, policy, useToken);
   // recover the gear
   p.deployed.splice(idx, 1);
   delete p.soak[buoyId];
   p.buoysAvailable += 1;
 }
 
-export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId: string, policy: HaulPolicy = 'clean'): void {
+export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId: string, policy: HaulPolicy = 'clean', useToken = false): void {
   const thief = d.players[thiefId];
   const owner = d.players[ownerId];
   const idx = owner.deployed.findIndex((b) => b.buoyId === buoyId);
@@ -93,7 +113,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
   const stage = stageFor(d, rec.ground, rec.daysSoaked); // thief gambles on OWNER's hidden ripeness
 
   const holdBefore = thief.hold.length;
-  resolveDraw(d, thiefId, rec.ground, stage, policy);
+  resolveDraw(d, thiefId, rec.ground, stage, policy, useToken);
   const stolen = thief.hold.slice(holdBefore);
   const value = stolen.reduce((s, t) => s + t.weightLb, 0) * d.config.buyers.coop.base;
 

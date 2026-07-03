@@ -111,6 +111,11 @@ export interface Config {
   holdDecayLbPerDay: number;
   reportBountyShare: number;
 
+  // v-token draw insurance (§7.4): on a lean haul (no keeper drawn) a player may
+  // spend one v-token to draw `insuranceDraws` extra tiles and keep the best
+  // keeper among them. Strength dial #4 — higher = more reliable rescue.
+  vToken: { insuranceDraws: number };
+
   scoring: {
     moneyPerVP: number;
     vNotchTokenValue: number;
