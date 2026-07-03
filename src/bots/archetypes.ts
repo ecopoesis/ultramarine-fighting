@@ -17,18 +17,20 @@ export interface Archetype {
   steals: boolean;             // pursue and steal rival buoys when adjacent
   refuelBelow: number;         // top up fuel at harbor when at/under this
   repFloor: number;            // ration rep-burning theft: only steal while reputation is above this
+  quitHour: number;            // stop fishing at/after this hour and head home to berth (initiative dial #1).
+                               // low = grab an early slot, sacrifice late-day fishing; high = fish to the end.
 }
 
 export const STEWARD: Archetype = {
   name: 'steward', haulPolicy: 'clean', stealPolicy: 'clean', targetGrounds: ['inshore', 'mid'],
-  minKeep: 2, sellThreshold: 3, steals: false, refuelBelow: 3, repFloor: -Infinity,
+  minKeep: 2, sellThreshold: 3, steals: false, refuelBelow: 3, repFloor: -Infinity, quitHour: 99,
 };
 
 // The high-grader: keeps everything it hauls (illegal tiles included) for the
 // weight, and eats the reputation cost of doing so.
 export const GREEDY: Archetype = {
   name: 'greedy', haulPolicy: 'greedy', stealPolicy: 'greedy', targetGrounds: ['mid', 'offshore', 'inshore'],
-  minKeep: 1, sellThreshold: 2, steals: false, refuelBelow: 2, repFloor: -Infinity,
+  minKeep: 1, sellThreshold: 2, steals: false, refuelBelow: 2, repFloor: -Infinity, quitHour: 99,
 };
 
 // A measured thief: lawful on its OWN catch, but keeps what it steals — and
@@ -37,7 +39,7 @@ export const GREEDY: Archetype = {
 // what makes "take now" a viable archetype rather than a suicide run.
 export const THIEF: Archetype = {
   name: 'thief', haulPolicy: 'clean', stealPolicy: 'greedy', targetGrounds: ['inshore', 'mid'],
-  minKeep: 1, sellThreshold: 2, steals: true, refuelBelow: 2, repFloor: 6,
+  minKeep: 1, sellThreshold: 2, steals: true, refuelBelow: 2, repFloor: 6, quitHour: 99,
 };
 
 export function makePolicy(arch: Archetype): Policy {
@@ -126,6 +128,10 @@ function chooseTarget(
   const cfg = state.config;
   const p = state.players[pid];
   const harbor = cfg.map.harbor;
+
+  // Initiative (dial #1): past our quit hour, stop fishing and go claim a slot,
+  // trading the rest of the day's fishing for turn-order position tomorrow.
+  if (!last && state.hour >= arch.quitHour) return harbor;
 
   // If we're holding catch and the day is winding down, go cash it in.
   if (p.hold.length > 0 && (last || hoursLeftToday(state) <= 1)) return harbor;
