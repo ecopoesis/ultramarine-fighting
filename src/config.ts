@@ -76,9 +76,13 @@ export const defaultConfig: Config = {
   scoring: {
     moneyPerVP: 5,
     vNotchTokenValue: 1,
-    conservationBagHealthVP: 10,
+    conservationBagHealthVP: 10, // shared end-game health bonus; floors conservation so specialists aren't zeroed
     repToVP: 1,
-    combineMode: 'weakLinkMultiplier',
+    // geometricMean: dumping any track (→0) still craters you, but a merely-weak
+    // track isn't annihilated the way min/max does — the only mode that yields
+    // three viable archetypes (steward/greedy/thief all win a fair share). See
+    // scripts/tuneScoring.ts. weakLinkMultiplier handed the steward ~92%.
+    combineMode: 'geometricMean',
   },
 
   flags: { weather: false, eras: false, multiShip: false, inspections: false },

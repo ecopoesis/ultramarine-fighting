@@ -116,7 +116,7 @@ export interface Config {
     vNotchTokenValue: number;
     conservationBagHealthVP: number;
     repToVP: number;
-    combineMode: 'sum' | 'weakLinkMultiplier';
+    combineMode: 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink';
   };
 
   flags: { weather: boolean; eras: boolean; multiShip: boolean; inspections: boolean };

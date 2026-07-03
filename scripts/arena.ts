@@ -6,7 +6,7 @@ import type { Config } from '../src/types';
 // so the seat-order confound (later seats winning) is averaged out and any
 // remaining win-skew is strategy, not position.
 
-function report(mode: 'sum' | 'weakLinkMultiplier', seeds: number) {
+function report(mode: Config['scoring']['combineMode'], seeds: number) {
   const config: Config = { ...defaultConfig, scoring: { ...defaultConfig.scoring, combineMode: mode } };
   const { byArch, healthSum, games } = runTournament(config, seeds);
 
@@ -30,11 +30,11 @@ function report(mode: 'sum' | 'weakLinkMultiplier', seeds: number) {
 
 const seeds = Number(process.argv[2] ?? 100);
 console.log(`Lobsters archetype arena — ${seeds} seeds × ${ARCHES.length} seat-rotations per mode`);
-report('weakLinkMultiplier', seeds);
-report('sum', seeds);
+report(defaultConfig.scoring.combineMode, seeds); // the live scoring mode
+if (defaultConfig.scoring.combineMode !== 'sum') report('sum', seeds); // extraction baseline for contrast
 console.log(
   '\nReads:\n' +
   '  • Bag health well under 100% under skilled play ⇒ the commons actually depletes (dial #2).\n' +
-  '  • weakLinkMultiplier should punish rep-dumping (thief/greedy) vs sum (dial #5).\n' +
+  '  • Live mode should give three viable archetypes; sum lets raw extraction (greedy) win (dial #5).\n' +
   '  • avgBerthSlot vs win% ⇒ is racing for the pole worth it? (dial #1, initiative).',
 );
