@@ -38,7 +38,7 @@ export function reportTheft(d: GameState, reporterId: string): void {
   const bounty = rec.value * d.config.reportBountyShare;
   p.money += bounty;
   p.tracks.reputation += d.config.rep.report;
-  thief.tracks.reputation += d.config.rep.steal; // extra heat on confiscation
+  thief.tracks.reputation += d.config.rep.reported; // extra heat on confiscation (own dial, not a 2nd steal penalty)
   d.thefts.splice(recIdx, 1);
   d.log.push(`${p.name} reports ${thief.name}; bounty ${bounty.toFixed(1)}`);
 }

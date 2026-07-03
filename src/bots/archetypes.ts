@@ -9,27 +9,35 @@ import {
 // An archetype is DATA; makePolicy() turns it into a deterministic captain.
 export interface Archetype {
   name: string;
-  haulPolicy: HaulPolicy;      // 'clean' = lawful (v-notch/throwback), 'greedy' = keep illegal tiles
+  haulPolicy: HaulPolicy;      // policy on OWN catch: 'clean' = lawful (v-notch/throwback), 'greedy' = keep illegal
+  stealPolicy: HaulPolicy;     // policy on STOLEN catch (a thief can be lawful at home but keep the loot it takes)
   targetGrounds: Ground[];     // preferred grounds, in priority order
   minKeep: number;             // haul a buoy now only if drawByStage[stage].keep >= this (else soak). PRIME keep=2.
   sellThreshold: number;       // sell once hold reaches this many tiles (always sells before leaving harbor)
   steals: boolean;             // pursue and steal rival buoys when adjacent
   refuelBelow: number;         // top up fuel at harbor when at/under this
+  repFloor: number;            // ration rep-burning theft: only steal while reputation is above this
 }
 
 export const STEWARD: Archetype = {
-  name: 'steward', haulPolicy: 'clean', targetGrounds: ['inshore', 'mid'],
-  minKeep: 2, sellThreshold: 3, steals: false, refuelBelow: 3,
+  name: 'steward', haulPolicy: 'clean', stealPolicy: 'clean', targetGrounds: ['inshore', 'mid'],
+  minKeep: 2, sellThreshold: 3, steals: false, refuelBelow: 3, repFloor: -Infinity,
 };
 
+// The high-grader: keeps everything it hauls (illegal tiles included) for the
+// weight, and eats the reputation cost of doing so.
 export const GREEDY: Archetype = {
-  name: 'greedy', haulPolicy: 'greedy', targetGrounds: ['mid', 'offshore', 'inshore'],
-  minKeep: 1, sellThreshold: 2, steals: false, refuelBelow: 2,
+  name: 'greedy', haulPolicy: 'greedy', stealPolicy: 'greedy', targetGrounds: ['mid', 'offshore', 'inshore'],
+  minKeep: 1, sellThreshold: 2, steals: false, refuelBelow: 2, repFloor: -Infinity,
 };
 
+// A measured thief: lawful on its OWN catch, but keeps what it steals — and
+// steals only while it can still absorb the reputation hit. Under
+// weakLinkMultiplier a dumped track craters the score, so rationing theft is
+// what makes "take now" a viable archetype rather than a suicide run.
 export const THIEF: Archetype = {
-  name: 'thief', haulPolicy: 'greedy', targetGrounds: ['inshore', 'mid'],
-  minKeep: 1, sellThreshold: 2, steals: true, refuelBelow: 2,
+  name: 'thief', haulPolicy: 'clean', stealPolicy: 'greedy', targetGrounds: ['inshore', 'mid'],
+  minKeep: 1, sellThreshold: 2, steals: true, refuelBelow: 2, repFloor: 6,
 };
 
 export function makePolicy(arch: Archetype): Policy {
@@ -43,10 +51,11 @@ export function makePolicy(arch: Archetype): Policy {
     const buoys = myBuoys(state, pid);
     const pass = firstOfType(legal, 'PASS')!; // always present
 
-    // 1) THIEF: a rival buoy under us is a chance we can't price — take it.
-    if (arch.steals) {
+    // 1) THIEF: a rival buoy under us is a chance we can't price — take it,
+    //    but only while we can still absorb the reputation hit (ration theft).
+    if (arch.steals && p.tracks.reputation > arch.repFloor) {
       const steals = ofType(legal, 'STEAL');
-      if (steals.length) return { ...steals[0], policy: arch.haulPolicy };
+      if (steals.length) return { ...steals[0], policy: arch.stealPolicy };
     }
 
     // 2) HAUL our own buoys that are worth pulling now (patience = archetype.minKeep).

@@ -9,7 +9,7 @@ export const defaultConfig: Config = {
   actionsPerTurn: 2,
   buoysPerPlayer: 4,
   startMoney: 10,
-  startReputation: 5,
+  startReputation: 8, // buffer so dirty play (theft/high-grading) is a priced risk, not instant death under weak-link
   fuelTankMax: 10,
   startFuel: 8,
   fuelCostPerUnit: 1,
@@ -64,7 +64,11 @@ export const defaultConfig: Config = {
   poleRepCost: 1,
   bribeMoneyCost: 4,
   lastSlotSweetenerFuel: 2,
-  rep: { steal: -2, illegalKeep: -1, report: 1, vNotch: 1, bribe: -1 },
+  // theft/dirty play burns rep, but priced to be survivable if rationed:
+  //   steal      -1  (was -2)  — cost of stealing a rival buoy
+  //   illegalKeep -0.5 (was -1) — cost per illegal tile kept (high-grading)
+  //   reported   -0.5 (own dial; was a 2nd full steal penalty) — extra heat when a theft is reported
+  rep: { steal: -1, illegalKeep: -0.5, report: 1, vNotch: 1, bribe: -1, reported: -0.5 },
 
   holdDecayLbPerDay: 1,
   reportBountyShare: 0.5,

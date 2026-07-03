@@ -106,7 +106,7 @@ export interface Config {
   poleRepCost: number;
   bribeMoneyCost: number;
   lastSlotSweetenerFuel: number;
-  rep: { steal: number; illegalKeep: number; report: number; vNotch: number; bribe: number };
+  rep: { steal: number; illegalKeep: number; report: number; vNotch: number; bribe: number; reported: number };
 
   holdDecayLbPerDay: number;
   reportBountyShare: number;
