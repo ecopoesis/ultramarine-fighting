@@ -52,7 +52,9 @@ export interface GameState {
   config: Config;
   rngSeed: number;
   phase: Phase;
-  day: number;
+  season: number;         // 1-based; game ends after config.seasons
+  day: number;            // 1-based day WITHIN the current season
+  recruitedTotal: number; // running count of tiles bred in by restock (open-system accounting)
   hour: number;
   turnOrder: string[];
   activePlayerIndex: number;
@@ -90,7 +92,9 @@ export interface DrawRule { draw: number; keep: number }
 
 export interface Config {
   players: number;
-  days: number;
+  seasons: number;        // number of seasons; the game ends after the last one
+  daysPerSeason: number;  // fishing days within each season (day resets to 1 each season)
+  referencePlayers: number; // bags AND recruitment scale by players/referencePlayers (constant pressure-per-boat)
   hoursPerDay: number;
   actionsPerTurn: number;
   buoysPerPlayer: number;
@@ -113,6 +117,12 @@ export interface Config {
   };
 
   bags: Record<Ground, Record<string, number>>; // per ground TYPE: tileTemplateName -> count
+  // Inter-season recruitment: each ground rolls `round(baseDice*playerScale) +
+  // floor(eggersInBag / eggerPerDie)` dice of `diceSides`; that many fresh tiles
+  // (the ground's natural mix) breed in. The v-notched eggers you LEFT are the
+  // extra dice — stewardship literally breeds recovery. No restock before the
+  // final season. Inner grounds recover more (higher base dice); deep barely.
+  restock: { baseDice: Record<Ground, number>; eggerPerDie: number; diceSides: number };
   soakCurves: Record<Ground, Stage[]>;
   drawByStage: Record<Stage, DrawRule>;
   actionCost: Record<string, number>;

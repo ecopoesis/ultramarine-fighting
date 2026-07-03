@@ -2,7 +2,7 @@ import type { GameState, Ground } from '../types';
 import type { Action } from '../actions';
 import type { HaulPolicy } from '../engine/buoys';
 import {
-  Policy, stepToward, myBuoys, isLastDay, hoursLeftToday, groundNodesOfType,
+  Policy, stepToward, myBuoys, isLastDayOfSeason, hoursLeftToday, groundNodesOfType,
   nearest, ofType, firstOfType, reachability,
   isPort, nearestPort, nearestMarketPort,
 } from './helpers';
@@ -53,7 +53,7 @@ export function makePolicy(arch: Archetype): Policy {
     const cfg = state.config;
     const p = state.players[pid];
     const atPort = isPort(state, p.node);
-    const last = isLastDay(state);
+    const last = isLastDayOfSeason(state);
     const reach = reachability(state, pid);
     const buoys = myBuoys(state, pid);
     const pass = firstOfType(legal, 'PASS')!; // always present
@@ -148,7 +148,7 @@ function chooseTarget(
 
   // Deploy an idle pot, honoring targetGrounds PRIORITY: the first ground type we
   // fish that has a safe, empty zone we can reach — nearest such zone of that type.
-  if (p.buoysAvailable > 0 && state.day < cfg.days) {
+  if (p.buoysAvailable > 0 && state.day < cfg.daysPerSeason) {
     for (const g of arch.targetGrounds) {
       const zones = groundNodesOfType(state, g).filter(
         (node) => reach[node]?.safe && !buoys.some((b) => b.node === node),

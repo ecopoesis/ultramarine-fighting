@@ -42,7 +42,7 @@ export function myBuoys(state: GameState, pid: string): MyBuoy[] {
   });
 }
 
-export const isLastDay = (s: GameState) => s.day === s.config.days;
+export const isLastDayOfSeason = (s: GameState) => s.day === s.config.daysPerSeason;
 export const hoursLeftToday = (s: GameState) => s.config.hoursPerDay - s.hour;
 
 // All zone nodes of a given ground type (there can be several — e.g. two offshore).

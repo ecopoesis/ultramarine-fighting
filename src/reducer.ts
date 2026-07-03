@@ -6,6 +6,7 @@ import { dropBuoy, haulBuoy, stealBuoy } from './engine/buoys';
 import { sell, reportTheft } from './engine/market';
 import { berth, bribe } from './engine/turnorder';
 import { advanceSoak } from './engine/soak';
+import { restock } from './engine/restock';
 import { fuelPriceAt } from './engine/ports';
 
 // Pure: returns a new state; never mutates the input. We clone once and mutate
@@ -112,13 +113,51 @@ function dayRollover(d: GameState): void {
   for (const m of Object.keys(d.markets)) d.markets[m].lbsSoldToday = 0; // prices recover overnight
 
   d.day++;
-  if (d.day > d.config.days) {
-    d.phase = 'GAME_OVER';
-    d.log.push('Season over.');
-    return;
-  }
+  if (d.day > d.config.daysPerSeason) { seasonRollover(d); return; }
   d.hour = 1;
   d.activePlayerIndex = 0;
   d.players[d.turnOrder[0]].actionsLeft = d.config.actionsPerTurn;
-  d.log.push(`--- Day ${d.day} begins. Order: ${d.turnOrder.join(', ')} ---`);
+  d.log.push(`--- Season ${d.season} Day ${d.day} begins. Order: ${d.turnOrder.join(', ')} ---`);
+}
+
+// End of a season: the fleet ratchets outward across the arc. Recruitment breeds
+// the near commons partly back (tied to the breeding stock left behind), all gear
+// is pulled, and every captain returns to the start port for a fresh season.
+function seasonRollover(d: GameState): void {
+  if (d.season >= d.config.seasons) {
+    // The final season just ended — no recovery, no reset; the game is done.
+    d.phase = 'GAME_OVER';
+    d.log.push('Final season over. Game over.');
+    return;
+  }
+
+  // Recruitment — but NOT before the final season ("screw everyone": the
+  // steward's investment is stranded, the endgame is a scramble over the scraps).
+  if (d.season < d.config.seasons - 1) restock(d);
+
+  // Pull all gear (recovers buoys, clears soak — gear holds no tiles, so this is
+  // tile-neutral) and send every captain home. Hold CARRIES (already decayed by
+  // the daily rollover) so accounting stays closed: end == start + recruited − sold.
+  const ids = Object.keys(d.players);
+  for (const id of ids) {
+    const p = d.players[id];
+    p.deployed = [];
+    p.soak = {};
+    p.buoysAvailable = d.config.buoysPerPlayer;
+    p.node = d.config.map.startPort;
+    p.berthNode = undefined;
+    p.berthed = false;
+    p.soldToday = false;
+    p.actionsLeft = 0;
+  }
+
+  d.season++;
+  d.turnOrder = ids;         // fresh season starts in base seat order
+  d.pendingNextOrder = [];
+  d.nextSlot = 0;
+  d.day = 1;
+  d.hour = 1;
+  d.activePlayerIndex = 0;
+  d.players[d.turnOrder[0]].actionsLeft = d.config.actionsPerTurn;
+  d.log.push(`=== Season ${d.season} begins at ${d.config.map.startPort}. Order: ${ids.join(', ')} ===`);
 }

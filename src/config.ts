@@ -4,7 +4,9 @@ import type { Config } from './types';
 // Change these to rebalance; never hardcode numbers in /engine.
 export const defaultConfig: Config = {
   players: 3,
-  days: 5,
+  seasons: 5,          // the historical-fishing arc: near commons collapses, the fleet ratchets outward
+  daysPerSeason: 4,
+  referencePlayers: 3, // bags + recruitment scale off this so depletion-per-boat holds across 3–6 players
   hoursPerDay: 6,
   actionsPerTurn: 2,
   buoysPerPlayer: 4,
@@ -84,6 +86,11 @@ export const defaultConfig: Config = {
     offshore: { KEEPER_3lb: 12, RARE_3lb: 4, SHORT: 4, JUMBO: 5, EGGER: 5 }, // 30 — heavy, some rare
     deep: { KEEPER_4lb: 6, RARE_4lb: 3, SHORT: 6, JUMBO: 6, EGGER: 9 }, // 30 — big lobsters but you mostly pull junk & breeders: a gamble, and v-notch matters
   },
+
+  // Inter-season recruitment (starting guesses — tune in sim). Inner grounds
+  // breed back fast, the deep barely at all; every v-notched egger left in the
+  // bag adds recruitment dice (one die per `eggerPerDie` breeders).
+  restock: { baseDice: { inshore: 3, mid: 2, offshore: 1, deep: 1 }, eggerPerDie: 2, diceSides: 6 },
 
   // stage indexed by daysSoaked; time+place => different curve shapes per ground
   soakCurves: {

@@ -26,10 +26,13 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
   }
 
   const grounds = Object.keys(config.bags) as Ground[]; // whatever ground types the config defines
+  const scale = config.players / config.referencePlayers; // constant depletion-pressure-per-boat across counts
   const bags = {} as GameState['bags'];
   const bagStart = {} as GameState['bagStart'];
   for (const g of grounds) {
-    bags[g] = buildBag(config.bags[g], g);
+    const spec: Record<string, number> = {};
+    for (const [name, count] of Object.entries(config.bags[g])) spec[name] = Math.round(count * scale);
+    bags[g] = buildBag(spec, g);
     bagStart[g] = bags[g].length;
   }
 
@@ -43,7 +46,9 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     config,
     rngSeed: seed,
     phase: 'PLAYING',
+    season: 1,
     day: 1,
+    recruitedTotal: 0,
     hour: 1,
     turnOrder: ids,
     activePlayerIndex: 0,
@@ -59,6 +64,6 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
   };
 
   players[ids[0]].actionsLeft = config.actionsPerTurn;
-  state.log.push(`Day 1 begins at ${config.map.startPort}. Order: ${ids.join(', ')}`);
+  state.log.push(`Season 1, Day 1 begins at ${config.map.startPort}. Order: ${ids.join(', ')}`);
   return state;
 }

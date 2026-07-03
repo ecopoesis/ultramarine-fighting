@@ -31,7 +31,7 @@ function playToEnd(seed: number): GameState[] {
 }
 
 describe('depletion accounting', () => {
-  it('tiles only leave the world via sales (greed is the only leak)', () => {
+  it('open system: tiles leave only via sales and enter only via recruitment', () => {
     let state = createInitialState(defaultConfig, 777);
     const startTotal = totalTilesInWorld(state);
     let soldTiles = 0;
@@ -47,9 +47,11 @@ describe('depletion accounting', () => {
       if (willSell) soldTiles += before; // whole hold sold => those tiles leave the world
     }
     const endTotal = totalTilesInWorld(state);
-    // Tiles in bags + holds never grow; the only permanent removal is a sale.
-    expect(endTotal).toBeLessThanOrEqual(startTotal);
-    expect(startTotal - endTotal).toBe(soldTiles);
+    // Multi-season is an OPEN system: sales remove tiles, inter-season recruitment
+    // adds them. The books still close exactly.
+    expect(endTotal).toBe(startTotal + state.recruitedTotal - soldTiles);
+    // guard against a vacuous test: recruitment must actually have fired
+    expect(state.recruitedTotal).toBeGreaterThan(0);
   });
 
   it('is deterministic for a fixed seed', () => {
@@ -58,9 +60,11 @@ describe('depletion accounting', () => {
     expect(JSON.stringify(a[a.length - 1].players)).toBe(JSON.stringify(b[b.length - 1].players));
   });
 
-  it('terminates and reaches GAME_OVER', () => {
+  it('terminates at GAME_OVER after the final season', () => {
     const h = playToEnd(99);
-    expect(h[h.length - 1].phase).toBe('GAME_OVER');
+    const end = h[h.length - 1];
+    expect(end.phase).toBe('GAME_OVER');
+    expect(end.season).toBe(defaultConfig.seasons); // played all the way through the last season
   });
 });
 
@@ -84,8 +88,8 @@ describe('v-token draw insurance keeps accounting honest', () => {
       insuranceFired += state.log.filter((l) => l.includes('v-token')).length;
       const endTotal = totalTilesInWorld(state);
       // spending a token draws from + returns to the bag; nothing is minted or lost
-      expect(endTotal).toBeLessThanOrEqual(startTotal);
-      expect(startTotal - endTotal).toBe(soldTiles);
+      // there. The only sources/sinks are recruitment (in) and sales (out).
+      expect(endTotal).toBe(startTotal + state.recruitedTotal - soldTiles);
     }
     // guard against a vacuous test: the insurance path must actually execute
     expect(insuranceFired).toBeGreaterThan(0);

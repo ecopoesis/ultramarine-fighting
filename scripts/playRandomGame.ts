@@ -14,7 +14,7 @@ function pickAction(state: GameState, legal: Action[]): Action {
   const weight = (a: Action): number => {
     switch (a.type) {
       case 'HAUL': return 8;
-      case 'SELL': return state.day === state.config.days ? 10 : 6;
+      case 'SELL': return state.day === state.config.daysPerSeason ? 10 : 6;
       case 'DROP': return 5;
       case 'STEAL': return 1;
       case 'REPORT': return 6;
