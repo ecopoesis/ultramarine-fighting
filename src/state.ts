@@ -25,7 +25,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     };
   }
 
-  const grounds: Ground[] = ['inshore', 'mid', 'offshore'];
+  const grounds = Object.keys(config.bags) as Ground[]; // whatever ground types the config defines
   const bags = {} as GameState['bags'];
   const bagStart = {} as GameState['bagStart'];
   for (const g of grounds) {

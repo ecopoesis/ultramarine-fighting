@@ -1,7 +1,7 @@
 import type { GameState, Ground } from '../types';
 
 export function avgBagHealth(state: GameState): number {
-  const grounds: Ground[] = ['inshore', 'mid', 'offshore'];
+  const grounds = Object.keys(state.bags) as Ground[];
   const ratios = grounds.map((g) => state.bags[g].length / Math.max(1, state.bagStart[g]));
   return ratios.reduce((a, b) => a + b, 0) / ratios.length;
 }

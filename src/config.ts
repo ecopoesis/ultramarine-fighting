@@ -13,58 +13,84 @@ export const defaultConfig: Config = {
   fuelTankMax: 10,
   startFuel: 8,
 
-  // Penobscot Bay (v1 — geometry to be backfit to the real chart later).
-  // Three market ports with distinct appetites, one shelter, six fishing zones.
+  // Penobscot Bay (v2 — geometry still to be backfit to the real chart).
+  // North (up-bay) is shallow/safe; the water deepens and richens south into the
+  // open Gulf. Three market ports with distinct appetites, two outer shelters,
+  // and a four-tier depth gradient (inshore → mid → offshore → the deep edge)
+  // reached by steaming out through the island belt.
   map: {
     nodes: {
-      // --- ports (dock: refuel/berth; market-ports also buy) ---
+      // --- market ports (dock: refuel/berth AND sell) ---
       ROCKLAND:   { type: 'port', label: 'Rockland', port: {
-        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.15, floor: 2, rareBonus: 0 } } },   // deep appetite, far south-west
+        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.15, floor: 2, rareBonus: 0 } } },   // SW mainland: deep appetite, cheap fuel, far from the edge
       VINALHAVEN: { type: 'port', label: 'Vinalhaven', port: {
-        fuelCostPerUnit: 2, market: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 } } },     // island: high price, floods fast, dear fuel
+        fuelCostPerUnit: 2, market: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 } } },     // island: high price, floods fast, dear fuel, near the edge
       STONINGTON: { type: 'port', label: 'Stonington', port: {
-        fuelCostPerUnit: 1.5, market: { base: 6, elasticity: 0.5, floor: 3, rareBonus: 0.4 } } },   // premium eastern middle path
-      MATINICUS:  { type: 'port', label: 'Matinicus', port: {
-        fuelCostPerUnit: 4, shelter: true } },                                                       // lighthouse: refuge + emergency fuel, no market
+        fuelCostPerUnit: 1.5, market: { base: 6, elasticity: 0.5, floor: 3, rareBonus: 0.4 } } },   // eastern premium, near the mid grounds
 
-      // --- fishing zones (two per ground type, sharing that type's bag) ---
+      // --- shelters (refuge + emergency fuel, NO market) — stage the outer run ---
+      MONHEGAN:   { type: 'port', label: 'Monhegan', port: { fuelCostPerUnit: 4, shelter: true } },  // SW lighthouse, by the outer-west water
+      MATINICUS:  { type: 'port', label: 'Matinicus', port: { fuelCostPerUnit: 4, shelter: true } },  // outermost, a stone's throw from the deep edge
+
+      // --- fishing zones (share their ground TYPE's bag) ---
       INSHORE_W:  { type: 'ground', ground: 'inshore', label: 'Muscle Ridge' },
-      INSHORE_E:  { type: 'ground', ground: 'inshore', label: 'Eggemoggin' },
+      INSHORE_N:  { type: 'ground', ground: 'inshore', label: 'Upper Bay' },
       MID_W:      { type: 'ground', ground: 'mid', label: 'West Bay' },
-      MID_E:      { type: 'ground', ground: 'mid', label: 'Fox Islands' },
+      MID_C:      { type: 'ground', ground: 'mid', label: 'Fox Islands' },
+      MID_E:      { type: 'ground', ground: 'mid', label: 'Eggemoggin Reach' },
       OFFSHORE_W: { type: 'ground', ground: 'offshore', label: 'Outer West' },
-      OFFSHORE_E: { type: 'ground', ground: 'offshore', label: 'The Edge' },
+      OFFSHORE_E: { type: 'ground', ground: 'offshore', label: 'Outer East' },
+      DEEP_EDGE:  { type: 'ground', ground: 'deep', label: 'The Edge' },      // richest, farthest, fouls fast
     },
     edges: [
+      // west shore & up-bay
       ['ROCKLAND', 'INSHORE_W'],
-      ['INSHORE_W', 'INSHORE_E'],
       ['ROCKLAND', 'MID_W'],
-      ['MID_W', 'MID_E'],
+      ['INSHORE_W', 'INSHORE_N'],
+      ['INSHORE_W', 'MID_W'],
+      ['INSHORE_N', 'MID_C'],
+      // the island belt (mid)
+      ['MID_W', 'MID_C'],
+      ['MID_C', 'MID_E'],
+      ['MID_C', 'VINALHAVEN'],
       ['MID_E', 'STONINGTON'],
-      ['MID_E', 'VINALHAVEN'],
-      ['MID_E', 'OFFSHORE_E'],
-      ['VINALHAVEN', 'OFFSHORE_E'],   // the morning run — 1 step to the rich water
+      // out to the offshore grounds
       ['MID_W', 'OFFSHORE_W'],
+      ['MID_E', 'OFFSHORE_E'],
+      ['VINALHAVEN', 'OFFSHORE_E'],   // the morning run — 1 step off the island
       ['OFFSHORE_W', 'OFFSHORE_E'],
-      ['VINALHAVEN', 'MATINICUS'],
+      // the deep edge (only through the offshore water) + outer shelters
+      ['OFFSHORE_W', 'DEEP_EDGE'],
+      ['OFFSHORE_E', 'DEEP_EDGE'],
+      ['OFFSHORE_W', 'MONHEGAN'],
       ['OFFSHORE_E', 'MATINICUS'],
+      ['DEEP_EDGE', 'MATINICUS'],
     ],
     fuelPerStep: 1,
     startPort: 'ROCKLAND',
+    // decorative — flavor only, no gameplay (a future UI can scatter these)
+    landmarks: [
+      { name: 'Saddleback Ledge', near: 'OFFSHORE_E' },
+      { name: 'Goose Rocks', near: 'MID_C' },
+      { name: 'Eagle Island', near: 'MID_E' },
+      { name: 'Heron Neck Light', near: 'VINALHAVEN' },
+    ],
   },
 
   // tile-template name -> count in the bag at season start
   bags: {
-    inshore: { KEEPER_1lb: 14, KEEPER_2lb: 6, SHORT: 14, JUMBO: 2, EGGER: 4 }, // 40
+    inshore: { KEEPER_1lb: 14, KEEPER_2lb: 6, SHORT: 14, JUMBO: 2, EGGER: 4 }, // 40 — light, forgiving
     mid: { KEEPER_2lb: 12, KEEPER_3lb: 6, RARE_2lb: 2, SHORT: 8, JUMBO: 3, EGGER: 4 }, // 35
-    offshore: { KEEPER_3lb: 12, RARE_3lb: 4, SHORT: 4, JUMBO: 5, EGGER: 5 }, // 30
+    offshore: { KEEPER_3lb: 12, RARE_3lb: 4, SHORT: 4, JUMBO: 5, EGGER: 5 }, // 30 — heavy, some rare
+    deep: { KEEPER_4lb: 10, RARE_4lb: 6, SHORT: 2, JUMBO: 6, EGGER: 6 }, // 30 — heaviest + most rare + most breeders (v-notch matters here)
   },
 
   // stage indexed by daysSoaked; time+place => different curve shapes per ground
   soakCurves: {
-    inshore: ['SET', 'PRIME', 'PRIME', 'PRIME', 'FOULED'],
+    inshore: ['SET', 'PRIME', 'PRIME', 'PRIME', 'FOULED'],                    // wide prime, forgiving
     mid: ['SET', 'SOAKING', 'PRIME', 'PRIME', 'OVERRIPE', 'FOULED'],
-    offshore: ['SET', 'SOAKING', 'SOAKING', 'PRIME', 'OVERRIPE', 'FOULED'], // narrow prime
+    offshore: ['SET', 'SOAKING', 'SOAKING', 'PRIME', 'OVERRIPE', 'FOULED'],   // narrow prime
+    deep: ['SET', 'SOAKING', 'SOAKING', 'PRIME', 'FOULED'],                   // prime day 3 only, then fouls fast — a real commitment
   },
 
   drawByStage: {

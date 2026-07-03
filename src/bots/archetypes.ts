@@ -29,7 +29,7 @@ export const STEWARD: Archetype = {
 // The high-grader: keeps everything it hauls (illegal tiles included), and eats
 // the reputation cost — until rep sinks to repFloor, when it plays clean.
 export const GREEDY: Archetype = {
-  name: 'greedy', haulPolicy: 'greedy', stealPolicy: 'greedy', targetGrounds: ['mid', 'offshore', 'inshore'],
+  name: 'greedy', haulPolicy: 'greedy', stealPolicy: 'greedy', targetGrounds: ['mid', 'offshore', 'deep', 'inshore'],
   minKeep: 1, sellThreshold: 2, steals: false, refuelBelow: 2, repFloor: 2, quitHour: 99,
 };
 

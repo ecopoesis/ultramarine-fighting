@@ -2,7 +2,7 @@
 
 export type TileKind = 'KEEPER' | 'SHORT' | 'JUMBO' | 'EGGER';
 export type Color = 'common' | 'rare';
-export type Ground = 'inshore' | 'mid' | 'offshore';
+export type Ground = 'inshore' | 'mid' | 'offshore' | 'deep';
 export type Stage = 'SET' | 'SOAKING' | 'PRIME' | 'OVERRIPE' | 'FOULED';
 export type Phase = 'PLAYING' | 'GAME_OVER';
 
@@ -107,6 +107,9 @@ export interface Config {
     edges: [string, string][];
     fuelPerStep: number;
     startPort: string; // where every boat begins day 1
+    // Decorative islands/ledges — pure flavor for the map, no gameplay. `near`
+    // is the node they sit beside so a future UI can place them.
+    landmarks?: { name: string; near: string }[];
   };
 
   bags: Record<Ground, Record<string, number>>; // per ground TYPE: tileTemplateName -> count

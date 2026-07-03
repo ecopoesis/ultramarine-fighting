@@ -9,6 +9,8 @@ export function tileTemplate(name: string): Omit<Tile, 'id'> {
     case 'KEEPER_3lb': return { kind: 'KEEPER', weightLb: 3, color: 'common' };
     case 'RARE_2lb': return { kind: 'KEEPER', weightLb: 2, color: 'rare' };
     case 'RARE_3lb': return { kind: 'KEEPER', weightLb: 3, color: 'rare' };
+    case 'KEEPER_4lb': return { kind: 'KEEPER', weightLb: 4, color: 'common' }; // the deep edge
+    case 'RARE_4lb': return { kind: 'KEEPER', weightLb: 4, color: 'rare' };
     case 'SHORT': return { kind: 'SHORT', weightLb: 0, color: 'common' };   // undersized: illegal
     case 'JUMBO': return { kind: 'JUMBO', weightLb: 5, color: 'common' };   // oversized: illegal but heavy
     case 'EGGER': return { kind: 'EGGER', weightLb: 0, color: 'common' };   // berried female: v-notch

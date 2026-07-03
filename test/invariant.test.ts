@@ -9,7 +9,7 @@ import type { GameState } from '../src/types';
 
 function totalTilesInWorld(s: GameState): number {
   let n = 0;
-  for (const g of ['inshore', 'mid', 'offshore'] as const) n += s.bags[g].length;
+  for (const g of Object.values(s.bags)) n += g.length;
   for (const p of Object.values(s.players)) n += p.hold.length;
   return n;
 }
