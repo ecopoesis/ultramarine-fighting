@@ -1,0 +1,20 @@
+{
+  "name": "lobsters-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Decoupled TS engine for the Lobsters euro board game prototype (hot-seat). Pen-and-paper is the real target.",
+  "scripts": {
+    "play": "tsx scripts/playRandomGame.ts",
+    "sim": "tsx scripts/playRandomGame.ts 200",
+    "arena": "tsx scripts/arena.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
