@@ -1,5 +1,6 @@
-import type { GameState, BuyerId } from './types';
+import type { GameState } from './types';
 import { neighbors } from './engine/movement';
+import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
 import type { HaulPolicy } from './engine/buoys';
 
 export type Action =
@@ -7,7 +8,7 @@ export type Action =
   | { type: 'DROP'; playerId: string }
   | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy; useToken?: boolean }
   | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy; useToken?: boolean }
-  | { type: 'SELL'; playerId: string; buyerId: BuyerId }
+  | { type: 'SELL'; playerId: string }
   | { type: 'REFUEL'; playerId: string; units: number }
   | { type: 'REPORT'; playerId: string }
   | { type: 'BERTH'; playerId: string }
@@ -19,14 +20,14 @@ export function actionCost(state: GameState, a: Action): number {
 }
 
 // Enumerate legal actions for a player right now. Always includes PASS so the
-// game can never deadlock. Powers both the UI buttons and the random runner.
+// game can never deadlock. Powers both the UI buttons and the runner.
 export function legalActions(state: GameState, playerId: string): Action[] {
   const p = state.players[playerId];
   const out: Action[] = [{ type: 'PASS', playerId }];
   if (p.berthed || state.phase !== 'PLAYING') return out;
 
   const cfg = state.config;
-  const atHarbor = p.node === cfg.map.harbor;
+  const atPort = isPort(state, p.node);
   const node = cfg.map.nodes[p.node];
   const canAfford = (t: Action) => p.actionsLeft >= actionCost(state, t);
 
@@ -59,16 +60,15 @@ export function legalActions(state: GameState, playerId: string): Action[] {
       }
     }
   }
-  // harbor actions
-  if (atHarbor) {
-    if (!p.soldToday && p.hold.length > 0) {
-      for (const buyerId of ['coop', 'tourist'] as BuyerId[]) {
-        const t: Action = { type: 'SELL', playerId, buyerId };
-        if (canAfford(t)) out.push(t);
-      }
+  // port actions (any dock; only market ports buy)
+  if (atPort) {
+    if (isMarketPort(state, p.node) && !p.soldToday && p.hold.length > 0) {
+      const t: Action = { type: 'SELL', playerId };
+      if (canAfford(t)) out.push(t);
     }
-    if (p.fuel < cfg.fuelTankMax && p.money >= cfg.fuelCostPerUnit) {
-      const units = Math.min(cfg.fuelTankMax - p.fuel, Math.floor(p.money / cfg.fuelCostPerUnit));
+    const price = fuelPriceAt(state, p.node);
+    if (p.fuel < cfg.fuelTankMax && p.money >= price) {
+      const units = Math.min(cfg.fuelTankMax - p.fuel, Math.floor(p.money / price));
       const t: Action = { type: 'REFUEL', playerId, units };
       if (units > 0 && canAfford(t)) out.push(t);
     }

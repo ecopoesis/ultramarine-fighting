@@ -2,6 +2,14 @@ import type { GameState, Ground, Tile, Stage } from '../types';
 import { takeRandom } from '../rng';
 import { stageFor } from './soak';
 import { isKeeper, isIllegal, isEgger } from '../tiles';
+import { marketPorts, portOf } from './ports';
+
+// A reference "book price" for valuing stolen catch (report bounty), independent
+// of which port the loot might eventually sell at: the best market base around.
+function refPrice(d: GameState): number {
+  const bases = marketPorts(d).map((n) => portOf(d, n)!.market!.base);
+  return bases.length ? Math.max(...bases) : 1;
+}
 
 function groundAt(d: GameState, node: string): Ground {
   const n = d.config.map.nodes[node];
@@ -115,7 +123,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
   const holdBefore = thief.hold.length;
   resolveDraw(d, thiefId, rec.ground, stage, policy, useToken);
   const stolen = thief.hold.slice(holdBefore);
-  const value = stolen.reduce((s, t) => s + t.weightLb, 0) * d.config.buyers.coop.base;
+  const value = stolen.reduce((s, t) => s + t.weightLb, 0) * refPrice(d);
 
   // gear and rep
   owner.deployed.splice(idx, 1);

@@ -4,7 +4,6 @@ export type TileKind = 'KEEPER' | 'SHORT' | 'JUMBO' | 'EGGER';
 export type Color = 'common' | 'rare';
 export type Ground = 'inshore' | 'mid' | 'offshore';
 export type Stage = 'SET' | 'SOAKING' | 'PRIME' | 'OVERRIPE' | 'FOULED';
-export type BuyerId = 'coop' | 'tourist';
 export type Phase = 'PLAYING' | 'GAME_OVER';
 
 export interface Tile {
@@ -38,6 +37,7 @@ export interface PlayerState {
   hold: Tile[];
   soldToday: boolean;
   berthed: boolean;
+  berthNode?: string;   // the port a captain berthed in — where they start tomorrow (daily home-port choice)
   vTokens: number;
   tracks: { conservation: number; reputation: number };
 }
@@ -59,7 +59,7 @@ export interface GameState {
   players: Record<string, PlayerState>;
   bags: Record<Ground, Tile[]>;
   bagStart: Record<Ground, number>;
-  buyers: Record<BuyerId, { lbsSoldToday: number }>;
+  markets: Record<string, { lbsSoldToday: number }>; // per market-port: lbs sold today (flood), recovers overnight
   nextSlot: number;
   pendingNextOrder: string[];
   thefts: TheftRecord[];
@@ -69,11 +69,21 @@ export interface GameState {
 
 // ---- Config ----
 
+// A port's market. Sell where you dock — price = max(floor, base - elasticity*lbsSoldToday_here).
+// Low elasticity = deep appetite / slow flood (Rockland); high = small appetite / floods fast.
 export interface BuyerConfig {
   base: number;
   elasticity: number;
   floor: number;
   rareBonus: number;
+}
+
+// A dock. Every port lets you refuel/berth; only ports with a `market` buy lobster.
+// A `shelter` (Matinicus, Monhegan) is storm refuge + emergency fuel — no market.
+export interface PortConfig {
+  fuelCostPerUnit: number;   // money per fuel unit here (islands/shelters are dear)
+  market?: BuyerConfig;      // present => you can SELL here
+  shelter?: boolean;         // lighthouse/refuge: no market, emergency fuel only
 }
 
 export interface DrawRule { draw: number; keep: number }
@@ -88,20 +98,21 @@ export interface Config {
   startReputation: number;
   fuelTankMax: number;
   startFuel: number;
-  fuelCostPerUnit: number;
 
   map: {
-    nodes: Record<string, { type: 'harbor' | 'ground'; ground?: Ground }>;
+    // A node is a port (dock: refuel/berth, maybe a market) or a ground (a fishing
+    // zone of some ground type). Several zones can share a ground type — they draw
+    // from that type's shared bag. `label` is display-only flavor.
+    nodes: Record<string, { type: 'port' | 'ground'; ground?: Ground; port?: PortConfig; label?: string }>;
     edges: [string, string][];
     fuelPerStep: number;
-    harbor: string;
+    startPort: string; // where every boat begins day 1
   };
 
-  bags: Record<Ground, Record<string, number>>; // tileTemplateName -> count
+  bags: Record<Ground, Record<string, number>>; // per ground TYPE: tileTemplateName -> count
   soakCurves: Record<Ground, Stage[]>;
   drawByStage: Record<Stage, DrawRule>;
   actionCost: Record<string, number>;
-  buyers: Record<BuyerId, BuyerConfig>;
 
   poleRepCost: number;
   bribeMoneyCost: number;

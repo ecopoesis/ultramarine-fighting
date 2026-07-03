@@ -1,9 +1,9 @@
-import type { GameState, Ground, Stage, BuyerId, PlayerState } from '../types';
+import type { GameState, Ground, Stage } from '../types';
 import type { Action } from '../actions';
 import { neighbors, distance } from '../engine/movement';
 import { reachability } from '../selectors';
 import { stageFor } from '../engine/soak';
-import { pricePerLb } from '../engine/market';
+export { isPort, isMarketPort, nearestPort, nearestMarketPort } from '../engine/ports';
 
 // A policy decides ONE action given the current legal set. Turn-level behavior
 // emerges from per-action decisions (same contract as the random runner).
@@ -45,19 +45,11 @@ export function myBuoys(state: GameState, pid: string): MyBuoy[] {
 export const isLastDay = (s: GameState) => s.day === s.config.days;
 export const hoursLeftToday = (s: GameState) => s.config.hoursPerDay - s.hour;
 
-// The node hosting a given ground (map has one node per ground).
-export function groundNode(state: GameState, g: Ground): string | null {
-  for (const [name, def] of Object.entries(state.config.map.nodes)) {
-    if (def.type === 'ground' && def.ground === g) return name;
-  }
-  return null;
-}
-
-// Pick the buyer paying more for the current hold RIGHT NOW (respects today's flooding).
-export function chooseBuyer(state: GameState, p: PlayerState): BuyerId {
-  const rev = (buyerId: BuyerId) =>
-    p.hold.reduce((s, t) => s + t.weightLb * pricePerLb(state, buyerId, t.color === 'rare'), 0);
-  return rev('tourist') >= rev('coop') ? 'tourist' : 'coop';
+// All zone nodes of a given ground type (there can be several — e.g. two offshore).
+export function groundNodesOfType(state: GameState, g: Ground): string[] {
+  return Object.keys(state.config.map.nodes).filter(
+    (n) => state.config.map.nodes[n].ground === g,
+  );
 }
 
 export function ofType<T extends Action['type']>(legal: Action[], type: T): Extract<Action, { type: T }>[] {

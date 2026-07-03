@@ -12,22 +12,45 @@ export const defaultConfig: Config = {
   startReputation: 8, // buffer so dirty play (theft/high-grading) is a priced risk, not instant death under weak-link
   fuelTankMax: 10,
   startFuel: 8,
-  fuelCostPerUnit: 1,
 
+  // Penobscot Bay (v1 — geometry to be backfit to the real chart later).
+  // Three market ports with distinct appetites, one shelter, six fishing zones.
   map: {
     nodes: {
-      PORT: { type: 'harbor' },
-      INSHORE: { type: 'ground', ground: 'inshore' },
-      MID: { type: 'ground', ground: 'mid' },
-      OFFSHORE: { type: 'ground', ground: 'offshore' },
+      // --- ports (dock: refuel/berth; market-ports also buy) ---
+      ROCKLAND:   { type: 'port', label: 'Rockland', port: {
+        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.15, floor: 2, rareBonus: 0 } } },   // deep appetite, far south-west
+      VINALHAVEN: { type: 'port', label: 'Vinalhaven', port: {
+        fuelCostPerUnit: 2, market: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 } } },     // island: high price, floods fast, dear fuel
+      STONINGTON: { type: 'port', label: 'Stonington', port: {
+        fuelCostPerUnit: 1.5, market: { base: 6, elasticity: 0.5, floor: 3, rareBonus: 0.4 } } },   // premium eastern middle path
+      MATINICUS:  { type: 'port', label: 'Matinicus', port: {
+        fuelCostPerUnit: 4, shelter: true } },                                                       // lighthouse: refuge + emergency fuel, no market
+
+      // --- fishing zones (two per ground type, sharing that type's bag) ---
+      INSHORE_W:  { type: 'ground', ground: 'inshore', label: 'Muscle Ridge' },
+      INSHORE_E:  { type: 'ground', ground: 'inshore', label: 'Eggemoggin' },
+      MID_W:      { type: 'ground', ground: 'mid', label: 'West Bay' },
+      MID_E:      { type: 'ground', ground: 'mid', label: 'Fox Islands' },
+      OFFSHORE_W: { type: 'ground', ground: 'offshore', label: 'Outer West' },
+      OFFSHORE_E: { type: 'ground', ground: 'offshore', label: 'The Edge' },
     },
     edges: [
-      ['PORT', 'INSHORE'],
-      ['INSHORE', 'MID'],
-      ['MID', 'OFFSHORE'],
+      ['ROCKLAND', 'INSHORE_W'],
+      ['INSHORE_W', 'INSHORE_E'],
+      ['ROCKLAND', 'MID_W'],
+      ['MID_W', 'MID_E'],
+      ['MID_E', 'STONINGTON'],
+      ['MID_E', 'VINALHAVEN'],
+      ['MID_E', 'OFFSHORE_E'],
+      ['VINALHAVEN', 'OFFSHORE_E'],   // the morning run — 1 step to the rich water
+      ['MID_W', 'OFFSHORE_W'],
+      ['OFFSHORE_W', 'OFFSHORE_E'],
+      ['VINALHAVEN', 'MATINICUS'],
+      ['OFFSHORE_E', 'MATINICUS'],
     ],
     fuelPerStep: 1,
-    harbor: 'PORT',
+    startPort: 'ROCKLAND',
   },
 
   // tile-template name -> count in the bag at season start
@@ -54,11 +77,6 @@ export const defaultConfig: Config = {
 
   actionCost: {
     STEAM: 1, DROP: 1, HAUL: 1, STEAL: 2, SELL: 1, REFUEL: 1, REPORT: 1, BERTH: 0, BRIBE: 0, PASS: 0,
-  },
-
-  buyers: {
-    coop: { base: 4, elasticity: 0.2, floor: 2, rareBonus: 0 },
-    tourist: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 },
   },
 
   poleRepCost: 1,

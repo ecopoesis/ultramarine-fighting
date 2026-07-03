@@ -1,4 +1,4 @@
-import type { GameState, BuyerId } from './types';
+import type { GameState } from './types';
 import type { Action } from './actions';
 import { actionCost } from './actions';
 import { steam } from './engine/movement';
@@ -6,6 +6,7 @@ import { dropBuoy, haulBuoy, stealBuoy } from './engine/buoys';
 import { sell, reportTheft } from './engine/market';
 import { berth, bribe } from './engine/turnorder';
 import { advanceSoak } from './engine/soak';
+import { fuelPriceAt } from './engine/ports';
 
 // Pure: returns a new state; never mutates the input. We clone once and mutate
 // the draft (engine fns operate on the draft), which keeps rule code readable.
@@ -32,12 +33,13 @@ function applyAction(d: GameState, a: Action): boolean {
     case 'DROP': dropBuoy(d, a.playerId); return false;
     case 'HAUL': haulBuoy(d, a.playerId, a.buoyId, a.policy ?? 'clean', a.useToken ?? false); return false;
     case 'STEAL': stealBuoy(d, a.playerId, a.ownerId, a.buoyId, a.policy ?? 'clean', a.useToken ?? false); return false;
-    case 'SELL': sell(d, a.playerId, a.buyerId as BuyerId); return false;
+    case 'SELL': sell(d, a.playerId); return false;
     case 'REFUEL': {
       const p = d.players[a.playerId];
-      const units = Math.min(a.units, d.config.fuelTankMax - p.fuel, Math.floor(p.money / d.config.fuelCostPerUnit));
-      p.fuel += units; p.money -= units * d.config.fuelCostPerUnit;
-      d.log.push(`${p.name} refuels ${units} (fuel ${p.fuel}, money ${p.money})`);
+      const price = fuelPriceAt(d, p.node); // dear at island ports, dearer at shelters
+      const units = Math.min(a.units, d.config.fuelTankMax - p.fuel, Math.floor(p.money / price));
+      p.fuel += units; p.money -= units * price;
+      d.log.push(`${p.name} refuels ${units} at ${p.node} (fuel ${p.fuel}, money ${p.money.toFixed(1)})`);
       return false;
     }
     case 'REPORT': reportTheft(d, a.playerId); return false;
@@ -107,7 +109,7 @@ function dayRollover(d: GameState): void {
     p.berthed = false;
     p.actionsLeft = 0;
   }
-  for (const b of Object.keys(d.buyers) as BuyerId[]) d.buyers[b].lbsSoldToday = 0;
+  for (const m of Object.keys(d.markets)) d.markets[m].lbsSoldToday = 0; // prices recover overnight
 
   d.day++;
   if (d.day > d.config.days) {

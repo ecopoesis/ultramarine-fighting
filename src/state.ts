@@ -10,7 +10,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     players[id] = {
       id,
       name: names?.[i] ?? `Captain ${i + 1}`,
-      node: config.map.harbor,
+      node: config.map.startPort,   // everyone begins day 1 at the start port
       fuel: config.startFuel,
       money: config.startMoney,
       actionsLeft: 0,
@@ -33,6 +33,12 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     bagStart[g] = bags[g].length;
   }
 
+  // one flood ledger per market port
+  const markets: GameState['markets'] = {};
+  for (const [node, def] of Object.entries(config.map.nodes)) {
+    if (def.port?.market) markets[node] = { lbsSoldToday: 0 };
+  }
+
   const state: GameState = {
     config,
     rngSeed: seed,
@@ -44,7 +50,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     players,
     bags,
     bagStart,
-    buyers: { coop: { lbsSoldToday: 0 }, tourist: { lbsSoldToday: 0 } },
+    markets,
     nextSlot: 0,
     pendingNextOrder: [],
     thefts: [],
@@ -52,8 +58,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     buoyCounter: 0,
   };
 
-  // first active player gets their action budget
   players[ids[0]].actionsLeft = config.actionsPerTurn;
-  state.log.push(`Day 1 begins. Order: ${ids.join(', ')}`);
+  state.log.push(`Day 1 begins at ${config.map.startPort}. Order: ${ids.join(', ')}`);
   return state;
 }
