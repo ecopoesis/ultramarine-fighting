@@ -5,7 +5,7 @@ import type { Config } from './types';
 export const defaultConfig: Config = {
   players: 3,
   seasons: 5,          // the historical-fishing arc: near commons collapses, the fleet ratchets outward
-  daysPerSeason: 4,
+  daysPerSeason: 5,    // a far round-trip must fit inside a season, else offshore/deep are unfishable and the arc is inert (Chunk C: 4→5 opened the migration window; speeding far prime instead front-loaded far fishing into S1)
   referencePlayers: 3, // bags + recruitment scale off this so depletion-per-boat holds across 3–6 players
   hoursPerDay: 6,
   actionsPerTurn: 2,
