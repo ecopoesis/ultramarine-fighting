@@ -72,6 +72,43 @@ describe('depletion accounting', () => {
   });
 });
 
+describe('weather keeps the census closed', () => {
+  const wet = { ...defaultConfig, flags: { ...defaultConfig.flags, weather: true } };
+
+  it('conserved + deterministic with storms on; whittle/hazard actually fire', () => {
+    let parted = 0, hazards = 0, everStormed = false;
+    const finals: string[] = [];
+    for (const seed of [3, 17, 99, 2024, 8123]) {
+      let state = createInitialState(wet, seed);
+      const startTotal = totalTilesInWorld(state);
+      let guard = 0;
+      while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
+        const pid = activePlayerId(state);
+        // roster of card-counters: they migrate outward into the stormed grounds
+        state = reduce(state, BOTS.gambler(state, pid, legalActions(state, pid)));
+        if (state.stormed.length) everStormed = true;
+      }
+      // parting a pot removes gear, not tiles — the census must still balance
+      expect(totalTilesInWorld(state)).toBe(startTotal);
+      parted += state.log.filter((l) => l.includes('parts')).length;
+      hazards += state.log.filter((l) => l.includes('takes a beating')).length;
+      finals.push(JSON.stringify(state.players));
+    }
+    // guard against a vacuous test: storms must be placed and their effects must fire
+    expect(everStormed).toBe(true);
+    expect(parted + hazards).toBeGreaterThan(0);
+
+    // determinism holds with weather on (storm rolls come off the same seeded RNG)
+    let state = createInitialState(wet, 3);
+    let guard = 0;
+    while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
+      const pid = activePlayerId(state);
+      state = reduce(state, BOTS.gambler(state, pid, legalActions(state, pid)));
+    }
+    expect(JSON.stringify(state.players)).toBe(finals[0]);
+  });
+});
+
 describe('v-token draw insurance keeps accounting honest', () => {
   it('census stays conserved even when insurance is spent (all-steward table)', () => {
     let insuranceFired = 0;

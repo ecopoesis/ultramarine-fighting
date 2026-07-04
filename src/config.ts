@@ -127,6 +127,26 @@ export const defaultConfig: Config = {
     deep: { KEEPER_4lb: 4, RARE_4lb: 2, SHORT: 7, JUMBO: 5, EGGER: 12 }, // 30 — a few big lobsters buried in junk & breeders: a real gamble
   },
 
+  // Weather / storms (Chunk D) — active only when flags.weather is on. Storms grow
+  // from the deep INWARD, intensifying season by season; the deep is always worst
+  // and never clears, offshore ramps 1→3, mid arrives late, inshore stays a safe
+  // refuge (0). S1 is calm (a learning round). Counts are the storm-die placement
+  // per tier per season; all values are starting guesses to tune in sim.
+  weather: {
+    track: [
+      { inshore: 0, mid: 0, offshore: 0, deep: 0 }, // S1 — calm
+      { inshore: 0, mid: 0, offshore: 1, deep: 1 }, // S2 — the deep turns, offshore begins
+      { inshore: 0, mid: 0, offshore: 2, deep: 1 }, // S3
+      { inshore: 0, mid: 1, offshore: 3, deep: 1 }, // S4 — it reaches the island belt
+      { inshore: 0, mid: 1, offshore: 3, deep: 1 }, // S5 — full blow on the outer water
+    ],
+    hazardChance: 0.5, // entering a storm: a coin-flip to take a beating (chancy, not a wall)
+    hazardFuel: 2,
+    whittleChance: 0.34, // ~a storm-die 1-2 of 6: a pot left out overnight parts
+    bonusDraws: 2,       // a stormed prime haul: draw 3+2=5, keep 2+2=4 — a fat gamble haul
+    bonusKeep: 2,
+  },
+
   // Inter-season restock draft (the custom lobster d6 — its faces are the main
   // recovery knob; a 0 is a blank that wastes the claim). Piles start pre-seeded
   // with a few of each sellable template for early agency.

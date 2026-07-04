@@ -1,6 +1,7 @@
 import type { GameState, Ground } from '../types';
 import type { Action } from '../actions';
 import { randInt } from '../rng';
+import { placeStorms } from './weather';
 
 // The inter-season RESTOCK DRAFT as a real, action-driven phase (what a human UI
 // will drive too). Going around in berth order, each captain CLAIMS one remaining
@@ -115,6 +116,10 @@ export function finishSeasonRollover(d: GameState): void {
   d.restock = undefined;
   d.phase = 'PLAYING';
   d.season++;
+  // Re-roll the weather for the new season: old tokens clear, the storm intensifies
+  // inward. Happens on EVERY rollover, including the no-restock 4→5 (the ocean stops
+  // recovering, but the weather keeps worsening).
+  placeStorms(d);
   d.turnOrder = ids;
   d.pendingNextOrder = [];
   d.nextSlot = 0;

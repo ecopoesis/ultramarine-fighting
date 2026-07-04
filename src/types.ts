@@ -77,6 +77,11 @@ export interface GameState {
   players: Record<string, PlayerState>;
   bags: Record<Ground, Tile[]>;
   bagStart: Record<Ground, number>;
+  // Nodes currently under storm (weather). Placed at each season rollover from the
+  // season's storm track; empty when flags.weather is off (or the calm first season).
+  // ENTERING one risks a hazard, gear left in one gets whittled overnight, but
+  // FISHING one churns up bonus lobster — pure gamble. Shelters are never stormed.
+  stormed: string[];
   // Extraction piles: sold/fished lobsters, sorted by their home bag. Tiles removed
   // from the commons land here (never destroyed); the inter-season restock draft
   // returns some of them to the bags. Depletion = bag→pile drift, not tiles leaving
@@ -111,6 +116,25 @@ export interface PortConfig {
 
 export interface DrawRule { draw: number; keep: number }
 
+// Weather / storms (Chunk D). The danger half of the forced-outward arc and the
+// brake on far-commit dominance. Storms grow from the deep inward, intensifying
+// season by season; the deep is always worst and never clears. Three effects:
+// entering a stormed node risks a hazard (fuel), gear left in one gets parted
+// overnight, and FISHING one churns up bonus lobster — risk vs reward tuned to a
+// near-wash so the far grounds become a gamble, not a wall or a free lunch.
+export interface WeatherConfig {
+  // Per-season storm counts per tier: how many nodes of that tier are stormed.
+  // Index 0 = season 1 (keep all-zero: S1 is the calm learning round). The storm
+  // die picks WHICH nodes. Keep inshore 0 (the safe refuge tier); deep has one
+  // node, so any count >= 1 means it always storms ('*'). Grows deep→inward.
+  track: Record<Ground, number>[];
+  hazardChance: number; // prob of a hazard when ENTERING a stormed node
+  hazardFuel: number;   // fuel lost on a hazard hit
+  whittleChance: number; // prob per night that a pot left in a stormed node is parted (lost for the season)
+  bonusDraws: number;   // extra tiles drawn when hauling a stormed node (the churn)
+  bonusKeep: number;    // extra keep-limit on a stormed haul (land more of the churn)
+}
+
 export interface Config {
   players: number;
   seasons: number;        // number of seasons; the game ends after the last one
@@ -138,6 +162,7 @@ export interface Config {
   };
 
   bags: Record<Ground, Record<string, number>>; // per ground TYPE: tileTemplateName -> count
+  weather: WeatherConfig;                        // storms (Chunk D); active only when flags.weather is on
   // Inter-season restock DRAFT: in berth order, each captain claims one remaining
   // bag, rolls the custom lobster die, and returns that many lobsters from the
   // bag's pile. `dieFaces` are the SIX faces of a physical d6 — the values (and

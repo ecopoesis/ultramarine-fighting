@@ -8,6 +8,7 @@ import { berth, bribe } from './engine/turnorder';
 import { advanceSoak } from './engine/soak';
 import { enterRestock, applyRestockAction, finishSeasonRollover } from './engine/restock';
 import { fuelPriceAt } from './engine/ports';
+import { stormWhittle } from './engine/weather';
 
 // Pure: returns a new state; never mutates the input. We clone once and mutate
 // the draft (engine fns operate on the draft), which keeps rule code readable.
@@ -106,6 +107,8 @@ function dayRollover(d: GameState): void {
 
   // mature all buoys
   advanceSoak(d);
+  // the storm's daily turn: part pots left out in the blow (before they can be hauled)
+  stormWhittle(d);
 
   // hold decay + reset day flags + recover prices
   for (const p of Object.values(d.players)) {

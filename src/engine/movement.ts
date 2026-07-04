@@ -1,4 +1,6 @@
 import type { GameState } from '../types';
+import { nextRandom } from '../rng';
+import { weatherOn, isStormed } from './weather';
 
 export function neighbors(state: GameState, node: string): string[] {
   const out: string[] = [];
@@ -37,4 +39,13 @@ export function steam(d: GameState, playerId: string, to: string): void {
   p.fuel -= cost;
   p.node = to;
   d.log.push(`${p.name} steams to ${to} (fuel ${p.fuel})`);
+
+  // Storm entry hazard: pushing INTO a stormed node risks a beating (lost fuel).
+  // Chancy, not a wall — you can still go, you just might limp. Shelters are never
+  // stormed, so ducking into one is always safe.
+  if (weatherOn(d) && isStormed(d, to) && nextRandom(d) < d.config.weather.hazardChance) {
+    const loss = Math.min(p.fuel, d.config.weather.hazardFuel);
+    p.fuel -= loss;
+    d.log.push(`${p.name} takes a beating in the storm at ${to} (-${loss} fuel, now ${p.fuel})`);
+  }
 }

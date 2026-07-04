@@ -1,5 +1,6 @@
 import type { Config, GameState, PlayerState, Ground, Tile } from './types';
 import { buildBag, tileTemplate } from './tiles';
+import { placeStorms } from './engine/weather';
 
 export function createInitialState(config: Config, seed = 12345, names?: string[]): GameState {
   const players: Record<string, PlayerState> = {};
@@ -69,6 +70,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     bagStart,
     piles,
     markets,
+    stormed: [],
     nextSlot: 0,
     pendingNextOrder: [],
     thefts: [],
@@ -77,6 +79,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
   };
 
   players[ids[0]].actionsLeft = config.actionsPerTurn;
+  placeStorms(state); // season 1 is calm by design → a no-op (no RNG), but honors a nonzero S1 track
   state.log.push(`Season 1, Day 1 begins at ${config.map.startPort}. Order: ${ids.join(', ')}`);
   return state;
 }

@@ -3,6 +3,7 @@ import { takeRandom } from '../rng';
 import { stageFor } from './soak';
 import { isKeeper, isIllegal, isEgger } from '../tiles';
 import { marketPorts, portOf } from './ports';
+import { weatherOn } from './weather';
 
 // A reference "book price" for valuing stolen catch (report bounty), independent
 // of which port the loot might eventually sell at: the best market base around.
@@ -38,11 +39,18 @@ export type HaulPolicy = 'clean' | 'greedy' | 'highgrade';
 
 function resolveDraw(
   d: GameState, playerId: string, ground: Ground, stage: Stage, policy: HaulPolicy, useToken: boolean,
+  stormy = false,
 ): void {
   const p = d.players[playerId];
   const rule = d.config.drawByStage[stage];
+  // A stormed node churns up bonus lobster: extra draws and a raised keep limit.
+  // This is the REWARD half of the gamble — priced against the entry hazard and
+  // the overnight whittle to a near-wash, so the far grounds are a bet, not a wall.
+  const bonus = stormy && weatherOn(d);
+  const drawN = rule.draw + (bonus ? d.config.weather.bonusDraws : 0);
+  const keepN = rule.keep + (bonus ? d.config.weather.bonusKeep : 0);
   const drawn: Tile[] = [];
-  for (let i = 0; i < rule.draw; i++) {
+  for (let i = 0; i < drawN; i++) {
     const t = takeRandom(d, d.bags[ground]);
     if (t) drawn.push(t);
   }
@@ -52,7 +60,7 @@ function resolveDraw(
 
   for (const t of drawn) {
     if (isKeeper(t)) {
-      if (keepers.indexOf(t) < rule.keep && kept < rule.keep) {
+      if (keepers.indexOf(t) < keepN && kept < keepN) {
         p.hold.push(t); kept++;
       } else {
         d.bags[ground].push(t); // over the keep limit, back it goes
@@ -91,7 +99,7 @@ function resolveDraw(
     }
     const extraKeepers = extra.filter(isKeeper).sort((a, b) => b.weightLb - a.weightLb);
     for (const t of extraKeepers) {
-      if (kept < rule.keep) { p.hold.push(t); kept++; } else d.bags[ground].push(t);
+      if (kept < keepN) { p.hold.push(t); kept++; } else d.bags[ground].push(t);
     }
     for (const t of extra) if (!isKeeper(t)) d.bags[ground].push(t); // non-keepers go back
     d.log.push(`${p.name} spends a v-token (insurance): rescued ${kept} keeper(s)`);
@@ -108,7 +116,7 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
   if (buoy.node !== p.node) throw new Error('Buoy is elsewhere');
   const rec = p.soak[buoyId];
   const stage = stageFor(d, rec.ground, rec.daysSoaked);
-  resolveDraw(d, playerId, rec.ground, stage, policy, useToken);
+  resolveDraw(d, playerId, rec.ground, stage, policy, useToken, d.stormed.includes(buoy.node));
   // recover the gear
   p.deployed.splice(idx, 1);
   delete p.soak[buoyId];
@@ -126,7 +134,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
   const stage = stageFor(d, rec.ground, rec.daysSoaked); // thief gambles on OWNER's hidden ripeness
 
   const holdBefore = thief.hold.length;
-  resolveDraw(d, thiefId, rec.ground, stage, policy, useToken);
+  resolveDraw(d, thiefId, rec.ground, stage, policy, useToken, d.stormed.includes(buoy.node));
   const stolen = thief.hold.slice(holdBefore);
   const value = stolen.reduce((s, t) => s + t.weightLb, 0) * refPrice(d);
 
