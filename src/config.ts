@@ -136,9 +136,9 @@ export const defaultConfig: Config = {
     track: [
       { inshore: 0, mid: 0, offshore: 0, deep: 0 }, // S1 — calm
       { inshore: 0, mid: 0, offshore: 1, deep: 1 }, // S2 — the deep turns, offshore begins
-      { inshore: 0, mid: 0, offshore: 2, deep: 1 }, // S3
-      { inshore: 0, mid: 1, offshore: 3, deep: 1 }, // S4 — it reaches the island belt
-      { inshore: 0, mid: 1, offshore: 3, deep: 1 }, // S5 — full blow on the outer water
+      { inshore: 0, mid: 1, offshore: 2, deep: 1 }, // S3 — it reaches the island belt
+      { inshore: 0, mid: 2, offshore: 3, deep: 1 }, // S4
+      { inshore: 0, mid: 2, offshore: 3, deep: 1 }, // S5 — full blow: a third of the mid grounds and most of the outer water (the near-water haven shrinks late)
     ],
     hazardChance: 0.4, // entering a storm: a chance of a beating (chancy, not a wall)
     hazardFuel: 1,     // a light beating — kept gentle so the fuel bleed at dear far ports doesn't bankrupt the far gamble; the whittle (lost gear) is the real teeth
@@ -200,5 +200,5 @@ export const defaultConfig: Config = {
     combineMode: 'geometricMean',
   },
 
-  flags: { weather: false, eras: false, multiShip: false, inspections: false },
+  flags: { weather: true, eras: false, multiShip: false, inspections: false },
 };

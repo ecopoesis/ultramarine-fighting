@@ -63,12 +63,12 @@ const ARCH_BASE: CardCounter = {
 // whether you bet on the blow are separate identities.
 export const CC_STEWARD: CardCounter = { ...ARCH_BASE, name: 'steward', vnotchContribute: 3, stormBias: 0.8 };    // clean, balanced — rebuilds the commons, gives storms a berth
 export const CC_GREEDY: CardCounter = { ...ARCH_BASE, name: 'greedy', haulPolicy: 'highgrade', minKeep: 1, vnotchContribute: 0 }; // selective high-grader: money leader, hoards v-notch for VP
-export const CC_HIGHLINER: CardCounter = { ...ARCH_BASE, name: 'highliner', farBias: 1.4, stormBias: 1.1 };       // works the far edge for the heavy catch
+export const CC_HIGHLINER: CardCounter = { ...ARCH_BASE, name: 'highliner', farBias: 1.4, stormBias: 1.4 };       // works the far edge for the heavy catch — and rides the churn out there (else it eats the storm tax without the reward)
 export const CC_GRINDER: CardCounter = { ...ARCH_BASE, name: 'grinder', farBias: 0.7, minKeep: 1, reachCostPerStep: 0.8, vnotchContribute: 2 }; // near-water workhorse: high volume, short runs, rebuilds its own grounds
-export const CC_GAMBLER: CardCounter = { ...ARCH_BASE, name: 'gambler', farBias: 2.0, minKeep: 2, refuelBelow: 6, dropSlack: 0, stormBias: 1.8 }; // deep-edge risk-taker: bets on the far gear AND the blow
+export const CC_GAMBLER: CardCounter = { ...ARCH_BASE, name: 'gambler', farBias: 2.0, minKeep: 2, stormBias: 1.8 }; // deep-edge risk-taker: bets on the far gear AND the blow — but a COMPETENT one (base dropSlack/refuel: don't strand gear or over-fuel at dear far ports)
 export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 4, vnotchContribute: 0, stormBias: 1.3 }; // dirty money anywhere, rides the storm
 export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 2, vnotchContribute: 3, stormBias: 0.6 };  // patient: only prime hauls (keep 2) — max conservation, avoids the blow
-export const CC_NOMAD: CardCounter = { ...ARCH_BASE, name: 'nomad', reachCostPerStep: 0.25 };                    // ranges the whole map for the best EV anywhere
+export const CC_NOMAD: CardCounter = { ...ARCH_BASE, name: 'nomad', reachCostPerStep: 0.25, stormBias: 1.2 };     // ranges the whole map for the best EV anywhere — including the churn (else it wanders into storms untaxed-for-nothing)
 
 // The full roster (index builds BOTS from this; the arena seats N of them).
 export const ROSTER: CardCounter[] = [
