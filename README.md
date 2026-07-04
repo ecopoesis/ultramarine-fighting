@@ -8,10 +8,20 @@ the balance numbers fast. See `SPEC.md` for the full design rationale.
 ```bash
 npm install
 npm run typecheck   # tsc --noEmit
-npm test            # vitest: depletion invariant, determinism, termination
+npm test            # vitest: depletion invariant, determinism, termination, web smoke
 npm run play        # one game, seed 12345, prints score table + bag health
 npm run sim         # 200 games, win-by-seat + mean bag health
+npm run dev         # hot-seat web UI (Vite) at http://localhost:5173
 ```
+
+## Hot-seat web UI (`web/`)
+A React + Vite front end over the same engine (imports `src/` directly — the engine
+is browser-safe). `npm run dev` to play. On the setup screen assign each seat to a
+**human**, a **named bot** (the roster archetypes), or a **random bot**; pass the
+device between human turns (a hand-off gate hides private info). The map shows the
+public state (boats, pots, storms ⛈, seeded piles); the active player's panel shows
+their private hold + pot ripeness and legal actions. `npm run build` / `npm run
+typecheck:web` for the app; `web/app.smoke.test.tsx` renders it against the engine.
 
 ## Architecture (the decoupling)
 - `src/config.ts` — **the only file you touch to rebalance.** Every tunable number.
