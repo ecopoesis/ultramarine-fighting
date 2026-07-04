@@ -99,7 +99,13 @@ export function makePolicy(arch: Archetype): Policy {
         const steam = step ? ofType(legal, 'STEAM').find((s) => s.to === step) : undefined;
         if (steam) return steam;
       }
-      return firstOfType(legal, 'BERTH') ?? pass;
+      // Don't pay the pole (slot-0) rep cost just for finishing early: if we'd be
+      // first into the berths, idle instead and let a rival take the front slot or
+      // the end-of-day auto-berth seat us for free. (Rep is a weak track; the pole
+      // is only worth its cost as a deliberate human initiative play, dial #1.)
+      const berthAction = firstOfType(legal, 'BERTH');
+      if (berthAction && state.nextSlot > 0) return berthAction;
+      return pass;
     }
 
     // 4) AT SEA. Drop a pot if we're standing on a zone we came to seed.
