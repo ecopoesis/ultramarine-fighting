@@ -4,7 +4,7 @@ export type TileKind = 'KEEPER' | 'SHORT' | 'JUMBO' | 'EGGER';
 export type Color = 'common' | 'rare';
 export type Ground = 'inshore' | 'mid' | 'offshore' | 'deep';
 export type Stage = 'SET' | 'SOAKING' | 'PRIME' | 'OVERRIPE' | 'FOULED';
-export type Phase = 'PLAYING' | 'GAME_OVER';
+export type Phase = 'PLAYING' | 'RESTOCK' | 'GAME_OVER';
 
 export interface Tile {
   id: string;
@@ -49,10 +49,26 @@ export interface TheftRecord {
   value: number; // proxy value of stolen catch, for the report bounty
 }
 
+// The inter-season restock draft, live only while phase === 'RESTOCK'. Captains
+// CLAIM bags in berth order; after each claim, players to the claimer's left may
+// CONTRIBUTE v-notch tokens (each token = one extra lobster returned). See
+// engine/restock.ts for the state machine.
+export interface RestockState {
+  claimOrder: string[];   // berth order — who claims, in turn
+  claimTurn: number;      // index into claimOrder of the current claimer
+  claimed: Ground[];      // bags already restocked this draft
+  roll: number;           // current claimer's lobster-die roll (how many they return)
+  step: 'claim' | 'contribute';
+  contribGround?: Ground; // the bag just claimed, now open for v-notch contributions
+  contribOrder?: string[]; // players eligible to contribute, from the claimer's left
+  contribTurn?: number;   // index into contribOrder
+}
+
 export interface GameState {
   config: Config;
   rngSeed: number;
   phase: Phase;
+  restock?: RestockState; // present only during the RESTOCK phase
   season: number;         // 1-based; game ends after config.seasons
   day: number;            // 1-based day WITHIN the current season
   hour: number;

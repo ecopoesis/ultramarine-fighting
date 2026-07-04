@@ -28,7 +28,7 @@ export function tournament(config: Config, seeds: number, fleet: Named[], player
       let state = createInitialState(cfg, 1000 + s);
       const ids = state.turnOrder.slice();
       let g = 0;
-      while (state.phase === 'PLAYING' && g++ < 300000) {
+      while (state.phase !== 'GAME_OVER' && g++ < 300000) {
         const pid = activePlayerId(state);
         const idx = ids.indexOf(pid);
         state = reduce(state, seat[idx].policy(state, pid, legalActions(state, pid)));

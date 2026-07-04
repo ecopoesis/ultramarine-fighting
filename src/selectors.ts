@@ -3,6 +3,10 @@ import { distance, neighbors } from './engine/movement';
 import { distanceToNearestPort } from './engine/ports';
 
 export function activePlayerId(state: GameState): string {
+  if (state.phase === 'RESTOCK') {
+    const r = state.restock!;
+    return r.step === 'claim' ? r.claimOrder[r.claimTurn] : r.contribOrder![r.contribTurn!];
+  }
   return state.turnOrder[state.activePlayerIndex];
 }
 

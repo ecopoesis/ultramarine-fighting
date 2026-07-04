@@ -21,7 +21,7 @@ function stealStats(thief: Named) {
     let state = createInitialState(defaultConfig, 1000 + s);
     const ids = state.turnOrder.slice();
     let g = 0;
-    while (state.phase === 'PLAYING' && g++ < 200000) {
+    while (state.phase !== 'GAME_OVER' && g++ < 200000) {
       const pid = activePlayerId(state); const idx = ids.indexOf(pid);
       const a = seat[idx].policy(state, pid, legalActions(state, pid));
       if (a.type === 'STEAL' && seat[idx].name === thief.name) steals++;

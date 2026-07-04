@@ -38,7 +38,7 @@ function run(config: Config, bot: ReturnType<typeof makeCardCounter>, seeds: num
     };
     snap(1);
     let g = 0;
-    while (s.phase === 'PLAYING' && g++ < 300000) {
+    while (s.phase !== 'GAME_OVER' && g++ < 300000) {
       const pid = activePlayerId(s);
       s = reduce(s, bot(s, pid, legalActions(s, pid)));
       if (s.phase === 'PLAYING' && s.season !== seen) { seen = s.season; snap(seen); }

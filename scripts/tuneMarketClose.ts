@@ -34,7 +34,7 @@ function instrumentedGame(config: Config, seed: number, seatArch: string[]) {
   const ids = state.turnOrder.slice();
   let heldOverTiles = 0, decayable = 0;
   let guard = 0;
-  while (state.phase === 'PLAYING' && guard++ < 200000) {
+  while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
     const pid = activePlayerId(state);
     const seat = ids.indexOf(pid);
     const action = policies[seat](state, pid, legalActions(state, pid));

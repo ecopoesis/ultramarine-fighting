@@ -37,7 +37,7 @@ function playOne(config: Config, seed: number, seatArch: Arch[]) {
 
   let guard = 0;
   const berthSlot: Record<string, number> = {};
-  while (state.phase === 'PLAYING' && guard++ < 200000) {
+  while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
     const pid = activePlayerId(state);
     const seat = ids.indexOf(pid);
     const legal = legalActions(state, pid);

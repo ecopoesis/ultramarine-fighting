@@ -1,41 +1,121 @@
-import type { GameState, Ground, Tile } from '../types';
+import type { GameState, Ground } from '../types';
+import type { Action } from '../actions';
 import { randInt } from '../rng';
 
-// Inter-season RESTOCK DRAFT. Going around in berth order, each captain claims one
-// remaining bag, rolls the lobster die for how many (1..dieFaces), and returns
-// that many lobsters from that bag's extraction pile back into the bag. There are
-// only ~4 bags, so with more players than bags the tail of the berth order does
-// NOT get to restock — which is exactly what makes the pole worth fighting for;
-// with fewer players than bags, some bags go un-restocked and stay depleted.
-//
-// Which bag, and which lobsters to return, is the strategic layer (a rich bag
-// helps everyone who fishes it; you can also stock it thin to deny). For now the
-// resolver uses one neutral heuristic — claim the most-depleted bag with stock,
-// return the heaviest keepers — pending archetype-specific restock strategies and
-// the v-notch spend layer.
-export function restock(d: GameState): void {
-  const grounds = Object.keys(d.bags) as Ground[];
-  const claimed = new Set<Ground>();
+// The inter-season RESTOCK DRAFT as a real, action-driven phase (what a human UI
+// will drive too). Going around in berth order, each captain CLAIMS one remaining
+// bag, rolls the lobster die for how many, and returns that many lobsters from the
+// bag's extraction pile (their secret choice). After each claim, players to the
+// claimer's LEFT may CONTRIBUTE v-notch tokens — one token = one extra lobster of
+// their choice back into that bag. With ~4 bags, the tail of the berth order may
+// never get to claim, so the pole is worth fighting for.
 
-  for (const pid of d.turnOrder) {           // berth order
-    if (claimed.size >= grounds.length) break; // every bag already restocked
-    // Claim the unclaimed bag with the most in its pile (the most to restore).
-    const pick = grounds
-      .filter((g) => !claimed.has(g) && d.piles[g].length > 0)
-      .sort((a, b) => d.piles[b].length - d.piles[a].length)[0];
-    if (!pick) continue; // nothing left worth restocking for this captain
+const rollDie = (d: GameState) => randInt(d, d.config.restock.dieFaces) + 1;
 
-    claimed.add(pick);
-    const n = randInt(d, d.config.restock.dieFaces) + 1; // roll the lobster die: 1..dieFaces
-    const returned = drawFromPile(d.piles[pick], n);
-    d.bags[pick].push(...returned);
-    d.log.push(`${d.players[pid].name} restocks ${pick} +${returned.length} (rolled ${n}; pile ${d.piles[pick].length} left)`);
+// Enter the draft: capture the berth order as the claim order and roll for the
+// first claimer. The season reset (pull gear, send everyone home, advance the
+// season) is deferred to finishSeasonRollover, once the draft completes.
+export function enterRestock(d: GameState): void {
+  d.phase = 'RESTOCK';
+  d.restock = {
+    claimOrder: d.turnOrder.slice(),
+    claimTurn: 0,
+    claimed: [],
+    roll: rollDie(d),
+    step: 'claim',
+  };
+  d.log.push(`--- Restock draft. Claim order: ${d.restock.claimOrder.join(', ')} ---`);
+}
+
+// Move specific pile tiles (by id) back into their bag. Throws on an unknown id so
+// an illegal selection can't silently mint or misplace lobsters.
+function returnTiles(d: GameState, ground: Ground, tileIds: string[]): void {
+  const pile = d.piles[ground];
+  for (const id of tileIds) {
+    const idx = pile.findIndex((t) => t.id === id);
+    if (idx < 0) throw new Error(`restock: tile ${id} not in ${ground} pile`);
+    d.bags[ground].push(pile.splice(idx, 1)[0]);
   }
 }
 
-// Take up to `n` lobsters out of a pile, heaviest first (rebuild fishing value),
-// removing them from the pile. Mutates the pile; returns the taken tiles.
-function drawFromPile(pile: Tile[], n: number): Tile[] {
-  pile.sort((a, b) => b.weightLb - a.weightLb);
-  return pile.splice(0, Math.min(n, pile.length));
+export function applyRestockAction(d: GameState, a: Action): void {
+  const r = d.restock!;
+  if (r.step === 'claim') {
+    if (a.type !== 'RESTOCK_CLAIM') throw new Error('restock: expected a claim');
+    if (r.claimed.includes(a.ground)) throw new Error('restock: bag already claimed');
+    if (a.tileIds.length > r.roll) throw new Error('restock: returned more than the roll allows');
+    returnTiles(d, a.ground, a.tileIds);
+    r.claimed.push(a.ground);
+    d.log.push(`${d.players[a.playerId].name} restocks ${a.ground} +${a.tileIds.length} (rolled ${r.roll}; pile ${d.piles[a.ground].length} left)`);
+
+    // Open the contribution round: everyone to the claimer's left, in seat order.
+    const seating = Object.keys(d.players);
+    const ci = seating.indexOf(a.playerId);
+    const contribOrder: string[] = [];
+    for (let k = 1; k < seating.length; k++) contribOrder.push(seating[(ci + k) % seating.length]);
+    r.step = 'contribute';
+    r.contribGround = a.ground;
+    r.contribOrder = contribOrder;
+    r.contribTurn = 0;
+    advanceContribute(d); // handles the solo-player case (no one to contribute)
+    return;
+  }
+
+  if (a.type !== 'RESTOCK_CONTRIBUTE') throw new Error('restock: expected a contribution');
+  if (a.tileIds.length > 0) {
+    const p = d.players[a.playerId];
+    if (a.tileIds.length > p.vTokens) throw new Error('restock: not enough v-notch tokens');
+    returnTiles(d, r.contribGround!, a.tileIds);
+    p.vTokens -= a.tileIds.length; // spending a token trades conservation VP for a healthier commons
+    d.log.push(`${p.name} spends ${a.tileIds.length} v-notch → +${a.tileIds.length} to ${r.contribGround}`);
+  }
+  r.contribTurn!++;
+  advanceContribute(d);
+}
+
+// Move past finished contributors; when the round is done, advance to the next
+// claimer — or finish the draft if every captain has claimed or every bag is done.
+function advanceContribute(d: GameState): void {
+  const r = d.restock!;
+  if (r.contribTurn! < r.contribOrder!.length) return;
+  r.step = 'claim';
+  r.contribGround = undefined;
+  r.contribOrder = undefined;
+  r.contribTurn = undefined;
+  r.claimTurn++;
+  const grounds = Object.keys(d.bags) as Ground[];
+  if (r.claimTurn >= r.claimOrder.length || r.claimed.length >= grounds.length) {
+    finishSeasonRollover(d);
+  } else {
+    r.roll = rollDie(d);
+  }
+}
+
+// Close out the season: pull all gear, send every captain home to the start port,
+// advance to the next season in base seat order. Also the direct path for the
+// no-restock transition into the final season.
+export function finishSeasonRollover(d: GameState): void {
+  const ids = Object.keys(d.players);
+  for (const id of ids) {
+    const p = d.players[id];
+    p.deployed = [];
+    p.soak = {};
+    p.buoysAvailable = d.config.buoysPerPlayer;
+    p.node = d.config.map.startPort;
+    p.berthNode = undefined;
+    p.berthed = false;
+    p.soldToday = false;
+    p.actionsLeft = 0;
+  }
+  d.restock = undefined;
+  d.phase = 'PLAYING';
+  d.season++;
+  d.turnOrder = ids;
+  d.pendingNextOrder = [];
+  d.nextSlot = 0;
+  d.day = 1;
+  d.hour = 1;
+  d.activePlayerIndex = 0;
+  d.players[d.turnOrder[0]].actionsLeft = d.config.actionsPerTurn;
+  d.log.push(`=== Season ${d.season} begins at ${d.config.map.startPort}. Order: ${ids.join(', ')} ===`);
 }

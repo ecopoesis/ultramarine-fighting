@@ -33,7 +33,7 @@ function playProbe(config: Config, seed: number, treatmentQuit: number, treatmen
   const slotSum: Record<string, number> = {};
   const slotCount: Record<string, number> = {};
   let guard = 0;
-  while (state.phase === 'PLAYING' && guard++ < 200000) {
+  while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
     const pid = activePlayerId(state);
     const seat = ids.indexOf(pid);
     const action = policies[seat](state, pid, legalActions(state, pid));

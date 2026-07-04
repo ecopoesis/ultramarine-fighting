@@ -1,4 +1,4 @@
-import type { GameState } from './types';
+import type { GameState, Ground } from './types';
 import { neighbors } from './engine/movement';
 import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
 import type { HaulPolicy } from './engine/buoys';
@@ -13,7 +13,10 @@ export type Action =
   | { type: 'REPORT'; playerId: string }
   | { type: 'BERTH'; playerId: string }
   | { type: 'BRIBE'; playerId: string }
-  | { type: 'PASS'; playerId: string };
+  | { type: 'PASS'; playerId: string }
+  // restock draft (phase === 'RESTOCK')
+  | { type: 'RESTOCK_CLAIM'; playerId: string; ground: Ground; tileIds: string[] }        // claim a bag, return these pile tiles
+  | { type: 'RESTOCK_CONTRIBUTE'; playerId: string; tileIds: string[] };                   // spend v-notch: return these (empty = pass)
 
 export function actionCost(state: GameState, a: Action): number {
   return state.config.actionCost[a.type] ?? 0;
@@ -22,6 +25,8 @@ export function actionCost(state: GameState, a: Action): number {
 // Enumerate legal actions for a player right now. Always includes PASS so the
 // game can never deadlock. Powers both the UI buttons and the runner.
 export function legalActions(state: GameState, playerId: string): Action[] {
+  if (state.phase === 'RESTOCK') return legalRestock(state, playerId);
+
   const p = state.players[playerId];
   const out: Action[] = [{ type: 'PASS', playerId }];
   if (p.berthed || state.phase !== 'PLAYING') return out;
@@ -80,4 +85,22 @@ export function legalActions(state: GameState, playerId: string): Action[] {
     if (p.money >= cfg.bribeMoneyCost) out.push({ type: 'BRIBE', playerId });
   }
   return out;
+}
+
+// Legal moves for the active restocker. The full choice (WHICH lobsters) is
+// combinatorial, so instead of enumerating it we return sensible DEFAULTS: on a
+// claim turn, one CLAIM per remaining bag pre-filled with the heaviest keepers the
+// roll allows; on a contribute turn, a single "pass" (spend nothing). A generic
+// runner picking the first option restocks reasonably; smart bots build their own.
+function legalRestock(state: GameState, playerId: string): Action[] {
+  const r = state.restock!;
+  const grounds = Object.keys(state.bags) as Ground[];
+  if (r.step === 'contribute') return [{ type: 'RESTOCK_CONTRIBUTE', playerId, tileIds: [] }];
+  return grounds
+    .filter((g) => !r.claimed.includes(g))
+    .map((g) => {
+      const heaviest = [...state.piles[g]].sort((a, b) => b.weightLb - a.weightLb);
+      const tileIds = heaviest.slice(0, Math.min(r.roll, heaviest.length)).map((t) => t.id);
+      return { type: 'RESTOCK_CLAIM', playerId, ground: g, tileIds } as Action;
+    });
 }

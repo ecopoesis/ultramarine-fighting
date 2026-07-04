@@ -42,7 +42,7 @@ for (let i = 0; i < N; i++) {
   let seenSeason = 1;
   snapDensity(1, s); // season 1 opening stock
   let guard = 0;
-  while (s.phase === 'PLAYING' && guard++ < 200000) {
+  while (s.phase !== 'GAME_OVER' && guard++ < 200000) {
     const pid = activePlayerId(s);
     const from = s.players[pid].node;
     const action = BOTS.cardcounter(s, pid, legalActions(s, pid));

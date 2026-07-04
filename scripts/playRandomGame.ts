@@ -23,6 +23,8 @@ function pickAction(state: GameState, legal: Action[]): Action {
       case 'BERTH': return state.hour >= state.config.hoursPerDay - 1 ? 7 : 1;
       case 'BRIBE': return 0.2;
       case 'PASS': return 0.5;
+      case 'RESTOCK_CLAIM': return 1;      // restock phase: just take the default claim/pass
+      case 'RESTOCK_CONTRIBUTE': return 1;
     }
   };
   const total = legal.reduce((s, a) => s + weight(a), 0);
@@ -34,7 +36,7 @@ function pickAction(state: GameState, legal: Action[]): Action {
 function playOne(seed: number): { winner: string; rows: ReturnType<typeof score>; health: number; days: number } {
   let state = createInitialState(defaultConfig, seed);
   let guard = 0;
-  while (state.phase === 'PLAYING' && guard++ < 100000) {
+  while (state.phase !== 'GAME_OVER' && guard++ < 100000) {
     const pid = activePlayerId(state);
     const legal = legalActions(state, pid);
     state = reduce(state, pickAction(state, legal));

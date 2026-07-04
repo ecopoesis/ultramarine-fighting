@@ -50,6 +50,7 @@ export const HIGHLINER: Archetype = {
 
 export function makePolicy(arch: Archetype): Policy {
   return (state: GameState, pid: string, legal: Action[]): Action => {
+    if (state.phase === 'RESTOCK') return legal[0]; // legalActions supplies a sensible default claim/pass
     const cfg = state.config;
     const p = state.players[pid];
     const atPort = isPort(state, p.node);

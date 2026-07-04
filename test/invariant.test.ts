@@ -22,7 +22,7 @@ function playToEnd(seed: number): GameState[] {
   let state = createInitialState(defaultConfig, seed);
   const history = [state];
   let guard = 0;
-  while (state.phase === 'PLAYING' && guard++ < 100000) {
+  while (state.phase !== 'GAME_OVER' && guard++ < 100000) {
     const pid = activePlayerId(state);
     const legal = legalActions(state, pid);
     // deterministic policy for the test: prefer HAUL/SELL/DROP/STEAM/BERTH/PASS in that order
@@ -40,7 +40,7 @@ describe('depletion accounting', () => {
     const startTotal = totalTilesInWorld(state);
     let sales = 0;
     let guard = 0;
-    while (state.phase === 'PLAYING' && guard++ < 100000) {
+    while (state.phase !== 'GAME_OVER' && guard++ < 100000) {
       const pid = activePlayerId(state);
       const legal = legalActions(state, pid);
       const order = ['HAUL', 'SELL', 'DROP', 'REFUEL', 'STEAM', 'BERTH', 'PASS'];
@@ -79,7 +79,7 @@ describe('v-token draw insurance keeps accounting honest', () => {
       let state = createInitialState(defaultConfig, seed);
       const startTotal = totalTilesInWorld(state);
       let guard = 0;
-      while (state.phase === 'PLAYING' && guard++ < 200000) {
+      while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
         const pid = activePlayerId(state);
         // stewards v-notch eggers (earning tokens) then spend them on lean hauls
         state = reduce(state, BOTS.steward(state, pid, legalActions(state, pid)));

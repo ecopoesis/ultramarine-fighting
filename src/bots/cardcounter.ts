@@ -32,6 +32,9 @@ export interface CardCounter {
   stealPolicy?: HaulPolicy; // policy applied to STOLEN catch (a raider can be lawful at home, greedy on loot)
   repFloor?: number;        // ration rep-burning (theft AND high-grading): stop once rep sinks to here
   farBias?: number;         // multiply offshore/deep EV by this when picking a ground (>1 = works the edge sooner)
+  // Restock draft:
+  restockReturn?: 'heavy' | 'light'; // which pile tiles to put back — heaviest keepers (rebuild) or lightest (stock it thin)
+  vnotchContribute?: number;         // how many v-notch tokens to SPEND per bag to add more lobsters (0 = hoard for VP)
 }
 
 // The neutral fair optimizer / measuring stick. Clean, no theft — the baseline
@@ -47,15 +50,18 @@ export const CARD_COUNTER: CardCounter = {
 // (rationed by repFloor). It rarely fires against efficient play (gear is hauled
 // promptly) — a punish for sloppy rivals, not a strategy. Tuned on the bay; see
 // scripts/tuneArchetypes.ts + scripts/sweepArch.ts.
-const ARCH_BASE: CardCounter = { ...CARD_COUNTER, steals: true, stealPolicy: 'highgrade', repFloor: 5 };
+const ARCH_BASE: CardCounter = {
+  ...CARD_COUNTER, steals: true, stealPolicy: 'highgrade', repFloor: 5,
+  restockReturn: 'heavy', vnotchContribute: 1,
+};
 
-export const CC_STEWARD: CardCounter = { ...ARCH_BASE, name: 'steward' };                                        // clean, balanced — conservation + reputation
-export const CC_GREEDY: CardCounter = { ...ARCH_BASE, name: 'greedy', haulPolicy: 'highgrade', minKeep: 1 };     // selective high-grader (keeps jumbos): money leader
+export const CC_STEWARD: CardCounter = { ...ARCH_BASE, name: 'steward', vnotchContribute: 3 };                   // clean, balanced — rebuilds the commons, spends v-notch freely
+export const CC_GREEDY: CardCounter = { ...ARCH_BASE, name: 'greedy', haulPolicy: 'highgrade', minKeep: 1, vnotchContribute: 0 }; // selective high-grader: money leader, hoards v-notch for VP
 export const CC_HIGHLINER: CardCounter = { ...ARCH_BASE, name: 'highliner', farBias: 1.4 };                      // works the far edge for the heavy catch
 export const CC_GRINDER: CardCounter = { ...ARCH_BASE, name: 'grinder', farBias: 0.6, minKeep: 1, reachCostPerStep: 0.8 }; // near-water workhorse: high volume, short runs
 export const CC_GAMBLER: CardCounter = { ...ARCH_BASE, name: 'gambler', farBias: 2.0, minKeep: 2, refuelBelow: 6, dropSlack: 0 }; // deep-edge risk-taker: bets on the far gear
-export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 3 }; // dirty money anywhere, rations rep hard
-export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 3 };                     // patient: only prime hauls — max conservation, low volume
+export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 3, vnotchContribute: 0 }; // dirty money anywhere, hoards v-notch
+export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 3, vnotchContribute: 3 };  // patient: only prime hauls — max conservation, rebuilds
 export const CC_NOMAD: CardCounter = { ...ARCH_BASE, name: 'nomad', reachCostPerStep: 0.25 };                    // ranges the whole map for the best EV anywhere
 
 // The full roster (index builds BOTS from this; the arena seats N of them).
@@ -138,8 +144,34 @@ function chooseTarget(
   return home();
 }
 
+// Restock-draft decision: which bag to claim + which lobsters to return, or how
+// much v-notch to spend contributing. WHICH-bag = the fullest pile (most value to
+// rebuild); WHICH-lobsters = heaviest keepers (rebuild) or lightest ('light' style).
+function restockDecision(state: GameState, pid: string, cc: CardCounter): Action {
+  const r = state.restock!;
+  const grounds = Object.keys(state.bags) as Ground[];
+  const pileVal = (g: Ground) => state.piles[g].reduce((a, t) => a + t.weightLb, 0);
+
+  if (r.step === 'claim') {
+    const remaining = grounds.filter((g) => !r.claimed.includes(g));
+    const withStock = remaining.filter((g) => state.piles[g].length > 0);
+    const ground = (withStock.length ? withStock : remaining).slice().sort((a, b) => pileVal(b) - pileVal(a))[0];
+    const asc = cc.restockReturn === 'light';
+    const pile = [...state.piles[ground]].sort((a, b) => (asc ? a.weightLb - b.weightLb : b.weightLb - a.weightLb));
+    const tileIds = pile.slice(0, Math.min(r.roll, pile.length)).map((t) => t.id);
+    return { type: 'RESTOCK_CLAIM', playerId: pid, ground, tileIds };
+  }
+
+  const p = state.players[pid];
+  const g = r.contribGround!;
+  const spend = Math.min(cc.vnotchContribute ?? 0, p.vTokens, state.piles[g].length);
+  const pile = [...state.piles[g]].sort((a, b) => b.weightLb - a.weightLb); // add the best lobsters we can
+  return { type: 'RESTOCK_CONTRIBUTE', playerId: pid, tileIds: pile.slice(0, spend).map((t) => t.id) };
+}
+
 export function makeCardCounter(cc: CardCounter): Policy {
   return (state: GameState, pid: string, legal: Action[]): Action => {
+    if (state.phase === 'RESTOCK') return restockDecision(state, pid, cc);
     const cfg = state.config;
     const p = state.players[pid];
     const atPort = isPort(state, p.node);

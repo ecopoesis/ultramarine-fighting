@@ -34,7 +34,7 @@ function runMigration(config: Config, seeds: number) {
     };
     snap(1);
     let g = 0;
-    while (s.phase === 'PLAYING' && g++ < 300000) {
+    while (s.phase !== 'GAME_OVER' && g++ < 300000) {
       const pid = activePlayerId(s);
       const from = s.players[pid].node;
       const a = BOTS.cardcounter(s, pid, legalActions(s, pid));
