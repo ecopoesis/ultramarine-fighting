@@ -140,11 +140,13 @@ export const defaultConfig: Config = {
       { inshore: 0, mid: 1, offshore: 3, deep: 1 }, // S4 — it reaches the island belt
       { inshore: 0, mid: 1, offshore: 3, deep: 1 }, // S5 — full blow on the outer water
     ],
-    hazardChance: 0.5, // entering a storm: a coin-flip to take a beating (chancy, not a wall)
-    hazardFuel: 2,
-    whittleChance: 0.34, // ~a storm-die 1-2 of 6: a pot left out overnight parts
-    bonusDraws: 2,       // a stormed prime haul: draw 3+2=5, keep 2+2=4 — a fat gamble haul
-    bonusKeep: 2,
+    hazardChance: 0.4, // entering a storm: a chance of a beating (chancy, not a wall)
+    hazardFuel: 1,     // a light beating — kept gentle so the fuel bleed at dear far ports doesn't bankrupt the far gamble; the whittle (lost gear) is the real teeth
+    whittleChance: 0.12, // a pot left out overnight parts. Gentle: a far pot (3-night soak) survives
+                         // ~2/3 of the time (0.88^3), so the churn bonus makes a stormed far ground a
+                         // net-lucrative gamble (worth the long reach) rather than a coin-flip wash.
+    bonusDraws: 4,       // a stormed prime haul: draw 3+4=7, keep 2+4=6 — a fat churn haul (the lure out to the edge)
+    bonusKeep: 4,
   },
 
   // Inter-season restock draft (the custom lobster d6 — its faces are the main
