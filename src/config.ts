@@ -81,8 +81,13 @@ export const defaultConfig: Config = {
 
   // tile-template name -> count in the bag at season start
   bags: {
-    inshore: { KEEPER_1lb: 14, KEEPER_2lb: 6, SHORT: 14, JUMBO: 2, EGGER: 4 }, // 40 — light, forgiving
-    mid: { KEEPER_2lb: 12, KEEPER_3lb: 6, RARE_2lb: 2, SHORT: 8, JUMBO: 3, EGGER: 4 }, // 35
+    // Near grounds are a THIN, RICH opening seam: few keepers, high density, strips
+    // fast. One season of even NICE (v-notching) play collapses them for the next
+    // season (see scripts/tuneNearCollapse.ts). Recovery is stewardship-gated —
+    // low base recruitment (dice 1 below), so v-notched eggers are what bring near
+    // back in the mid-game; a greedy table that keeps eggers gets none of it.
+    inshore: { KEEPER_1lb: 8, KEEPER_2lb: 4, SHORT: 4, JUMBO: 1, EGGER: 3 }, // 20 — thin & rich, collapses fast
+    mid: { KEEPER_2lb: 7, KEEPER_3lb: 3, RARE_2lb: 1, SHORT: 4, JUMBO: 2, EGGER: 3 }, // 20
     offshore: { KEEPER_3lb: 12, RARE_3lb: 4, SHORT: 4, JUMBO: 5, EGGER: 5 }, // 30 — heavy, some rare
     deep: { KEEPER_4lb: 6, RARE_4lb: 3, SHORT: 6, JUMBO: 6, EGGER: 9 }, // 30 — big lobsters but you mostly pull junk & breeders: a gamble, and v-notch matters
   },
@@ -90,7 +95,7 @@ export const defaultConfig: Config = {
   // Inter-season recruitment (starting guesses — tune in sim). Inner grounds
   // breed back fast, the deep barely at all; every v-notched egger left in the
   // bag adds recruitment dice (one die per `eggerPerDie` breeders).
-  restock: { baseDice: { inshore: 3, mid: 2, offshore: 1, deep: 1 }, eggerPerDie: 2, diceSides: 6 },
+  restock: { baseDice: { inshore: 1, mid: 1, offshore: 1, deep: 1 }, eggerPerDie: 2, diceSides: 6 },
 
   // stage indexed by daysSoaked; time+place => different curve shapes per ground
   soakCurves: {

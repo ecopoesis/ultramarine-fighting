@@ -1,5 +1,6 @@
 import type { GameState, Ground } from '../types';
 import type { Action } from '../actions';
+import type { HaulPolicy } from '../engine/buoys';
 import { distance } from '../engine/movement';
 import { distanceToNearestPort, marketPorts, portOf } from '../engine/ports';
 import {
@@ -24,10 +25,11 @@ export interface CardCounter {
   minKeep: number;          // haul a buoy now only if drawByStage[stage].keep >= this (PRIME keep = 2)
   refuelBelow: number;      // top up at a port when fuel at/under this
   dropSlack: number;        // only drop gear that primes with this many days to SPARE (so it can be hauled, not abandoned)
+  haulPolicy: HaulPolicy;   // 'clean' = lawful (v-notch/throwback, the fair default); 'greedy' = keep illegal (for stewardship probes)
 }
 
 export const CARD_COUNTER: CardCounter = {
-  name: 'cardcounter', reachCostPerStep: 0.5, minKeep: 2, refuelBelow: 3, dropSlack: 1,
+  name: 'cardcounter', reachCostPerStep: 0.5, minKeep: 2, refuelBelow: 3, dropSlack: 1, haulPolicy: 'clean',
 };
 
 // Best market base around — a stable reference for valuing a landed pound (the
@@ -121,7 +123,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
         .map((h) => ({ h, keep: buoys.find((b) => b.buoyId === h.buoyId)?.keep ?? 0 }))
         .filter((x) => last || x.keep >= cc.minKeep)
         .sort((a, b) => b.keep - a.keep);
-      if (ranked.length) return { ...ranked[0].h, policy: 'clean', useToken: true };
+      if (ranked.length) return { ...ranked[0].h, policy: cc.haulPolicy, useToken: true };
     }
 
     const target = chooseTarget(state, pid, cc, buoys, reach, last);
