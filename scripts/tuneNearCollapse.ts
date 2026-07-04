@@ -52,23 +52,20 @@ function measure(config: Config, seeds: number) {
 const nearBags = (base: Config, inshore: Record<string, number>, mid: Record<string, number>): Config => ({
   ...base, bags: { ...base.bags, inshore, mid },
 });
-const dice = (base: Config, inshore: number, mid: number): Config => ({
-  ...base, restock: { ...base.restock, baseDice: { ...base.restock.baseDice, inshore, mid } },
+const die = (base: Config, dieFaces: number): Config => ({
+  ...base, restock: { ...base.restock, dieFaces },
 });
 
-// Candidates: shrink near to a thin/rich seam and cut base recruitment so eggers
-// (v-notch) become the swing. Deep/offshore untouched here.
+// Candidates: near bag size × restock die (how many lobsters come back per claim).
 const cand: [string, Config][] = [
-  ['baseline (40/35, dice 3/2)', defaultConfig],
-  ['thin (20/20, dice 3/2)', nearBags(defaultConfig,
-    { KEEPER_1lb: 8, KEEPER_2lb: 4, SHORT: 4, JUMBO: 1, EGGER: 3 },
-    { KEEPER_2lb: 7, KEEPER_3lb: 3, RARE_2lb: 1, SHORT: 4, JUMBO: 2, EGGER: 3 })],
-  ['thin + low dice 1/1', dice(nearBags(defaultConfig,
-    { KEEPER_1lb: 8, KEEPER_2lb: 4, SHORT: 4, JUMBO: 1, EGGER: 3 },
-    { KEEPER_2lb: 7, KEEPER_3lb: 3, RARE_2lb: 1, SHORT: 4, JUMBO: 2, EGGER: 3 }), 1, 1)],
-  ['thinner + low dice 1/1', dice(nearBags(defaultConfig,
+  ['current (20/20, dieFaces 6)', defaultConfig],
+  ['near die 3 (slower recovery)', die(defaultConfig, 3)],
+  ['thinner near (die 6)', nearBags(defaultConfig,
     { KEEPER_1lb: 6, KEEPER_2lb: 3, SHORT: 3, JUMBO: 1, EGGER: 2 },
-    { KEEPER_2lb: 5, KEEPER_3lb: 2, RARE_2lb: 1, SHORT: 3, JUMBO: 1, EGGER: 2 }), 1, 1)],
+    { KEEPER_2lb: 5, KEEPER_3lb: 2, RARE_2lb: 1, SHORT: 3, JUMBO: 1, EGGER: 2 })],
+  ['thinner near + die 3', die(nearBags(defaultConfig,
+    { KEEPER_1lb: 6, KEEPER_2lb: 3, SHORT: 3, JUMBO: 1, EGGER: 2 },
+    { KEEPER_2lb: 5, KEEPER_3lb: 2, RARE_2lb: 1, SHORT: 3, JUMBO: 1, EGGER: 2 }), 3)],
 ];
 
 console.log(`=== Near-collapse tuner (${SEEDS} seeds, nice card-counter fleet) ===`);

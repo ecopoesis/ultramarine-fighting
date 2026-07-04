@@ -34,18 +34,34 @@ export interface CardCounter {
   farBias?: number;         // multiply offshore/deep EV by this when picking a ground (>1 = works the edge sooner)
 }
 
+// The neutral fair optimizer / measuring stick. Clean, no theft — the baseline
+// the archetypes are compared against.
 export const CARD_COUNTER: CardCounter = {
   name: 'cardcounter', reachCostPerStep: 0.5, minKeep: 2, refuelBelow: 3, dropSlack: 1, haulPolicy: 'clean',
 };
 
-// The four player archetypes ARE this rational core plus one twist each. Because
-// they all target by live EV, they all migrate and contest every ground — no bot
-// gets a lane to itself (which is what let the old highliner run away). Tuned on
-// the multi-season bay; see scripts/tuneArchetypes.ts + scripts/sweepArch.ts.
-export const CC_STEWARD: CardCounter = { ...CARD_COUNTER, name: 'steward' };                         // pure clean: conservation + reputation
-export const CC_GREEDY: CardCounter = { ...CARD_COUNTER, name: 'greedy', haulPolicy: 'highgrade', repFloor: 5, minKeep: 1 }; // selective high-grader: keeps jumbos, money leader
-export const CC_THIEF: CardCounter = { ...CARD_COUNTER, name: 'thief', steals: true, stealPolicy: 'highgrade', repFloor: 6, minKeep: 1 }; // raider: clean at home, keeps the loot
-export const CC_HIGHLINER: CardCounter = { ...CARD_COUNTER, name: 'highliner', farBias: 1.3 };        // works the far edge sooner
+// Every PLAYER archetype is the rational core plus a personality twist. They all
+// target by live EV, so they all migrate and contest the whole map — no bot gets
+// a lane to itself. Theft is a SITUATIONAL tactic shared by ALL of them: grab a
+// rival buoy that happens to sit under you while your reputation can absorb it
+// (rationed by repFloor). It rarely fires against efficient play (gear is hauled
+// promptly) — a punish for sloppy rivals, not a strategy. Tuned on the bay; see
+// scripts/tuneArchetypes.ts + scripts/sweepArch.ts.
+const ARCH_BASE: CardCounter = { ...CARD_COUNTER, steals: true, stealPolicy: 'highgrade', repFloor: 5 };
+
+export const CC_STEWARD: CardCounter = { ...ARCH_BASE, name: 'steward' };                                        // clean, balanced — conservation + reputation
+export const CC_GREEDY: CardCounter = { ...ARCH_BASE, name: 'greedy', haulPolicy: 'highgrade', minKeep: 1 };     // selective high-grader (keeps jumbos): money leader
+export const CC_HIGHLINER: CardCounter = { ...ARCH_BASE, name: 'highliner', farBias: 1.4 };                      // works the far edge for the heavy catch
+export const CC_GRINDER: CardCounter = { ...ARCH_BASE, name: 'grinder', farBias: 0.6, minKeep: 1, reachCostPerStep: 0.8 }; // near-water workhorse: high volume, short runs
+export const CC_GAMBLER: CardCounter = { ...ARCH_BASE, name: 'gambler', farBias: 2.0, minKeep: 2, refuelBelow: 6, dropSlack: 0 }; // deep-edge risk-taker: bets on the far gear
+export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 3 }; // dirty money anywhere, rations rep hard
+export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 3 };                     // patient: only prime hauls — max conservation, low volume
+export const CC_NOMAD: CardCounter = { ...ARCH_BASE, name: 'nomad', reachCostPerStep: 0.25 };                    // ranges the whole map for the best EV anywhere
+
+// The full roster (index builds BOTS from this; the arena seats N of them).
+export const ROSTER: CardCounter[] = [
+  CC_STEWARD, CC_GREEDY, CC_HIGHLINER, CC_GRINDER, CC_GAMBLER, CC_HUSTLER, CC_MONK, CC_NOMAD,
+];
 
 // Best market base around — a stable reference for valuing a landed pound (the
 // catch sells into the same markets wherever it was fished).

@@ -5,7 +5,7 @@ import type { Config } from '../src/types';
 // Archetype tournament. The captains play each other; seats are rotated so the
 // seat-order confound (later seats winning) is averaged out and any remaining
 // win-skew is strategy, not position.
-const FLEET = ['steward', 'greedy', 'thief', 'highliner'];
+const FLEET = ['steward', 'greedy', 'highliner', 'grinder', 'gambler', 'hustler', 'monk', 'nomad'];
 
 function report(mode: Config['scoring']['combineMode'], seeds: number) {
   const config: Config = { ...defaultConfig, scoring: { ...defaultConfig.scoring, combineMode: mode } };

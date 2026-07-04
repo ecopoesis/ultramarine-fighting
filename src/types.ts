@@ -8,9 +8,10 @@ export type Phase = 'PLAYING' | 'GAME_OVER';
 
 export interface Tile {
   id: string;
-  kind: TileKind;
-  weightLb: number;
-  color: Color;
+  kind: TileKind;     // marker: type (keeper / short / jumbo / egger)
+  weightLb: number;   // marker: size
+  color: Color;       // marker: rarity (common / rare)
+  ground: Ground;     // marker: bag — which ground-type bag it belongs to (routes sold tiles to the right pile)
 }
 
 export interface DeployedBuoy {
@@ -54,13 +55,17 @@ export interface GameState {
   phase: Phase;
   season: number;         // 1-based; game ends after config.seasons
   day: number;            // 1-based day WITHIN the current season
-  recruitedTotal: number; // running count of tiles bred in by restock (open-system accounting)
   hour: number;
   turnOrder: string[];
   activePlayerIndex: number;
   players: Record<string, PlayerState>;
   bags: Record<Ground, Tile[]>;
   bagStart: Record<Ground, number>;
+  // Extraction piles: sold/fished lobsters, sorted by their home bag. Tiles removed
+  // from the commons land here (never destroyed); the inter-season restock draft
+  // returns some of them to the bags. Depletion = bag→pile drift, not tiles leaving
+  // the world, so the whole census (bags + holds + piles) is conserved.
+  piles: Record<Ground, Tile[]>;
   markets: Record<string, { lbsSoldToday: number }>; // per market-port: lbs sold today (flood), recovers overnight
   nextSlot: number;
   pendingNextOrder: string[];
@@ -117,12 +122,13 @@ export interface Config {
   };
 
   bags: Record<Ground, Record<string, number>>; // per ground TYPE: tileTemplateName -> count
-  // Inter-season recruitment: each ground rolls `round(baseDice*playerScale) +
-  // floor(eggersInBag / eggerPerDie)` dice of `diceSides`; that many fresh tiles
-  // (the ground's natural mix) breed in. The v-notched eggers you LEFT are the
-  // extra dice — stewardship literally breeds recovery. No restock before the
-  // final season. Inner grounds recover more (higher base dice); deep barely.
-  restock: { baseDice: Record<Ground, number>; eggerPerDie: number; diceSides: number };
+  // Inter-season restock DRAFT: in berth order, each captain claims one remaining
+  // bag, rolls the lobster die for how many (1..dieFaces), and secretly returns
+  // that many lobsters from that bag's extraction pile. Only ~4 bags, so with more
+  // players than bags some don't get to restock — the pole is worth fighting for.
+  // Piles are pre-seeded with `preSeedPerBag` of each sellable template for early
+  // agency. No restock before the final season.
+  restock: { dieFaces: number; preSeedPerBag: number };
   soakCurves: Record<Ground, Stage[]>;
   drawByStage: Record<Stage, DrawRule>;
   actionCost: Record<string, number>;

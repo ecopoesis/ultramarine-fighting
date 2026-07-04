@@ -7,10 +7,14 @@ import { activePlayerId } from '../src/selectors';
 import { BOTS } from '../src/bots';
 import type { GameState } from '../src/types';
 
+// The full lobster census: bags (in the commons) + holds (caught, unsold) + piles
+// (sold/fished, awaiting restock). Tiles only ever move between these — none are
+// minted or destroyed after setup — so this total is conserved for the whole game.
 function totalTilesInWorld(s: GameState): number {
   let n = 0;
   for (const g of Object.values(s.bags)) n += g.length;
   for (const p of Object.values(s.players)) n += p.hold.length;
+  for (const g of Object.values(s.piles)) n += g.length;
   return n;
 }
 
@@ -31,27 +35,27 @@ function playToEnd(seed: number): GameState[] {
 }
 
 describe('depletion accounting', () => {
-  it('open system: tiles leave only via sales and enter only via recruitment', () => {
+  it('closed system: the lobster census is conserved (bags + holds + piles)', () => {
     let state = createInitialState(defaultConfig, 777);
     const startTotal = totalTilesInWorld(state);
-    let soldTiles = 0;
+    let sales = 0;
     let guard = 0;
     while (state.phase === 'PLAYING' && guard++ < 100000) {
       const pid = activePlayerId(state);
       const legal = legalActions(state, pid);
       const order = ['HAUL', 'SELL', 'DROP', 'REFUEL', 'STEAM', 'BERTH', 'PASS'];
       const pick = legal.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type))[0];
-      const before = state.players[pid].hold.length;
-      const willSell = pick.type === 'SELL';
+      if (pick.type === 'SELL') sales++;
       state = reduce(state, pick);
-      if (willSell) soldTiles += before; // whole hold sold => those tiles leave the world
     }
-    const endTotal = totalTilesInWorld(state);
-    // Multi-season is an OPEN system: sales remove tiles, inter-season recruitment
-    // adds them. The books still close exactly.
-    expect(endTotal).toBe(startTotal + state.recruitedTotal - soldTiles);
-    // guard against a vacuous test: recruitment must actually have fired
-    expect(state.recruitedTotal).toBeGreaterThan(0);
+    // Nothing is minted or destroyed after setup — sold lobsters move to the piles,
+    // the restock draft moves some back — so the total never changes.
+    expect(totalTilesInWorld(state)).toBe(startTotal);
+    // guard against a vacuous game: selling (bag -> pile) must actually have happened,
+    // and the piles must hold the fished-out lobsters at the end.
+    expect(sales).toBeGreaterThan(0);
+    const pileTotal = Object.values(state.piles).reduce((a, g) => a + g.length, 0);
+    expect(pileTotal).toBeGreaterThan(0);
   });
 
   it('is deterministic for a fixed seed', () => {
@@ -69,27 +73,20 @@ describe('depletion accounting', () => {
 });
 
 describe('v-token draw insurance keeps accounting honest', () => {
-  it('tiles still only leave via sales when insurance is spent (all-steward table)', () => {
+  it('census stays conserved even when insurance is spent (all-steward table)', () => {
     let insuranceFired = 0;
     for (const seed of [7, 42, 101, 2024, 55555]) {
       let state = createInitialState(defaultConfig, seed);
       const startTotal = totalTilesInWorld(state);
-      let soldTiles = 0;
       let guard = 0;
       while (state.phase === 'PLAYING' && guard++ < 200000) {
         const pid = activePlayerId(state);
         // stewards v-notch eggers (earning tokens) then spend them on lean hauls
-        const action = BOTS.steward(state, pid, legalActions(state, pid));
-        const before = state.players[pid].hold.length;
-        const willSell = action.type === 'SELL';
-        state = reduce(state, action);
-        if (willSell) soldTiles += before;
+        state = reduce(state, BOTS.steward(state, pid, legalActions(state, pid)));
       }
       insuranceFired += state.log.filter((l) => l.includes('v-token')).length;
-      const endTotal = totalTilesInWorld(state);
-      // spending a token draws from + returns to the bag; nothing is minted or lost
-      // there. The only sources/sinks are recruitment (in) and sales (out).
-      expect(endTotal).toBe(startTotal + state.recruitedTotal - soldTiles);
+      // spending a token draws from + returns to the bag; nothing is minted or lost.
+      expect(totalTilesInWorld(state)).toBe(startTotal);
     }
     // guard against a vacuous test: the insurance path must actually execute
     expect(insuranceFired).toBeGreaterThan(0);

@@ -1,8 +1,8 @@
-import type { Tile, TileKind, Color } from './types';
+import type { Tile, TileKind, Color, Ground } from './types';
 
-// Maps a config tile-template name to a tile blueprint.
+// Maps a config tile-template name to a tile blueprint (everything but id + ground).
 // Add new templates here; config references them by name.
-export function tileTemplate(name: string): Omit<Tile, 'id'> {
+export function tileTemplate(name: string): Omit<Tile, 'id' | 'ground'> {
   switch (name) {
     case 'KEEPER_1lb': return { kind: 'KEEPER', weightLb: 1, color: 'common' };
     case 'KEEPER_2lb': return { kind: 'KEEPER', weightLb: 2, color: 'common' };
@@ -18,15 +18,16 @@ export function tileTemplate(name: string): Omit<Tile, 'id'> {
   }
 }
 
-// IDs are derived from a caller-supplied prefix so they're deterministic per game
-// (no persistent module state leaking across createInitialState calls).
-export function buildBag(spec: Record<string, number>, prefix: string): Tile[] {
+// IDs are derived from the ground so they're deterministic per game (no persistent
+// module state leaking across createInitialState calls). Every tile carries its
+// home `ground` (the bag marker) so a sold tile routes back to the right pile.
+export function buildBag(spec: Record<string, number>, ground: Ground): Tile[] {
   const bag: Tile[] = [];
   let i = 0;
   for (const [name, count] of Object.entries(spec)) {
     const blueprint = tileTemplate(name);
     for (let c = 0; c < count; c++) {
-      bag.push({ id: `${prefix}-${i++}`, ...blueprint });
+      bag.push({ id: `${ground}-${i++}`, ground, ...blueprint });
     }
   }
   return bag;

@@ -92,10 +92,10 @@ export const defaultConfig: Config = {
     deep: { KEEPER_4lb: 6, RARE_4lb: 3, SHORT: 6, JUMBO: 6, EGGER: 9 }, // 30 — big lobsters but you mostly pull junk & breeders: a gamble, and v-notch matters
   },
 
-  // Inter-season recruitment (starting guesses — tune in sim). Inner grounds
-  // breed back fast, the deep barely at all; every v-notched egger left in the
-  // bag adds recruitment dice (one die per `eggerPerDie` breeders).
-  restock: { baseDice: { inshore: 1, mid: 1, offshore: 1, deep: 1 }, eggerPerDie: 2, diceSides: 6 },
+  // Inter-season restock draft (starting guesses — tune in sim). Each claim rolls
+  // 1..dieFaces lobsters back from a bag's pile; piles start pre-seeded with a few
+  // of each sellable template so the first restocks have something to choose from.
+  restock: { dieFaces: 6, preSeedPerBag: 2 },
 
   // stage indexed by daysSoaked; time+place => different curve shapes per ground
   soakCurves: {

@@ -74,7 +74,7 @@ console.table(Object.fromEntries(grounds.map((g) => [g, Object.fromEntries(
 
 // Is it a strong baseline? Head-to-head win% against each archetype (seats rotated).
 console.log(`\n=== Strong-baseline check: card-counter vs the archetypes (${N} seeds each, ${cfg.scoring.combineMode}) ===`);
-for (const rival of ['steward', 'greedy', 'thief', 'highliner']) {
+for (const rival of ['steward', 'greedy', 'highliner', 'grinder', 'gambler', 'hustler', 'monk', 'nomad']) {
   const fleet = ['cardcounter', rival, rival];
   const { byArch, games } = runTournament(cfg, N, fleet);
   const cc = byArch.cardcounter;

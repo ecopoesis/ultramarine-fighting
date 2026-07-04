@@ -13,25 +13,29 @@ import type { Config } from '../src/types';
 // rotation as runTournament: every captain plays each seat equally.
 export interface Named { name: string; policy: Policy }
 
-export function tournament(config: Config, seeds: number, fleet: Named[]) {
+// Seat `players` captains per game (default 3). Rotates a window of that size
+// through the fleet so every captain plays each seat equally. For an N-player
+// table pass players=N and a fleet of >= N archetypes (bags scale with players).
+export function tournament(config: Config, seeds: number, fleet: Named[], players = 3) {
   const agg: Record<string, { wins: number; games: number; total: number; money: number; cons: number; rep: number }> = {};
   for (const f of fleet) agg[f.name] = { wins: 0, games: 0, total: 0, money: 0, cons: 0, rep: 0 };
   let health = 0, games = 0;
   const K = fleet.length;
+  const cfg: Config = { ...config, players };
   for (let s = 0; s < seeds; s++) {
     for (let rot = 0; rot < K; rot++) {
-      const seat = [0, 1, 2].map((i) => fleet[(i + rot) % K]);
-      let state = createInitialState(config, 1000 + s);
+      const seat = Array.from({ length: players }, (_, i) => fleet[(i + rot) % K]);
+      let state = createInitialState(cfg, 1000 + s);
       const ids = state.turnOrder.slice();
       let g = 0;
-      while (state.phase === 'PLAYING' && g++ < 200000) {
+      while (state.phase === 'PLAYING' && g++ < 300000) {
         const pid = activePlayerId(state);
         const idx = ids.indexOf(pid);
         state = reduce(state, seat[idx].policy(state, pid, legalActions(state, pid)));
       }
       const rows = score(state);
       games++; health += avgBagHealth(state);
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < players; i++) {
         const a = agg[seat[i].name];
         const pid = ids[i];
         const row = rows.find((r) => r.playerId === pid)!;
@@ -43,8 +47,8 @@ export function tournament(config: Config, seeds: number, fleet: Named[]) {
   return { agg, health, games };
 }
 
-export function report(label: string, config: Config, seeds: number, fleet: Named[]) {
-  const { agg, health, games } = tournament(config, seeds, fleet);
+export function report(label: string, config: Config, seeds: number, fleet: Named[], players = 3) {
+  const { agg, health, games } = tournament(config, seeds, fleet, players);
   console.log(`\n=== ${label}  (${games} games, ${config.scoring.combineMode}) ===`);
   console.table(fleet.map((f) => {
     const a = agg[f.name];

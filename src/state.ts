@@ -1,5 +1,5 @@
-import type { Config, GameState, PlayerState, Ground } from './types';
-import { buildBag } from './tiles';
+import type { Config, GameState, PlayerState, Ground, Tile } from './types';
+import { buildBag, tileTemplate } from './tiles';
 
 export function createInitialState(config: Config, seed = 12345, names?: string[]): GameState {
   const players: Record<string, PlayerState> = {};
@@ -29,11 +29,24 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
   const scale = config.players / config.referencePlayers; // constant depletion-pressure-per-boat across counts
   const bags = {} as GameState['bags'];
   const bagStart = {} as GameState['bagStart'];
+  // Extraction piles, pre-seeded with a few of each SELLABLE template (keepers +
+  // jumbos — the tiles that can end up sold and thus draftable) so early restocks
+  // have something to choose from before much has been landed.
+  const piles = {} as GameState['piles'];
   for (const g of grounds) {
     const spec: Record<string, number> = {};
     for (const [name, count] of Object.entries(config.bags[g])) spec[name] = Math.round(count * scale);
     bags[g] = buildBag(spec, g);
     bagStart[g] = bags[g].length;
+
+    const seed: Tile[] = [];
+    let s = 0;
+    for (const name of Object.keys(config.bags[g])) {
+      const bp = tileTemplate(name);
+      if (bp.kind !== 'KEEPER' && bp.kind !== 'JUMBO') continue; // shorts/eggers never get sold
+      for (let c = 0; c < config.restock.preSeedPerBag; c++) seed.push({ id: `${g}-seed-${s++}`, ground: g, ...bp });
+    }
+    piles[g] = seed;
   }
 
   // one flood ledger per market port
@@ -48,13 +61,13 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     phase: 'PLAYING',
     season: 1,
     day: 1,
-    recruitedTotal: 0,
     hour: 1,
     turnOrder: ids,
     activePlayerIndex: 0,
     players,
     bags,
     bagStart,
+    piles,
     markets,
     nextSlot: 0,
     pendingNextOrder: [],
