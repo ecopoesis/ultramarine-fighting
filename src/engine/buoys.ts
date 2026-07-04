@@ -28,10 +28,13 @@ export function dropBuoy(d: GameState, playerId: string): void {
   d.log.push(`${p.name} drops buoy ${buoyId} at ${p.node}`);
 }
 
-// Decision policy for what to do with drawn tiles.
-// `clean` = lawful: keep best legal keepers up to limit, throw shorts/jumbos back, v-notch eggers.
-// Humans in the UI would choose per-tile; the runner uses 'clean'.
-export type HaulPolicy = 'clean' | 'greedy';
+// Decision policy for what to do with drawn tiles. Humans choose per-tile; bots pick one.
+// `clean`     = lawful: keep legal keepers, throw shorts/jumbos back, v-notch eggers.
+// `greedy`    = keep EVERYTHING illegal (shorts, jumbos, eggers) — indiscriminate.
+// `highgrade` = keep only the VALUABLE illegal (heavy jumbos); still throws shorts
+//               back and v-notches eggers. The smart high-grader: takes the illegal
+//               tiles that actually pay, without burning rep on worthless ones.
+export type HaulPolicy = 'clean' | 'greedy' | 'highgrade';
 
 function resolveDraw(
   d: GameState, playerId: string, ground: Ground, stage: Stage, policy: HaulPolicy, useToken: boolean,
@@ -56,15 +59,17 @@ function resolveDraw(
       }
     } else if (isEgger(t)) {
       if (policy === 'greedy') {
-        p.hold.push(t); // illegal keep of a berried female
+        p.hold.push(t); // illegal keep of a berried female (indiscriminate greed)
         p.tracks.reputation += d.config.rep.illegalKeep;
       } else {
-        d.bags[ground].push(t); // v-notch: returns to the bag (refills the commons)
+        d.bags[ground].push(t); // clean & highgrade v-notch: back to the bag (refills the commons)
         p.vTokens += 1;
         p.tracks.conservation += d.config.rep.vNotch;
       }
     } else if (isIllegal(t)) {
-      if (policy === 'greedy') {
+      // highgrade keeps only the heavy, valuable illegal (jumbos), not worthless shorts.
+      const keepIt = policy === 'greedy' || (policy === 'highgrade' && t.kind === 'JUMBO');
+      if (keepIt) {
         p.hold.push(t);
         p.tracks.reputation += d.config.rep.illegalKeep;
       } else {

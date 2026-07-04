@@ -25,12 +25,27 @@ export interface CardCounter {
   minKeep: number;          // haul a buoy now only if drawByStage[stage].keep >= this (PRIME keep = 2)
   refuelBelow: number;      // top up at a port when fuel at/under this
   dropSlack: number;        // only drop gear that primes with this many days to SPARE (so it can be hauled, not abandoned)
-  haulPolicy: HaulPolicy;   // 'clean' = lawful (v-notch/throwback, the fair default); 'greedy' = keep illegal (for stewardship probes)
+  haulPolicy: HaulPolicy;   // 'clean' = lawful (v-notch/throwback, the fair default); 'greedy' = keep illegal (high-grade)
+  // Personality knobs — the archetypes are this rational core plus a twist. All
+  // default to "off" so a plain card-counter is the neutral, fair optimizer.
+  steals?: boolean;         // steal a rival buoy sitting under us (while rep allows)
+  stealPolicy?: HaulPolicy; // policy applied to STOLEN catch (a raider can be lawful at home, greedy on loot)
+  repFloor?: number;        // ration rep-burning (theft AND high-grading): stop once rep sinks to here
+  farBias?: number;         // multiply offshore/deep EV by this when picking a ground (>1 = works the edge sooner)
 }
 
 export const CARD_COUNTER: CardCounter = {
   name: 'cardcounter', reachCostPerStep: 0.5, minKeep: 2, refuelBelow: 3, dropSlack: 1, haulPolicy: 'clean',
 };
+
+// The four player archetypes ARE this rational core plus one twist each. Because
+// they all target by live EV, they all migrate and contest every ground — no bot
+// gets a lane to itself (which is what let the old highliner run away). Tuned on
+// the multi-season bay; see scripts/tuneArchetypes.ts + scripts/sweepArch.ts.
+export const CC_STEWARD: CardCounter = { ...CARD_COUNTER, name: 'steward' };                         // pure clean: conservation + reputation
+export const CC_GREEDY: CardCounter = { ...CARD_COUNTER, name: 'greedy', haulPolicy: 'highgrade', repFloor: 5, minKeep: 1 }; // selective high-grader: keeps jumbos, money leader
+export const CC_THIEF: CardCounter = { ...CARD_COUNTER, name: 'thief', steals: true, stealPolicy: 'highgrade', repFloor: 6, minKeep: 1 }; // raider: clean at home, keeps the loot
+export const CC_HIGHLINER: CardCounter = { ...CARD_COUNTER, name: 'highliner', farBias: 1.3 };        // works the far edge sooner
 
 // Best market base around — a stable reference for valuing a landed pound (the
 // catch sells into the same markets wherever it was fished).
@@ -62,7 +77,8 @@ function evLbPerHaul(state: GameState, g: Ground): number {
 // reach cost from where we stand. Higher = better place to fish right now.
 function scoreZone(state: GameState, from: string, zone: string, g: Ground, cc: CardCounter): number {
   const perDay = evLbPerHaul(state, g) / daysToPrime(state, g); // throughput-adjusted EV
-  const money = perDay * refPrice(state);
+  const bias = (cc.farBias ?? 1) !== 1 && (g === 'offshore' || g === 'deep') ? cc.farBias! : 1;
+  const money = perDay * refPrice(state) * bias;
   const steps = distance(state, from, zone) + distanceToNearestPort(state, zone);
   return money - cc.reachCostPerStep * steps;
 }
@@ -115,15 +131,26 @@ export function makeCardCounter(cc: CardCounter): Policy {
     const reach = reachability(state, pid);
     const buoys = myBuoys(state, pid);
     const pass = firstOfType(legal, 'PASS')!;
+    const repFloor = cc.repFloor ?? -Infinity;
 
-    // 1) HAUL ripe own buoys (best keep first). Clean play: v-notch, throwback.
+    // 1) STEAL a rival buoy under us (a raider only), while we can still absorb the
+    //    reputation hit — a chance we can't price, so we take it.
+    if (cc.steals && p.tracks.reputation > repFloor) {
+      const steals = ofType(legal, 'STEAL');
+      if (steals.length) return { ...steals[0], policy: cc.stealPolicy ?? 'greedy', useToken: true };
+    }
+
+    // 2) HAUL ripe own buoys (best keep first). A measured high-grader keeps illegal
+    //    tiles only while rep allows; once at repFloor it reverts to clean play.
     const hauls = ofType(legal, 'HAUL');
     if (hauls.length) {
+      const dirty = cc.haulPolicy === 'greedy' || cc.haulPolicy === 'highgrade';
+      const effHaul: HaulPolicy = dirty && p.tracks.reputation <= repFloor ? 'clean' : cc.haulPolicy;
       const ranked = hauls
         .map((h) => ({ h, keep: buoys.find((b) => b.buoyId === h.buoyId)?.keep ?? 0 }))
         .filter((x) => last || x.keep >= cc.minKeep)
         .sort((a, b) => b.keep - a.keep);
-      if (ranked.length) return { ...ranked[0].h, policy: cc.haulPolicy, useToken: true };
+      if (ranked.length) return { ...ranked[0].h, policy: effHaul, useToken: true };
     }
 
     const target = chooseTarget(state, pid, cc, buoys, reach, last);
