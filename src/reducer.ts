@@ -9,6 +9,7 @@ import { advanceSoak } from './engine/soak';
 import { enterRestock, applyRestockAction, finishSeasonRollover } from './engine/restock';
 import { fuelPriceAt } from './engine/ports';
 import { stormWhittle } from './engine/weather';
+import { daysThisSeason } from './selectors';
 
 // Pure: returns a new state; never mutates the input. We clone once and mutate
 // the draft (engine fns operate on the draft), which keeps rule code readable.
@@ -123,7 +124,7 @@ function dayRollover(d: GameState): void {
   for (const m of Object.keys(d.markets)) d.markets[m].lbsSoldToday = 0; // prices recover overnight
 
   d.day++;
-  if (d.day > d.config.daysPerSeason) { seasonRollover(d); return; }
+  if (d.day > daysThisSeason(d)) { seasonRollover(d); return; }
   d.hour = 1;
   d.activePlayerIndex = 0;
   d.players[d.turnOrder[0]].actionsLeft = d.config.actionsPerTurn;

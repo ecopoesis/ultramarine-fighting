@@ -31,9 +31,10 @@ export function sell(d: GameState, playerId: string): void {
   p.money += revenue;
   p.soldToday = true;
   d.log.push(`${p.name} sells ${p.hold.length} tiles (${lbs}lb) at ${p.node} for ${revenue.toFixed(1)}`);
-  // Sold lobsters aren't destroyed — they land on their home bag's extraction pile,
-  // where the inter-season restock draft can return some of them to the commons.
-  for (const t of p.hold) d.piles[t.ground].push(t);
+  // Sold BAG lobsters aren't destroyed — they land on their home bag's extraction
+  // pile, where the inter-season restock draft can return some to the commons.
+  // Seeded (generic) lobsters are an OPEN injection: they leave the world on sale.
+  for (const t of p.hold) if (!t.seeded) d.piles[t.ground].push(t);
   p.hold = [];
 }
 

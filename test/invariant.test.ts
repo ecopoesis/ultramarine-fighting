@@ -13,7 +13,10 @@ import type { GameState } from '../src/types';
 function totalTilesInWorld(s: GameState): number {
   let n = 0;
   for (const g of Object.values(s.bags)) n += g.length;
-  for (const p of Object.values(s.players)) n += p.hold.length;
+  // seeded (generic) lobsters are an OPEN injection (minted onto spaces, they leave
+  // the world on sale) — they never touch bags/piles, so exclude them from the CLOSED
+  // bag+hold+pile census.
+  for (const p of Object.values(s.players)) n += p.hold.filter((t) => !t.seeded).length;
   for (const g of Object.values(s.piles)) n += g.length;
   return n;
 }
@@ -104,6 +107,44 @@ describe('weather keeps the census closed', () => {
     while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
       const pid = activePlayerId(state);
       state = reduce(state, BOTS.gambler(state, pid, legalActions(state, pid)));
+    }
+    expect(JSON.stringify(state.players)).toBe(finals[0]);
+  });
+});
+
+describe('seeded lobsters are an open economy on top of the closed census', () => {
+  const seeded = { ...defaultConfig, flags: { ...defaultConfig.flags, seeded: true } };
+
+  it('accumulate + pull-first, never touch the piles, and leave the closed census intact', () => {
+    let pulls = 0, maxPile = 0, pileHadSeeded = 0;
+    const finals: string[] = [];
+    for (const seed of [5, 40, 123, 2024, 9001]) {
+      let state = createInitialState(seeded, seed);
+      const startClosed = totalTilesInWorld(state);
+      let guard = 0;
+      while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
+        const pid = activePlayerId(state);
+        // grinder stays near, so far spaces go unfished and pile up
+        state = reduce(state, BOTS.grinder(state, pid, legalActions(state, pid)));
+        maxPile = Math.max(maxPile, ...Object.values(state.seeded));
+      }
+      // the CLOSED census (bags + non-seeded holds + piles) is untouched by the open injection
+      expect(totalTilesInWorld(state)).toBe(startClosed);
+      pulls += state.log.filter((l) => l.includes('seeded lobster')).length;
+      // generic lobsters must never land on a restock pile
+      pileHadSeeded += Object.values(state.piles).flat().filter((t) => t.seeded).length;
+      finals.push(JSON.stringify(state.players));
+    }
+    expect(pulls).toBeGreaterThan(0);       // the mechanic actually fires
+    expect(maxPile).toBeGreaterThan(1);     // an unfished space accumulated past one season
+    expect(pileHadSeeded).toBe(0);          // open economy: never routed to a pile
+
+    // determinism holds with seeding on
+    let state = createInitialState(seeded, 5);
+    let guard = 0;
+    while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
+      const pid = activePlayerId(state);
+      state = reduce(state, BOTS.grinder(state, pid, legalActions(state, pid)));
     }
     expect(JSON.stringify(state.players)).toBe(finals[0]);
   });

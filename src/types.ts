@@ -12,6 +12,8 @@ export interface Tile {
   weightLb: number;   // marker: size
   color: Color;       // marker: rarity (common / rare)
   ground: Ground;     // marker: bag — which ground-type bag it belongs to (routes sold tiles to the right pile)
+  seeded?: boolean;   // a GENERIC seeded lobster (dropped on a space, not from a bag): OPEN economy —
+                      // when sold it leaves the world instead of landing on a restock pile.
 }
 
 export interface DeployedBuoy {
@@ -77,6 +79,11 @@ export interface GameState {
   players: Record<string, PlayerState>;
   bags: Record<Ground, Tile[]>;
   bagStart: Record<Ground, number>;
+  // Generic "seeded" lobsters sitting on each fishing space (by node). One is dropped
+  // on every space at the start of each season and they ACCUMULATE on unfished spaces,
+  // so neglected corners build up a pile — the lure to work the whole map. A haul pulls
+  // the space's pile first, then the bag. Empty when flags.seeded is off.
+  seeded: Record<string, number>;
   // Nodes currently under storm (weather). Placed at each season rollover from the
   // season's storm track; empty when flags.weather is off (or the calm first season).
   // ENTERING one risks a hazard, gear left in one gets whittled overnight, but
@@ -138,7 +145,12 @@ export interface WeatherConfig {
 export interface Config {
   players: number;
   seasons: number;        // number of seasons; the game ends after the last one
-  daysPerSeason: number;  // fishing days within each season (day resets to 1 each season)
+  daysPerSeason: number;  // fishing days within each season (fallback when daysSchedule is absent)
+  // Optional per-season day count (index 0 = season 1). Seasons LENGTHEN through the
+  // game — the fishery works longer as the years pass, the ocean recovers less. A
+  // short S1 is a low-stakes learning round and gates the deep (its 3-day prime
+  // barely fits); later seasons open the far grounds. Read via daysThisSeason().
+  daysSchedule?: number[];
   referencePlayers: number; // bags AND recruitment scale by players/referencePlayers (constant pressure-per-boat)
   hoursPerDay: number;
   actionsPerTurn: number;
@@ -163,6 +175,9 @@ export interface Config {
 
   bags: Record<Ground, Record<string, number>>; // per ground TYPE: tileTemplateName -> count
   weather: WeatherConfig;                        // storms (Chunk D); active only when flags.weather is on
+  // Seeded lobsters: generic keepers dropped on every fishing space each season that
+  // accumulate on unfished spaces (the whole-map lure). Active only when flags.seeded is on.
+  seeded: { perSeason: number; weightLb: number; haulCap: number };
   // Inter-season restock DRAFT: in berth order, each captain claims one remaining
   // bag, rolls the custom lobster die, and returns that many lobsters from the
   // bag's pile. `dieFaces` are the SIX faces of a physical d6 — the values (and
@@ -196,5 +211,5 @@ export interface Config {
     combineMode: 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink';
   };
 
-  flags: { weather: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
+  flags: { weather: boolean; seeded: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
 }

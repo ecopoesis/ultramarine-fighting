@@ -4,6 +4,7 @@ import { stageFor } from './soak';
 import { isKeeper, isIllegal, isEgger } from '../tiles';
 import { marketPorts, portOf } from './ports';
 import { weatherOn } from './weather';
+import { pullSeeded } from './seeded';
 
 // A reference "book price" for valuing stolen catch (report bounty), independent
 // of which port the loot might eventually sell at: the best market base around.
@@ -116,6 +117,7 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
   if (buoy.node !== p.node) throw new Error('Buoy is elsewhere');
   const rec = p.soak[buoyId];
   const stage = stageFor(d, rec.ground, rec.daysSoaked);
+  pullSeeded(d, playerId, buoy.node); // the space's seeded pile comes up first, then the bag
   resolveDraw(d, playerId, rec.ground, stage, policy, useToken, d.stormed.includes(buoy.node));
   // recover the gear
   p.deployed.splice(idx, 1);
@@ -134,6 +136,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
   const stage = stageFor(d, rec.ground, rec.daysSoaked); // thief gambles on OWNER's hidden ripeness
 
   const holdBefore = thief.hold.length;
+  pullSeeded(d, thiefId, buoy.node); // the thief also grabs the space's seeded pile
   resolveDraw(d, thiefId, rec.ground, stage, policy, useToken, d.stormed.includes(buoy.node));
   const stolen = thief.hold.slice(holdBefore);
   const value = stolen.reduce((s, t) => s + t.weightLb, 0) * refPrice(d);

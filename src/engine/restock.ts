@@ -2,6 +2,7 @@ import type { GameState, Ground } from '../types';
 import type { Action } from '../actions';
 import { randInt } from '../rng';
 import { placeStorms } from './weather';
+import { seedSpaces } from './seeded';
 
 // The inter-season RESTOCK DRAFT as a real, action-driven phase (what a human UI
 // will drive too). Going around in berth order, each captain CLAIMS one remaining
@@ -120,6 +121,8 @@ export function finishSeasonRollover(d: GameState): void {
   // inward. Happens on EVERY rollover, including the no-restock 4→5 (the ocean stops
   // recovering, but the weather keeps worsening).
   placeStorms(d);
+  // Drop this season's generic lobsters onto every space (accumulating on the unfished).
+  seedSpaces(d);
   d.turnOrder = ids;
   d.pendingNextOrder = [];
   d.nextSlot = 0;

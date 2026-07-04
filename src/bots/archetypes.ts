@@ -3,7 +3,7 @@ import type { Action } from '../actions';
 import type { HaulPolicy } from '../engine/buoys';
 import {
   Policy, stepToward, myBuoys, isLastDayOfSeason, hoursLeftToday, groundNodesOfType,
-  nearest, ofType, firstOfType, reachability,
+  nearest, ofType, firstOfType, reachability, daysThisSeason,
   isPort, nearestPort, nearestMarketPort,
 } from './helpers';
 
@@ -155,7 +155,7 @@ function chooseTarget(
 
   // Deploy an idle pot, honoring targetGrounds PRIORITY: the first ground type we
   // fish that has a safe, empty zone we can reach — nearest such zone of that type.
-  if (p.buoysAvailable > 0 && state.day < cfg.daysPerSeason) {
+  if (p.buoysAvailable > 0 && state.day < daysThisSeason(state)) {
     for (const g of arch.targetGrounds) {
       const zones = groundNodesOfType(state, g).filter(
         (node) => reach[node]?.safe && !buoys.some((b) => b.node === node),

@@ -5,7 +5,9 @@ import type { Config } from './types';
 export const defaultConfig: Config = {
   players: 3,
   seasons: 5,          // the historical-fishing arc: near commons collapses, the fleet ratchets outward
-  daysPerSeason: 5,    // a far round-trip must fit inside a season, else offshore/deep are unfishable and the arc is inert (Chunk C: 4→5 opened the migration window; speeding far prime instead front-loaded far fishing into S1)
+  daysPerSeason: 5,    // fallback if daysSchedule is unset (a far round-trip must fit inside a season)
+  daysSchedule: [4, 5, 5, 6, 6], // seasons LENGTHEN then plateau: a short S1 learning round (gates the deep), the far grounds open as the years drag on. CAPPED at 6 — full escalation ([4,5,6,7,8]) supercharges the volume high-graders (long late seasons) into a hustler runaway; the cap keeps the lengthening-seasons feel with healthy balance. See scripts/tuneSeededDays.ts.
+
   referencePlayers: 3, // bags + recruitment scale off this so depletion-per-boat holds across 3–6 players
   hoursPerDay: 6,
   actionsPerTurn: 2,
@@ -149,6 +151,14 @@ export const defaultConfig: Config = {
     bonusKeep: 4,
   },
 
+  // Seeded lobsters (whole-map lure) — active only when flags.seeded is on. One
+  // generic keeper is dropped on every fishing space each season; they ACCUMULATE on
+  // unfished spaces, so a neglected corner is a growing jackpot. A haul pulls the
+  // space's pile (up to haulCap) BEFORE the bag draw. Generic ⇒ OPEN economy: sold
+  // seeded lobsters leave the world (never join a restock pile). perSeason/weightLb
+  // are the economy dials; pair with restock.dieFaces to hold commons health.
+  seeded: { perSeason: 1, weightLb: 2, haulCap: 99 },
+
   // Inter-season restock draft (the custom lobster d6 — its faces are the main
   // recovery knob; a 0 is a blank that wastes the claim). Piles start pre-seeded
   // with a few of each sellable template for early agency.
@@ -200,5 +210,5 @@ export const defaultConfig: Config = {
     combineMode: 'geometricMean',
   },
 
-  flags: { weather: true, eras: false, multiShip: false, inspections: false },
+  flags: { weather: true, seeded: true, eras: false, multiShip: false, inspections: false },
 };

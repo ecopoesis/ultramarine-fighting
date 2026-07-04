@@ -2,6 +2,14 @@ import type { GameState } from './types';
 import { distance, neighbors } from './engine/movement';
 import { distanceToNearestPort } from './engine/ports';
 
+// Fishing days in the CURRENT season. Honors an escalating daysSchedule (seasons
+// lengthen through the game); falls back to the flat daysPerSeason.
+export function daysThisSeason(state: GameState): number {
+  const sched = state.config.daysSchedule;
+  if (sched && sched.length) return sched[Math.min(state.season - 1, sched.length - 1)];
+  return state.config.daysPerSeason;
+}
+
 export function activePlayerId(state: GameState): string {
   if (state.phase === 'RESTOCK') {
     const r = state.restock!;

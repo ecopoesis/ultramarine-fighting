@@ -1,6 +1,7 @@
 import type { Config, GameState, PlayerState, Ground, Tile } from './types';
 import { buildBag, tileTemplate } from './tiles';
 import { placeStorms } from './engine/weather';
+import { seedSpaces } from './engine/seeded';
 
 export function createInitialState(config: Config, seed = 12345, names?: string[]): GameState {
   const players: Record<string, PlayerState> = {};
@@ -71,6 +72,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     piles,
     markets,
     stormed: [],
+    seeded: {},
     nextSlot: 0,
     pendingNextOrder: [],
     thefts: [],
@@ -80,6 +82,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
 
   players[ids[0]].actionsLeft = config.actionsPerTurn;
   placeStorms(state); // season 1 is calm by design → a no-op (no RNG), but honors a nonzero S1 track
+  seedSpaces(state);  // season 1's generic lobsters onto every fishing space
   state.log.push(`Season 1, Day 1 begins at ${config.map.startPort}. Order: ${ids.join(', ')}`);
   return state;
 }

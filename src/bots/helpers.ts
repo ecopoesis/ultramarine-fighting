@@ -1,9 +1,10 @@
 import type { GameState, Ground, Stage } from '../types';
 import type { Action } from '../actions';
 import { neighbors, distance } from '../engine/movement';
-import { reachability } from '../selectors';
+import { reachability, daysThisSeason } from '../selectors';
 import { stageFor } from '../engine/soak';
 export { isPort, isMarketPort, nearestPort, nearestMarketPort } from '../engine/ports';
+export { daysThisSeason } from '../selectors';
 
 // A policy decides ONE action given the current legal set. Turn-level behavior
 // emerges from per-action decisions (same contract as the random runner).
@@ -42,7 +43,7 @@ export function myBuoys(state: GameState, pid: string): MyBuoy[] {
   });
 }
 
-export const isLastDayOfSeason = (s: GameState) => s.day === s.config.daysPerSeason;
+export const isLastDayOfSeason = (s: GameState) => s.day === daysThisSeason(s);
 export const hoursLeftToday = (s: GameState) => s.config.hoursPerDay - s.hour;
 
 // All zone nodes of a given ground type (there can be several — e.g. two offshore).

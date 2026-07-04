@@ -6,7 +6,7 @@ import { distanceToNearestPort, marketPorts, portOf } from '../engine/ports';
 import { weatherOn, isStormed } from '../engine/weather';
 import {
   Policy, stepToward, myBuoys, isLastDayOfSeason, hoursLeftToday, groundNodesOfType,
-  nearest, ofType, firstOfType, reachability,
+  nearest, ofType, firstOfType, reachability, daysThisSeason,
   isPort, nearestPort, nearestMarketPort,
 } from './helpers';
 
@@ -34,6 +34,7 @@ export interface CardCounter {
   repFloor?: number;        // ration rep-burning (theft AND high-grading): stop once rep sinks to here
   farBias?: number;         // multiply offshore/deep EV by this when picking a ground (>1 = works the edge sooner)
   stormBias?: number;       // multiply a STORMED zone's (already risk/reward-adjusted) score by this — >1 chases the gamble, <1 gives storms a wide berth (default 1 = price it honestly)
+  seedBias?: number;        // weight on a space's accumulated SEEDED pile when scoring it — >1 chases neglected jackpots (a would-be "sniper"), <1 ignores them (default 1 = price it in)
   // Restock draft:
   restockReturn?: 'heavy' | 'light'; // which pile tiles to put back — heaviest keepers (rebuild) or lightest (stock it thin)
   vnotchContribute?: number;         // how many v-notch tokens to SPEND per bag to add more lobsters (0 = hoard for VP)
@@ -119,6 +120,16 @@ function scoreZone(state: GameState, from: string, zone: string, g: Ground, cc: 
     const hazardCost = w.hazardChance * w.hazardFuel * cc.reachCostPerStep;
     money = (money * rewardMult * survive - hazardCost) * (cc.stormBias ?? 1);
   }
+  // Seeded lobsters: the space's accumulated generic pile is a one-time bonus taken on
+  // the haul. Amortize it over the soak (per-day, like the bag EV) and add it — a
+  // neglected space with a fat pile scores higher, which is the whole-map lure.
+  if (state.config.flags.seeded) {
+    const pile = state.seeded[zone] ?? 0;
+    if (pile > 0) {
+      const perDay = (pile * state.config.seeded.weightLb * refPrice(state)) / daysToPrime(state, g);
+      money += perDay * (cc.seedBias ?? 1);
+    }
+  }
   const steps = distance(state, from, zone) + distanceToNearestPort(state, zone);
   return money - cc.reachCostPerStep * steps;
 }
@@ -145,8 +156,8 @@ function chooseTarget(
   // safe, reachable zone whose gear can still reach prime before the season ends,
   // pick the highest money-per-soak-day net of reach. Migration is emergent — as
   // near density drops, a farther-but-richer ground wins the score.
-  if (p.buoysAvailable > 0 && state.day < state.config.daysPerSeason) {
-    const daysLeft = state.config.daysPerSeason - state.day;
+  if (p.buoysAvailable > 0 && state.day < daysThisSeason(state)) {
+    const daysLeft = daysThisSeason(state) - state.day;
     let best: string | null = null;
     let bestScore = 0; // require a positive net score to commit gear
     for (const g of Object.keys(state.bags) as Ground[]) {
