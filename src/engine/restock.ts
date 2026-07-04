@@ -10,7 +10,12 @@ import { randInt } from '../rng';
 // their choice back into that bag. With ~4 bags, the tail of the berth order may
 // never get to claim, so the pole is worth fighting for.
 
-const rollDie = (d: GameState) => randInt(d, d.config.restock.dieFaces) + 1;
+// Roll the custom lobster d6: pick one of its six faces uniformly. A blank (0)
+// face is a legal outcome — the claim is wasted but the bag is still locked.
+const rollDie = (d: GameState) => {
+  const faces = d.config.restock.dieFaces;
+  return faces[randInt(d, faces.length)];
+};
 
 // Enter the draft: capture the berth order as the claim order and roll for the
 // first claimer. The season reset (pull gear, send everyone home, advance the

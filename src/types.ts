@@ -139,12 +139,13 @@ export interface Config {
 
   bags: Record<Ground, Record<string, number>>; // per ground TYPE: tileTemplateName -> count
   // Inter-season restock DRAFT: in berth order, each captain claims one remaining
-  // bag, rolls the lobster die for how many (1..dieFaces), and secretly returns
-  // that many lobsters from that bag's extraction pile. Only ~4 bags, so with more
-  // players than bags some don't get to restock — the pole is worth fighting for.
-  // Piles are pre-seeded with `preSeedPerBag` of each sellable template for early
-  // agency. No restock before the final season.
-  restock: { dieFaces: number; preSeedPerBag: number };
+  // bag, rolls the custom lobster die, and returns that many lobsters from the
+  // bag's pile. `dieFaces` are the SIX faces of a physical d6 — the values (and
+  // blanks: a 0-face wastes the claim yet still locks the bag) are the tuning
+  // knob. Only ~4 bags, so with more players than bags some don't get to restock —
+  // the pole is worth fighting for. Piles are pre-seeded with `preSeedPerBag` of
+  // each sellable template for early agency. No restock before the final season.
+  restock: { dieFaces: number[]; preSeedPerBag: number };
   soakCurves: Record<Ground, Stage[]>;
   drawByStage: Record<Stage, DrawRule>;
   actionCost: Record<string, number>;

@@ -88,14 +88,14 @@ export const defaultConfig: Config = {
     // back in the mid-game; a greedy table that keeps eggers gets none of it.
     inshore: { KEEPER_1lb: 8, KEEPER_2lb: 4, SHORT: 4, JUMBO: 1, EGGER: 3 }, // 20 — thin & rich, collapses fast
     mid: { KEEPER_2lb: 7, KEEPER_3lb: 3, RARE_2lb: 1, SHORT: 4, JUMBO: 2, EGGER: 3 }, // 20
-    offshore: { KEEPER_3lb: 12, RARE_3lb: 4, SHORT: 4, JUMBO: 5, EGGER: 5 }, // 30 — heavy, some rare
-    deep: { KEEPER_4lb: 6, RARE_4lb: 3, SHORT: 6, JUMBO: 6, EGGER: 9 }, // 30 — big lobsters but you mostly pull junk & breeders: a gamble, and v-notch matters
+    offshore: { KEEPER_3lb: 9, RARE_3lb: 3, SHORT: 6, JUMBO: 5, EGGER: 7 }, // 30 — heavy, some rare (leaner: far shouldn't dominate pre-weather)
+    deep: { KEEPER_4lb: 4, RARE_4lb: 2, SHORT: 7, JUMBO: 5, EGGER: 12 }, // 30 — a few big lobsters buried in junk & breeders: a real gamble
   },
 
-  // Inter-season restock draft (starting guesses — tune in sim). Each claim rolls
-  // 1..dieFaces lobsters back from a bag's pile; piles start pre-seeded with a few
-  // of each sellable template so the first restocks have something to choose from.
-  restock: { dieFaces: 6, preSeedPerBag: 2 },
+  // Inter-season restock draft (the custom lobster d6 — its faces are the main
+  // recovery knob; a 0 is a blank that wastes the claim). Piles start pre-seeded
+  // with a few of each sellable template for early agency.
+  restock: { dieFaces: [0, 1, 2, 3, 4, 5], preSeedPerBag: 2 },
 
   // stage indexed by daysSoaked; time+place => different curve shapes per ground
   soakCurves: {

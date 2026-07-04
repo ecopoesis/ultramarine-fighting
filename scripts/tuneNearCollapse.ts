@@ -52,20 +52,21 @@ function measure(config: Config, seeds: number) {
 const nearBags = (base: Config, inshore: Record<string, number>, mid: Record<string, number>): Config => ({
   ...base, bags: { ...base.bags, inshore, mid },
 });
-const die = (base: Config, dieFaces: number): Config => ({
+const die = (base: Config, dieFaces: number[]): Config => ({
   ...base, restock: { ...base.restock, dieFaces },
 });
+const LOW = [0, 0, 1, 1, 2, 3]; // a stingier lobster die (more blanks)
 
 // Candidates: near bag size × restock die (how many lobsters come back per claim).
 const cand: [string, Config][] = [
-  ['current (20/20, dieFaces 6)', defaultConfig],
-  ['near die 3 (slower recovery)', die(defaultConfig, 3)],
-  ['thinner near (die 6)', nearBags(defaultConfig,
+  ['current die [0..5]', defaultConfig],
+  ['stingy die [0,0,1,1,2,3]', die(defaultConfig, LOW)],
+  ['thinner near', nearBags(defaultConfig,
     { KEEPER_1lb: 6, KEEPER_2lb: 3, SHORT: 3, JUMBO: 1, EGGER: 2 },
     { KEEPER_2lb: 5, KEEPER_3lb: 2, RARE_2lb: 1, SHORT: 3, JUMBO: 1, EGGER: 2 })],
-  ['thinner near + die 3', die(nearBags(defaultConfig,
+  ['thinner near + stingy die', die(nearBags(defaultConfig,
     { KEEPER_1lb: 6, KEEPER_2lb: 3, SHORT: 3, JUMBO: 1, EGGER: 2 },
-    { KEEPER_2lb: 5, KEEPER_3lb: 2, RARE_2lb: 1, SHORT: 3, JUMBO: 1, EGGER: 2 }), 3)],
+    { KEEPER_2lb: 5, KEEPER_3lb: 2, RARE_2lb: 1, SHORT: 3, JUMBO: 1, EGGER: 2 }), LOW)],
 ];
 
 console.log(`=== Near-collapse tuner (${SEEDS} seeds, nice card-counter fleet) ===`);

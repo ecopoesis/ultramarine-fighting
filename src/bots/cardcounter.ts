@@ -58,10 +58,10 @@ const ARCH_BASE: CardCounter = {
 export const CC_STEWARD: CardCounter = { ...ARCH_BASE, name: 'steward', vnotchContribute: 3 };                   // clean, balanced — rebuilds the commons, spends v-notch freely
 export const CC_GREEDY: CardCounter = { ...ARCH_BASE, name: 'greedy', haulPolicy: 'highgrade', minKeep: 1, vnotchContribute: 0 }; // selective high-grader: money leader, hoards v-notch for VP
 export const CC_HIGHLINER: CardCounter = { ...ARCH_BASE, name: 'highliner', farBias: 1.4 };                      // works the far edge for the heavy catch
-export const CC_GRINDER: CardCounter = { ...ARCH_BASE, name: 'grinder', farBias: 0.6, minKeep: 1, reachCostPerStep: 0.8 }; // near-water workhorse: high volume, short runs
+export const CC_GRINDER: CardCounter = { ...ARCH_BASE, name: 'grinder', farBias: 0.7, minKeep: 1, reachCostPerStep: 0.8, vnotchContribute: 2 }; // near-water workhorse: high volume, short runs, rebuilds its own grounds
 export const CC_GAMBLER: CardCounter = { ...ARCH_BASE, name: 'gambler', farBias: 2.0, minKeep: 2, refuelBelow: 6, dropSlack: 0 }; // deep-edge risk-taker: bets on the far gear
-export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 3, vnotchContribute: 0 }; // dirty money anywhere, hoards v-notch
-export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 3, vnotchContribute: 3 };  // patient: only prime hauls — max conservation, rebuilds
+export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 4, vnotchContribute: 0 }; // dirty money anywhere, hoards v-notch
+export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 2, vnotchContribute: 3 };  // patient: only prime hauls (keep 2) — max conservation, rebuilds
 export const CC_NOMAD: CardCounter = { ...ARCH_BASE, name: 'nomad', reachCostPerStep: 0.25 };                    // ranges the whole map for the best EV anywhere
 
 // The full roster (index builds BOTS from this; the arena seats N of them).
@@ -155,7 +155,10 @@ function restockDecision(state: GameState, pid: string, cc: CardCounter): Action
   if (r.step === 'claim') {
     const remaining = grounds.filter((g) => !r.claimed.includes(g));
     const withStock = remaining.filter((g) => state.piles[g].length > 0);
-    const ground = (withStock.length ? withStock : remaining).slice().sort((a, b) => pileVal(b) - pileVal(a))[0];
+    const pool = withStock.length ? withStock : remaining;
+    // A real roll → claim the fullest pile (most to rebuild). A blank (0) still
+    // LOCKS a bag, so dump it on the least valuable one rather than a rich bag.
+    const ground = pool.slice().sort((a, b) => (r.roll === 0 ? pileVal(a) - pileVal(b) : pileVal(b) - pileVal(a)))[0];
     const asc = cc.restockReturn === 'light';
     const pile = [...state.piles[ground]].sort((a, b) => (asc ? a.weightLb - b.weightLb : b.weightLb - a.weightLb));
     const tileIds = pile.slice(0, Math.min(r.roll, pile.length)).map((t) => t.id);
