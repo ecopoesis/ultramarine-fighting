@@ -187,6 +187,7 @@ export interface Config {
   // the pole is worth fighting for. Piles are pre-seeded with `preSeedPerBag` of
   // each sellable template for early agency. No restock before the final season.
   restock: { dieFaces: number[]; preSeedPerBag: number };
+  requirePrimeToHaul: boolean; // a pot can't be hauled until it ripens to PRIME — forces the place→soak→retrieve loop (else bots drop-and-grab at SET)
   soakCurves: Record<Ground, Stage[]>;
   drawByStage: Record<Stage, DrawRule>;
   actionCost: Record<string, number>;

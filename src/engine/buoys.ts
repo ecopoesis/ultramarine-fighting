@@ -1,6 +1,6 @@
 import type { GameState, Ground, Tile, Stage } from '../types';
 import { takeRandom } from '../rng';
-import { stageFor } from './soak';
+import { stageFor, isRipe } from './soak';
 import { isKeeper, isIllegal, isEgger } from '../tiles';
 import { marketPorts, portOf } from './ports';
 import { weatherOn } from './weather';
@@ -116,6 +116,7 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
   const buoy = p.deployed[idx];
   if (buoy.node !== p.node) throw new Error('Buoy is elsewhere');
   const rec = p.soak[buoyId];
+  if (!isRipe(d, rec.ground, rec.daysSoaked)) throw new Error('Pot is not ripe yet (must reach PRIME)');
   const stage = stageFor(d, rec.ground, rec.daysSoaked);
   pullSeeded(d, playerId, buoy.node); // the space's seeded pile comes up first, then the bag
   resolveDraw(d, playerId, rec.ground, stage, policy, useToken, d.stormed.includes(buoy.node));
@@ -133,6 +134,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
   const buoy = owner.deployed[idx];
   if (buoy.node !== thief.node) throw new Error('Rival buoy is elsewhere');
   const rec = owner.soak[buoyId];
+  if (!isRipe(d, rec.ground, rec.daysSoaked)) throw new Error('Rival pot is not ripe yet');
   const stage = stageFor(d, rec.ground, rec.daysSoaked); // thief gambles on OWNER's hidden ripeness
 
   const holdBefore = thief.hold.length;

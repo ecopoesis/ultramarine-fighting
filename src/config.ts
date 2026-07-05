@@ -164,6 +164,7 @@ export const defaultConfig: Config = {
   // with a few of each sellable template for early agency.
   restock: { dieFaces: [0, 1, 2, 3, 4, 5], preSeedPerBag: 2 },
 
+  requirePrimeToHaul: true, // no drop-and-grab: a pot must ripen to PRIME before it can be hauled (worker-placement rhythm)
   // stage indexed by daysSoaked; time+place => different curve shapes per ground
   soakCurves: {
     inshore: ['SET', 'PRIME', 'PRIME', 'PRIME', 'FOULED'],                    // wide prime, forgiving

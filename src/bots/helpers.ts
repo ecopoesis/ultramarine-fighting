@@ -2,7 +2,7 @@ import type { GameState, Ground, Stage } from '../types';
 import type { Action } from '../actions';
 import { neighbors, distance } from '../engine/movement';
 import { reachability, daysThisSeason } from '../selectors';
-import { stageFor } from '../engine/soak';
+import { stageFor, isRipe } from '../engine/soak';
 export { isPort, isMarketPort, nearestPort, nearestMarketPort } from '../engine/ports';
 export { daysThisSeason } from '../selectors';
 
@@ -32,6 +32,7 @@ export interface MyBuoy {
   ground: Ground;
   stage: Stage;
   keep: number; // drawByStage[stage].keep — a proxy for "how ripe / how much it yields now"
+  ripe: boolean; // haulable now? (PRIME+ when requirePrimeToHaul)
 }
 
 export function myBuoys(state: GameState, pid: string): MyBuoy[] {
@@ -39,7 +40,11 @@ export function myBuoys(state: GameState, pid: string): MyBuoy[] {
   return p.deployed.map((b) => {
     const rec = p.soak[b.buoyId];
     const stage = stageFor(state, rec.ground, rec.daysSoaked);
-    return { buoyId: b.buoyId, node: b.node, ground: rec.ground, stage, keep: state.config.drawByStage[stage].keep };
+    return {
+      buoyId: b.buoyId, node: b.node, ground: rec.ground, stage,
+      keep: state.config.drawByStage[stage].keep,
+      ripe: isRipe(state, rec.ground, rec.daysSoaked),
+    };
   });
 }
 

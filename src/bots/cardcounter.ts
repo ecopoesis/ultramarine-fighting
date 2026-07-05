@@ -160,8 +160,8 @@ function chooseTarget(
   // this too: it never heads in on its own, fishing until it strands and gets towed.
   if (!cc.guzzle && p.hold.length > 0 && (last || hoursLeftToday(state) <= 1)) return sellPort;
 
-  // Harvest ripe, reachable gear (nearest first).
-  const ripe = buoys.filter((b) => (last || b.keep >= cc.minKeep) && okReach(b.node));
+  // Harvest ripe (haulable), reachable gear (nearest first).
+  const ripe = buoys.filter((b) => b.ripe && (last || b.keep >= cc.minKeep) && okReach(b.node));
   if (ripe.length) return nearest(state, p.node, ripe.map((b) => b.node)) ?? anyPort;
 
   // Deploy an idle pot on the best-scoring ground we can fish: over every empty,

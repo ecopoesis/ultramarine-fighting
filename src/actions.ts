@@ -1,6 +1,7 @@
 import type { GameState, Ground } from './types';
 import { neighbors } from './engine/movement';
 import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
+import { isRipe } from './engine/soak';
 import type { HaulPolicy } from './engine/buoys';
 
 export type Action =
@@ -48,18 +49,18 @@ export function legalActions(state: GameState, playerId: string): Action[] {
     const t: Action = { type: 'DROP', playerId };
     if (canAfford(t)) out.push(t);
   }
-  // haul own buoys here
+  // haul own buoys here — only once they've ripened to PRIME
   for (const b of p.deployed) {
-    if (b.node === p.node) {
+    if (b.node === p.node && isRipe(state, p.soak[b.buoyId].ground, p.soak[b.buoyId].daysSoaked)) {
       const t: Action = { type: 'HAUL', playerId, buoyId: b.buoyId };
       if (canAfford(t)) out.push(t);
     }
   }
-  // steal rival buoys here
+  // steal rival buoys here (also only if ripe — nothing worth taking from a fresh pot)
   for (const other of Object.values(state.players)) {
     if (other.id === playerId) continue;
     for (const b of other.deployed) {
-      if (b.node === p.node) {
+      if (b.node === p.node && isRipe(state, other.soak[b.buoyId].ground, other.soak[b.buoyId].daysSoaked)) {
         const t: Action = { type: 'STEAL', playerId, ownerId: other.id, buoyId: b.buoyId };
         if (canAfford(t)) out.push(t);
       }
