@@ -3,6 +3,7 @@ import type { Action } from '../actions';
 import { randInt } from '../rng';
 import { placeStorms } from './weather';
 import { seedSpaces } from './seeded';
+import { buoyCap } from './upgrades';
 
 // The inter-season RESTOCK DRAFT as a real, action-driven phase (what a human UI
 // will drive too). Going around in berth order, each captain CLAIMS one remaining
@@ -107,7 +108,7 @@ export function finishSeasonRollover(d: GameState): void {
     const p = d.players[id];
     p.deployed = [];
     p.soak = {};
-    p.buoysAvailable = d.config.buoysPerPlayer;
+    p.buoysAvailable = buoyCap(d, p); // cargo-hold refit carries over
     p.node = d.config.map.startPort;
     p.berthNode = undefined;
     p.berthed = false;

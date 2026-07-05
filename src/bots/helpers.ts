@@ -26,6 +26,19 @@ export function stepToward(state: GameState, from: string, target: string): stri
   return best;
 }
 
+// The node up to `maxHops` toward `target` — a bigger engine steams several nodes
+// per action, so bots aim at the farthest reachable node on the path (null if
+// already there). maxHops 1 == stepToward.
+export function hopToward(state: GameState, from: string, target: string, maxHops: number): string | null {
+  let cur = from;
+  for (let i = 0; i < Math.max(1, maxHops); i++) {
+    const nxt = stepToward(state, cur, target);
+    if (!nxt) break;
+    cur = nxt;
+  }
+  return cur === from ? null : cur;
+}
+
 export interface MyBuoy {
   buoyId: string;
   node: string;

@@ -1,7 +1,8 @@
 import type { GameState, Ground } from './types';
-import { neighbors } from './engine/movement';
+import { neighbors, distance } from './engine/movement';
 import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
 import { isRipe } from './engine/soak';
+import { upgradesOn, upgradeDisplay, canBuyUpgrade, hasFreeHaul, fuelCap, stepsPerSteam } from './engine/upgrades';
 import type { HaulPolicy } from './engine/buoys';
 
 export type Action =
@@ -14,13 +15,20 @@ export type Action =
   | { type: 'REPORT'; playerId: string }
   | { type: 'BERTH'; playerId: string }
   | { type: 'BRIBE'; playerId: string }
+  | { type: 'BUY_UPGRADE'; playerId: string; upgradeId: string } // refit at a market port's chandlery
   | { type: 'PASS'; playerId: string }
   // restock draft (phase === 'RESTOCK')
   | { type: 'RESTOCK_CLAIM'; playerId: string; ground: Ground; tileIds: string[] }        // claim a bag, return these pile tiles
   | { type: 'RESTOCK_CONTRIBUTE'; playerId: string; tileIds: string[] };                   // spend v-notch: return these (empty = pass)
 
 export function actionCost(state: GameState, a: Action): number {
-  return state.config.actionCost[a.type] ?? 0;
+  const base = state.config.actionCost[a.type] ?? 0;
+  // a hauling crane makes pulling pots free (0 actions)
+  if (a.type === 'HAUL' && base > 0) {
+    const p = state.players[a.playerId];
+    if (p && hasFreeHaul(state, p)) return 0;
+  }
+  return base;
 }
 
 // Enumerate legal actions for a player right now. Always includes PASS so the
@@ -37,11 +45,16 @@ export function legalActions(state: GameState, playerId: string): Action[] {
   const node = cfg.map.nodes[p.node];
   const canAfford = (t: Action) => p.actionsLeft >= actionCost(state, t);
 
-  // steam
+  // steam — to any node within the ship's reach per action (base 1 hop; a bigger
+  // engine reaches farther), if there's fuel for the hops
   if (p.fuel >= cfg.map.fuelPerStep) {
-    for (const to of neighbors(state, p.node)) {
+    const reach = stepsPerSteam(state, p);
+    const targets = reach <= 1
+      ? neighbors(state, p.node)
+      : Object.keys(cfg.map.nodes).filter((n) => { const h = distance(state, p.node, n); return h >= 1 && h <= reach; });
+    for (const to of targets) {
       const t: Action = { type: 'STEAM', playerId, to };
-      if (canAfford(t)) out.push(t);
+      if (p.fuel >= distance(state, p.node, to) * cfg.map.fuelPerStep && canAfford(t)) out.push(t);
     }
   }
   // drop
@@ -73,8 +86,8 @@ export function legalActions(state: GameState, playerId: string): Action[] {
       if (canAfford(t)) out.push(t);
     }
     const price = fuelPriceAt(state, p.node);
-    if (p.fuel < cfg.fuelTankMax && p.money >= price) {
-      const units = Math.min(cfg.fuelTankMax - p.fuel, Math.floor(p.money / price));
+    if (p.fuel < fuelCap(state, p) && p.money >= price) {
+      const units = Math.min(fuelCap(state, p) - p.fuel, Math.floor(p.money / price));
       const t: Action = { type: 'REFUEL', playerId, units };
       if (units > 0 && canAfford(t)) out.push(t);
     }
@@ -84,6 +97,13 @@ export function legalActions(state: GameState, playerId: string): Action[] {
     }
     out.push({ type: 'BERTH', playerId });
     if (p.money >= cfg.bribeMoneyCost) out.push({ type: 'BRIBE', playerId });
+    // refit at the chandlery: any face-up upgrade you can afford with a free slot
+    if (upgradesOn(state)) {
+      for (const id of upgradeDisplay(state, p.node)) {
+        const t: Action = { type: 'BUY_UPGRADE', playerId, upgradeId: id };
+        if (canBuyUpgrade(state, p, id) && canAfford(t)) out.push(t);
+      }
+    }
   }
   return out;
 }

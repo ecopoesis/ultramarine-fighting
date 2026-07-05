@@ -182,7 +182,23 @@ export const defaultConfig: Config = {
   },
 
   actionCost: {
-    STEAM: 1, DROP: 1, HAUL: 1, STEAL: 2, SELL: 1, REFUEL: 1, REPORT: 1, BERTH: 0, BRIBE: 0, PASS: 0,
+    STEAM: 1, DROP: 1, HAUL: 1, STEAL: 2, SELL: 1, REFUEL: 1, REPORT: 1, BERTH: 0, BRIBE: 0, BUY_UPGRADE: 1, PASS: 0,
+  },
+
+  // Ship upgrades (engine-building layer). Money buys CAPABILITY, not just VP — a
+  // real investment (pricey + an action + you must be at a market chandlery), scarce
+  // (a face-up race per port), and slot-limited (max 3: engine + radar + one second-
+  // middle). Costs/counts are starting guesses; tune the cadence to ~2-3/player/game.
+  upgrades: {
+    catalog: [
+      { id: 'engine', label: 'Bigger engine', slot: 'stern', cost: 18, stepsPerSteam: 2 },       // move 2 nodes per steam — halves travel to the far grounds
+      { id: 'radar', label: 'Radar', slot: 'midPrimary', cost: 14, stormImmune: true },           // no storm entry hazard
+      { id: 'crane', label: 'Hauling crane', slot: 'midSecondary', cost: 16, freeHaul: true },     // HAUL costs 0 actions
+      { id: 'tank', label: 'Bigger tanks', slot: 'midSecondary', cost: 10, fuelBonus: 6 },         // + fuel capacity
+      { id: 'cargo', label: 'Cargo hold', slot: 'midSecondary', cost: 14, buoyBonus: 1 },          // + one buoy
+    ],
+    perPortStock: 6, // each of the 3 market ports stocks this many refit tokens (drawn from the catalog)
+    display: 3,      // face-up at once
   },
 
   poleRepCost: 1,
@@ -212,5 +228,5 @@ export const defaultConfig: Config = {
     combineMode: 'geometricMean',
   },
 
-  flags: { weather: true, seeded: true, eras: false, multiShip: false, inspections: false },
+  flags: { weather: true, seeded: true, upgrades: true, eras: false, multiShip: false, inspections: false },
 };

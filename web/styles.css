@@ -72,6 +72,8 @@ select, input { background: var(--panel2); color: var(--text); border: 1px solid
 .turn h3, .bot-turn h3, .gate h3 { display: flex; align-items: center; gap: 4px; }
 .stats-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 10px; }
 .stat.big { font-size: 15px; font-weight: 600; }
+.ship-row { margin: 2px 0 8px; font-size: 13px; }
+.refit { display: inline-block; background: #23303a; border: 1px solid var(--accent); border-radius: 5px; padding: 1px 7px; margin-right: 5px; font-size: 12px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 ul.tight { margin: 4px 0; padding-left: 16px; }
 ul.tight li { font-size: 12px; }

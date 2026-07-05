@@ -43,7 +43,28 @@ export interface PlayerState {
   berthNode?: string;   // the port a captain berthed in — where they start tomorrow (daily home-port choice)
   vTokens: number;
   towCooldown?: number; // turns still to skip after an end-of-day tow (the rescue costs you the next morning)
+  // Installed ship upgrades, one per slot (the physical ship: bow/amidships/stern
+  // tiles you swap or insert). stern = engine, midPrimary = radar (replaces the
+  // base amidships), midSecondary = the ONE second-middle you may add (crane / tank
+  // / cargo). Max three upgrades. See engine/upgrades.ts for the derived effects.
+  upgrades: Partial<Record<UpgradeSlot, string>>;
   tracks: { conservation: number; reputation: number };
+}
+
+export type UpgradeSlot = 'stern' | 'midPrimary' | 'midSecondary';
+
+// A refit you can buy at a market port's chandlery. Occupies one ship slot; its
+// optional effect fields are read by the capability queries in engine/upgrades.ts.
+export interface UpgradeDef {
+  id: string;
+  label: string;
+  slot: UpgradeSlot;
+  cost: number;             // money to install (also costs an action, at a market port)
+  stepsPerSteam?: number;   // engine: nodes moved per STEAM action (base 1)
+  stormImmune?: boolean;    // radar: no storm entry hazard
+  freeHaul?: boolean;       // crane: HAUL costs 0 actions
+  fuelBonus?: number;       // tank: + fuel-tank capacity
+  buoyBonus?: number;       // cargo: + buoy capacity
 }
 
 export interface TheftRecord {
@@ -96,6 +117,11 @@ export interface GameState {
   // the world, so the whole census (bags + holds + piles) is conserved.
   piles: Record<Ground, Tile[]>;
   markets: Record<string, { lbsSoldToday: number }>; // per market-port: lbs sold today (flood), recovers overnight
+  // Upgrade supply per market port: the remaining refit tokens (upgrade ids). The
+  // face-up DISPLAY is the first `config.upgrades.display` of these — buying pulls
+  // one out and the next slides up; empty = that chandlery is picked clean. Present
+  // only when flags.upgrades is on.
+  upgradeStock: Record<string, string[]>;
   nextSlot: number;
   pendingNextOrder: string[];
   thefts: TheftRecord[];
@@ -188,6 +214,13 @@ export interface Config {
   // each sellable template for early agency. No restock before the final season.
   restock: { dieFaces: number[]; preSeedPerBag: number };
   requirePrimeToHaul: boolean; // a pot can't be hauled until it ripens to PRIME — forces the place→soak→retrieve loop (else bots drop-and-grab at SET)
+  // Ship upgrades (engine-building layer) — active only when flags.upgrades is on.
+  // A scarce, per-port, face-up race: money buys capability, not just VP.
+  upgrades: {
+    catalog: UpgradeDef[];  // the refits available in the game
+    perPortStock: number;   // refit tokens each market port starts with (drawn from the catalog)
+    display: number;        // how many are face-up at once (the rest are the deck behind them)
+  };
   soakCurves: Record<Ground, Stage[]>;
   drawByStage: Record<Stage, DrawRule>;
   actionCost: Record<string, number>;
@@ -221,5 +254,5 @@ export interface Config {
     combineMode: 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink';
   };
 
-  flags: { weather: boolean; seeded: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
+  flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
 }

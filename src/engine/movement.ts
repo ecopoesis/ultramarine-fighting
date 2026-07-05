@@ -1,6 +1,7 @@
 import type { GameState } from '../types';
 import { nextRandom } from '../rng';
 import { weatherOn, isStormed } from './weather';
+import { stepsPerSteam, isStormImmune } from './upgrades';
 
 export function neighbors(state: GameState, node: string): string[] {
   const out: string[] = [];
@@ -33,17 +34,18 @@ export function distance(state: GameState, from: string, to: string): number {
 
 export function steam(d: GameState, playerId: string, to: string): void {
   const p = d.players[playerId];
-  const cost = d.config.map.fuelPerStep;
-  if (!neighbors(d, p.node).includes(to)) throw new Error(`No edge ${p.node}->${to}`);
+  // A bigger engine moves several nodes per STEAM action; base ships hop one.
+  const hops = distance(d, p.node, to);
+  if (hops < 1 || hops > stepsPerSteam(d, p)) throw new Error(`Cannot steam ${p.node}->${to} in one action`);
+  const cost = hops * d.config.map.fuelPerStep;
   if (p.fuel < cost) throw new Error('Out of fuel');
   p.fuel -= cost;
   p.node = to;
-  d.log.push(`${p.name} steams to ${to} (fuel ${p.fuel})`);
+  d.log.push(`${p.name} steams to ${to} (${hops} hop${hops > 1 ? 's' : ''}, fuel ${p.fuel})`);
 
   // Storm entry hazard: pushing INTO a stormed node risks a beating (lost fuel).
-  // Chancy, not a wall — you can still go, you just might limp. Shelters are never
-  // stormed, so ducking into one is always safe.
-  if (weatherOn(d) && isStormed(d, to) && nextRandom(d) < d.config.weather.hazardChance) {
+  // Chancy, not a wall. Shelters are never stormed; RADAR makes you immune.
+  if (weatherOn(d) && isStormed(d, to) && !isStormImmune(d, p) && nextRandom(d) < d.config.weather.hazardChance) {
     const loss = Math.min(p.fuel, d.config.weather.hazardFuel);
     p.fuel -= loss;
     d.log.push(`${p.name} takes a beating in the storm at ${to} (-${loss} fuel, now ${p.fuel})`);

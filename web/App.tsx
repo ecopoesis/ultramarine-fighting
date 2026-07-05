@@ -120,6 +120,16 @@ function ActivePanel({ state, pid }: { state: GameState; pid: string }) {
         <span className="stat big">🌿 {p.tracks.conservation.toFixed(0)}</span>
         <span className="stat big">🔖 v-notch {p.vTokens}</span>
       </div>
+      {state.config.flags.upgrades && (
+        <div className="ship-row">
+          🚢 Ship:{' '}
+          {Object.values(p.upgrades).length === 0
+            ? <span className="muted small">no refits yet</span>
+            : Object.values(p.upgrades).map((id) => (
+                <span key={id} className="refit">{state.config.upgrades.catalog.find((u) => u.id === id)?.label ?? id}</span>
+              ))}
+        </div>
+      )}
       <div className="two-col">
         <div>
           <h4>Hold ({p.hold.length})</h4>

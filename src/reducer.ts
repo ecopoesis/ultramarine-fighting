@@ -9,6 +9,7 @@ import { advanceSoak } from './engine/soak';
 import { enterRestock, applyRestockAction, finishSeasonRollover } from './engine/restock';
 import { fuelPriceAt, isPort, nearestPort } from './engine/ports';
 import { stormWhittle } from './engine/weather';
+import { buyUpgrade, fuelCap } from './engine/upgrades';
 import { daysThisSeason } from './selectors';
 
 // Pure: returns a new state; never mutates the input. We clone once and mutate
@@ -44,7 +45,7 @@ function applyAction(d: GameState, a: Action): boolean {
     case 'REFUEL': {
       const p = d.players[a.playerId];
       const price = fuelPriceAt(d, p.node); // dear at island ports, dearer at shelters
-      const units = Math.min(a.units, d.config.fuelTankMax - p.fuel, Math.floor(p.money / price));
+      const units = Math.min(a.units, fuelCap(d, p) - p.fuel, Math.floor(p.money / price));
       p.fuel += units; p.money -= units * price;
       d.log.push(`${p.name} refuels ${units} at ${p.node} (fuel ${p.fuel}, money ${p.money.toFixed(1)})`);
       return false;
@@ -52,6 +53,7 @@ function applyAction(d: GameState, a: Action): boolean {
     case 'REPORT': reportTheft(d, a.playerId); return false;
     case 'BERTH': berth(d, a.playerId); return true;
     case 'BRIBE': bribe(d, a.playerId); return true;
+    case 'BUY_UPGRADE': buyUpgrade(d, a.playerId, a.upgradeId); return false;
     case 'PASS': return true;
     case 'RESTOCK_CLAIM':
     case 'RESTOCK_CONTRIBUTE':

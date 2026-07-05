@@ -24,6 +24,10 @@ export function actionLabel(state: GameState, a: Action): string {
     case 'RESTOCK_CLAIM': return `Claim ${a.ground} (+${a.tileIds.length})`;
     case 'RESTOCK_CONTRIBUTE':
       return a.tileIds.length ? `Contribute ${a.tileIds.length} v-notch` : 'Contribute nothing';
+    case 'BUY_UPGRADE': {
+      const def = state.config.upgrades.catalog.find((u) => u.id === a.upgradeId);
+      return `Refit: ${def?.label ?? a.upgradeId} (−${def?.cost ?? '?'})`;
+    }
   }
 }
 
@@ -32,7 +36,7 @@ export function actionGroup(a: Action): 'move' | 'gear' | 'port' | 'end' {
   switch (a.type) {
     case 'STEAM': return 'move';
     case 'DROP': case 'HAUL': case 'STEAL': return 'gear';
-    case 'SELL': case 'REFUEL': case 'REPORT': case 'BRIBE': return 'port';
+    case 'SELL': case 'REFUEL': case 'REPORT': case 'BRIBE': case 'BUY_UPGRADE': return 'port';
     default: return 'end';
   }
 }

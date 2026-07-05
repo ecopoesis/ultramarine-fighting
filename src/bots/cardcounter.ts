@@ -5,10 +5,13 @@ import { distance } from '../engine/movement';
 import { distanceToNearestPort, marketPorts, portOf } from '../engine/ports';
 import { weatherOn, isStormed } from '../engine/weather';
 import {
-  Policy, stepToward, myBuoys, isLastDayOfSeason, hoursLeftToday, groundNodesOfType,
+  Policy, stepToward, hopToward, myBuoys, isLastDayOfSeason, hoursLeftToday, groundNodesOfType,
   nearest, ofType, firstOfType, reachability, daysThisSeason,
   isPort, nearestPort, nearestMarketPort,
 } from './helpers';
+import { upgradesOn, upgradeDef, stepsPerSteam } from '../engine/upgrades';
+
+const UPGRADE_RESERVE = 10; // money a bot keeps in hand rather than sinking into a refit
 
 // The CARD-COUNTER: a public-information optimizer, and the fleet's strong
 // baseline / instrument. It reads each ground's CURRENT bag (public info) — never
@@ -36,6 +39,7 @@ export interface CardCounter {
   stormBias?: number;       // multiply a STORMED zone's (already risk/reward-adjusted) score by this — >1 chases the gamble, <1 gives storms a wide berth (default 1 = price it honestly)
   seedBias?: number;        // weight on a space's accumulated SEEDED pile when scoring it — >1 chases neglected jackpots (a would-be "sniper"), <1 ignores them (default 1 = price it in)
   guzzle?: boolean;         // the GAS-GUZZLER: fish one-way-reachable zones, never reserve return fuel, never refuel — deliberately run dry and lean on the tow. The tow must be priced to KILL this (else "run dry, take the cheap tow" beats honest fuel management).
+  upgradeWishlist?: string[]; // refit priority (buys the first affordable one early, keeping a reserve); undefined = a generic order
   // Restock draft:
   restockReturn?: 'heavy' | 'light'; // which pile tiles to put back — heaviest keepers (rebuild) or lightest (stock it thin)
   vnotchContribute?: number;         // how many v-notch tokens to SPEND per bag to add more lobsters (0 = hoard for VP)
@@ -221,6 +225,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
     const atPort = isPort(state, p.node);
     const last = isLastDayOfSeason(state);
     const reach = reachability(state, pid);
+    const hopReach = stepsPerSteam(state, p); // nodes we can steam per action (a bigger engine reaches farther)
     const buoys = myBuoys(state, pid);
     const pass = firstOfType(legal, 'PASS')!;
     const repFloor = cc.repFloor ?? -Infinity;
@@ -258,8 +263,19 @@ export function makeCardCounter(cc: CardCounter): Policy {
       const refuel = firstOfType(legal, 'REFUEL');
       if (refuel && !last && !cc.guzzle && p.fuel <= cc.refuelBelow) return refuel;
 
+      // Refit at the chandlery: buy the highest-priority wanted upgrade we can afford
+      // while keeping a money reserve. Only early enough to recoup the investment.
+      if (upgradesOn(state) && !last && state.season <= cfg.seasons - 1) {
+        const buys = ofType(legal, 'BUY_UPGRADE');
+        const wish = cc.upgradeWishlist ?? ['engine', 'crane', 'cargo', 'radar', 'tank'];
+        for (const id of wish) {
+          const b = buys.find((x) => x.upgradeId === id);
+          if (b && p.money - (upgradeDef(state, id)?.cost ?? Infinity) >= UPGRADE_RESERVE) return b;
+        }
+      }
+
       if (!last && targetIsGround && targetOk) {
-        const step = stepToward(state, p.node, target);
+        const step = hopToward(state, p.node, target, hopReach);
         const steam = step ? ofType(legal, 'STEAM').find((s) => s.to === step) : undefined;
         if (steam) return steam;
       }
@@ -278,14 +294,14 @@ export function makeCardCounter(cc: CardCounter): Policy {
     }
 
     // Steam toward the target (grounds only while a port is still reachable after).
-    const step = stepToward(state, p.node, target);
+    const step = hopToward(state, p.node, target, hopReach);
     if (step) {
       const steam = ofType(legal, 'STEAM').find((s) => s.to === step);
       if (steam && (!targetIsGround || targetOk)) return steam;
     }
     // Otherwise limp toward the nearest port.
     const homePort = nearestPort(state, p.node);
-    const homeStep = homePort ? stepToward(state, p.node, homePort) : null;
+    const homeStep = homePort ? hopToward(state, p.node, homePort, hopReach) : null;
     const homeSteam = homeStep ? ofType(legal, 'STEAM').find((s) => s.to === homeStep) : undefined;
     if (homeSteam) return homeSteam;
 
