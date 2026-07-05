@@ -8,7 +8,8 @@ export { score, avgBagHealth } from '../src/engine/scoring';
 export { BOTS, ROSTER } from '../src/bots';
 export { neighbors } from '../src/engine/movement';
 export { isPort, isMarketPort } from '../src/engine/ports';
-export { stageFor } from '../src/engine/soak';
+export { stageFor, isRipe } from '../src/engine/soak';
+export { fuelCap, buoyCap } from '../src/engine/upgrades';
 export type { GameState, PlayerState, Tile, Ground, Config } from '../src/types';
 export type { Action } from '../src/actions';
 

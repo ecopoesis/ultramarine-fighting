@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  defaultConfig, createInitialState, reduce, legalActions, activePlayerId, daysThisSeason,
-  score, avgBagHealth, BOTS, BOT_NAMES, SEAT_COLORS, stageFor,
+  defaultConfig, createInitialState, reduce, legalActions, activePlayerId,
+  score, avgBagHealth, BOTS, BOT_NAMES, SEAT_COLORS,
   type GameState, type Action, type Config,
 } from './engine';
 import { MapView } from './MapView';
+import { SeasonDay, ResourceMeters, SoakTracks, ScoreTracks } from './Tracks';
 import { actionLabel, actionGroup, nodeLabel } from './labels';
 import type { HaulPolicy } from '../src/engine/buoys';
 
@@ -115,11 +116,11 @@ function ActivePanel({ state, pid }: { state: GameState; pid: string }) {
     <div className="active-detail">
       <div className="stats-row">
         <span className="stat big">💰 {Math.round(p.money)}</span>
-        <span className="stat big">⛽ {p.fuel}/{state.config.fuelTankMax}</span>
         <span className="stat big">⭐ rep {p.tracks.reputation.toFixed(1)}</span>
         <span className="stat big">🌿 {p.tracks.conservation.toFixed(0)}</span>
         <span className="stat big">🔖 v-notch {p.vTokens}</span>
       </div>
+      <ResourceMeters state={state} p={p} />
       {state.config.flags.upgrades && (
         <div className="ship-row">
           🚢 Ship:{' '}
@@ -138,22 +139,8 @@ function ActivePanel({ state, pid }: { state: GameState; pid: string }) {
           )}
         </div>
         <div>
-          <h4>Your pots ({p.deployed.length})</h4>
-          {p.deployed.length === 0 ? <p className="muted small">none set</p> : (
-            <ul className="tight">
-              {p.deployed.map((b) => {
-                const rec = p.soak[b.buoyId];
-                const stage = stageFor(state, rec.ground, rec.daysSoaked);
-                const dr = state.config.drawByStage[stage];
-                return (
-                  <li key={b.buoyId}>
-                    {b.buoyId} @ {nodeLabel(state, b.node)} — <span className={`stage ${stage}`}>{stage}</span>
-                    <span className="muted small"> · {rec.daysSoaked}d soaked · draw {dr.draw}/keep {dr.keep}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <h4>Pot readiness</h4>
+          <SoakTracks state={state} p={p} />
         </div>
       </div>
     </div>
@@ -331,8 +318,7 @@ export function App() {
     <div className="app game">
       <header className="topbar">
         <span className="title">🦞 Lobsters</span>
-        <span className="badge">Season {game.season}/{game.config.seasons}</span>
-        <span className="badge">Day {game.day}/{daysThisSeason(game)}</span>
+        <SeasonDay state={game} />
         <span className="badge">Hour {game.hour}/{game.config.hoursPerDay}</span>
         {game.phase === 'RESTOCK' && <span className="badge warn">RESTOCK DRAFT</span>}
         {game.stormed.length > 0 && <span className="badge storm">⛈ {game.stormed.length} stormed</span>}
@@ -349,6 +335,7 @@ export function App() {
 
         <aside className="side">
           <PlayerList state={game} controllers={controllers} activePid={activePid} />
+          <ScoreTracks state={game} />
 
           {gameOver ? (
             <GameOver state={game} controllers={controllers} onNew={() => { setGame(null); setControllers({}); }} />
