@@ -29,8 +29,20 @@ export function MapView(props: {
   const boatsAt: Record<string, string[]> = {};
   for (const p of Object.values(state.players)) (boatsAt[p.node] ??= []).push(p.id);
 
+  // depth-axis guide: a faint band + label per tier row (top = home, bottom = deep)
+  const rows: [string, number][] = [
+    ['HOME', 44], ['INSHORE', 140], ['MID · ISLANDS', 258], ['OFFSHORE', 392], ['DEEP', 508],
+  ];
+
   return (
     <svg className="map" viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`} preserveAspectRatio="xMidYMid meet">
+      {/* depth rows (top→bottom = shallow→deep) */}
+      {rows.map(([label, y]) => (
+        <g key={label}>
+          <line x1={0} y1={y} x2={VIEWBOX.w} y2={y} className="row-guide" />
+          <text x={6} y={y - 5} className="row-label">{label}</text>
+        </g>
+      ))}
       {/* edges */}
       {state.config.map.edges.map(([a, b], i) => {
         const pa = NODE_XY[a], pb = NODE_XY[b];
