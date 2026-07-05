@@ -134,7 +134,13 @@ function ActivePanel({ state, pid }: { state: GameState; pid: string }) {
               {p.deployed.map((b) => {
                 const rec = p.soak[b.buoyId];
                 const stage = stageFor(state, rec.ground, rec.daysSoaked);
-                return <li key={b.buoyId}>{b.buoyId} @ {nodeLabel(state, b.node)} — <span className={`stage ${stage}`}>{stage}</span></li>;
+                const dr = state.config.drawByStage[stage];
+                return (
+                  <li key={b.buoyId}>
+                    {b.buoyId} @ {nodeLabel(state, b.node)} — <span className={`stage ${stage}`}>{stage}</span>
+                    <span className="muted small"> · {rec.daysSoaked}d soaked · draw {dr.draw}/keep {dr.keep}</span>
+                  </li>
+                );
               })}
             </ul>
           )}
@@ -326,7 +332,9 @@ export function App() {
 
       <div className="layout">
         <div className="map-wrap card">
-          <MapView state={game} colors={SEAT_COLORS} legalSteams={legalSteams} onNode={(n) => apply({ type: 'STEAM', playerId: activePid, to: n })} />
+          <MapView state={game} colors={SEAT_COLORS} legalSteams={legalSteams}
+            ownPid={!gameOver && activeCtrl?.kind === 'human' && !needGate ? activePid : null}
+            onNode={(n) => apply({ type: 'STEAM', playerId: activePid, to: n })} />
         </div>
 
         <aside className="side">

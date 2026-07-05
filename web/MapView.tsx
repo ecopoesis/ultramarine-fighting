@@ -1,4 +1,5 @@
 import type { GameState } from './engine';
+import { stageFor } from './engine';
 import { NODE_XY, TIER_COLOR, VIEWBOX } from './layout';
 import { nodeLabel } from './labels';
 
@@ -16,15 +17,24 @@ export function MapView(props: {
   colors: string[];
   legalSteams: Set<string>;
   onNode: (node: string) => void;
+  ownPid: string | null; // whose pots may reveal soak on hover (the active human; null when gated/bot)
 }) {
-  const { state, colors, legalSteams, onNode } = props;
+  const { state, colors, legalSteams, onNode, ownPid } = props;
   const nodes = state.config.map.nodes;
 
-  // buoys per node (public): owner color
-  const buoysAt: Record<string, string[]> = {};
+  // buoys per node (public gear): owner + buoyId (soak stays private — only ownPid's is revealed)
+  const buoysAt: Record<string, { owner: string; buoyId: string }[]> = {};
   for (const p of Object.values(state.players)) {
-    for (const b of p.deployed) (buoysAt[b.node] ??= []).push(p.id);
+    for (const b of p.deployed) (buoysAt[b.node] ??= []).push({ owner: p.id, buoyId: b.buoyId });
   }
+  const buoyTip = (owner: string, buoyId: string, node: string): string => {
+    if (owner === ownPid) {
+      const rec = state.players[owner].soak[buoyId];
+      const dr = state.config.drawByStage[stageFor(state, rec.ground, rec.daysSoaked)];
+      return `Your pot ${buoyId} @ ${nodeLabel(state, node)} — ${stageFor(state, rec.ground, rec.daysSoaked)} (soaked ${rec.daysSoaked}d · draw ${dr.draw}/keep ${dr.keep})`;
+    }
+    return `${state.players[owner].name}'s pot (ripeness hidden)`;
+  };
   // boats per node (public)
   const boatsAt: Record<string, string[]> = {};
   for (const p of Object.values(state.players)) (boatsAt[p.node] ??= []).push(p.id);
@@ -75,11 +85,17 @@ export function MapView(props: {
                 <text x={pos.x + r - 2} y={pos.y - r + 5} className="seed-count">{seeded}</text>
               </g>
             )}
-            {/* buoys (public gear) */}
-            {(buoysAt[id] ?? []).map((owner, i, arr) => {
+            {/* buoys (public gear); the active player's own pots get a white ring + soak tooltip */}
+            {(buoysAt[id] ?? []).map((b, i, arr) => {
               const q = around(pos.x, pos.y, i, arr.length, r + 3);
-              return <rect key={`b${i}`} x={q.x - 3} y={q.y - 3} width={6} height={6}
-                fill={seatColor(owner, colors)} stroke="#111" strokeWidth={0.5} />;
+              const mine = b.owner === ownPid;
+              return (
+                <rect key={`b${i}`} x={q.x - 3.5} y={q.y - 3.5} width={7} height={7} rx={1}
+                  fill={seatColor(b.owner, colors)} stroke={mine ? '#fff' : '#111'} strokeWidth={mine ? 1.5 : 0.5}
+                  style={{ cursor: 'help' }}>
+                  <title>{buoyTip(b.owner, b.buoyId, id)}</title>
+                </rect>
+              );
             })}
             {/* boats */}
             {(boatsAt[id] ?? []).map((pid, i, arr) => {
