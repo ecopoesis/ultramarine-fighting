@@ -22,13 +22,15 @@ export function score(state: GameState): ScoreBreakdown[] {
 
   for (const p of Object.values(state.players)) {
     const moneyVP = p.money / s.moneyPerVP;
-    const conservationVP =
-      p.vTokens * s.vNotchTokenValue +
-      p.tracks.conservation +
-      s.conservationBagHealthVP * health; // a stripped commons devalues everyone's stewardship
+    // a stripped commons devalues everyone's stewardship — read as a stepped
+    // depletion track (hand-computable) when buckets are configured
+    const healthVP = s.healthBuckets
+      ? (s.healthBuckets.find((b) => health >= b.atLeast)?.vp ?? 0)
+      : s.conservationBagHealthVP * health;
+    const conservationVP = p.vTokens * s.vNotchTokenValue + p.tracks.conservation + healthVP;
     const reputationVP = p.tracks.reputation * s.repToVP;
 
-    const total = combine(s.combineMode, [moneyVP, conservationVP, reputationVP]);
+    const total = combine(s.combineMode, [moneyVP, conservationVP, reputationVP], s.weakLink);
     rows.push({
       playerId: p.id, name: p.name,
       moneyVP: round(moneyVP), conservationVP: round(conservationVP),
@@ -44,12 +46,16 @@ export function score(state: GameState): ScoreBreakdown[] {
 //   sum                — no interaction; specialization always pays (extraction wins).
 //   weakLinkMultiplier — sum * (min/max); brutal on any single dominant track.
 //   geometricMean      — (∏ tracks)^(1/n); a dumped track (→0) still craters you,
-//                        but a merely-weak track is not annihilated. Balanced.
+//                        but a merely-weak track is not annihilated. Balanced. NOT
+//                        hand-computable (a cube root).
 //   weakestLink        — min(tracks); the score IS your worst track. Purest weak-link.
+//   sumWeakLink        — sum × a MULTIPLIER looked up from your lowest track (a
+//                        printed card). The pen-and-paper stand-in for geometricMean:
+//                        rewards balance, craters a dumped track, no roots.
 // Negative tracks clamp to 0 for every multiplicative mode (dumping = cratering).
-export type CombineMode = 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink';
+export type CombineMode = 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink' | 'sumWeakLink';
 
-export function combine(mode: CombineMode, tracks: number[]): number {
+export function combine(mode: CombineMode, tracks: number[], weakLink?: { atLeast: number; mult: number }[]): number {
   const sum = tracks.reduce((a, b) => a + b, 0);
   const clamped = tracks.map((v) => Math.max(0, v));
   switch (mode) {
@@ -66,6 +72,12 @@ export function combine(mode: CombineMode, tracks: number[]): number {
     }
     case 'weakestLink':
       return Math.min(...clamped);
+    case 'sumWeakLink': {
+      const min = Math.min(...tracks);
+      const table = weakLink ?? [{ atLeast: -Infinity, mult: 1 }];
+      const row = table.find((r) => min >= r.atLeast);
+      return Math.max(0, sum) * (row?.mult ?? 1);
+    }
   }
 }
 

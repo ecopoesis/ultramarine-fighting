@@ -231,12 +231,28 @@ export const defaultConfig: Config = {
     moneyPerVP: 5,
     vNotchTokenValue: 1,
     conservationBagHealthVP: 10, // shared end-game health bonus; floors conservation so specialists aren't zeroed
-    repToVP: 1,
-    // geometricMean: dumping any track (→0) still craters you, but a merely-weak
-    // track isn't annihilated the way min/max does — the only mode that yields
-    // three viable archetypes (steward/greedy/thief all win a fair share). See
-    // scripts/tuneScoring.ts. weakLinkMultiplier handed the steward ~92%.
-    combineMode: 'geometricMean',
+    repToVP: 4, // rescaled so reputation lands on the same ~0-25 scale as money/conservation — the weak-link's "lowest track" is only fair if the tracks are comparable
+    // sumWeakLink: the PEN-AND-PAPER combine (geometricMean is a cube root, unscoreable
+    // by hand). Total = (sum of the three tracks) × the multiplier for your LOWEST
+    // track, from the printed card below. Add three numbers, find the smallest, read
+    // the row. Rewards balance, craters a dumped track — like geomean, by hand.
+    combineMode: 'sumWeakLink',
+    // Clean halve/quarter multipliers — easy to apply to a two-digit sum by hand.
+    weakLink: [
+      { atLeast: 22, mult: 1 },      // balanced across all three → full score
+      { atLeast: 16, mult: 0.75 },
+      { atLeast: 10, mult: 0.5 },
+      { atLeast: 4, mult: 0.25 },
+      { atLeast: -Infinity, mult: 0 }, // a dumped track (below 4) zeroes you
+    ],
+    // Commons-health depletion track → VP (one end-game read, no ratio math).
+    healthBuckets: [
+      { atLeast: 0.8, vp: 10 },
+      { atLeast: 0.6, vp: 7 },
+      { atLeast: 0.4, vp: 4 },
+      { atLeast: 0.2, vp: 2 },
+      { atLeast: 0, vp: 0 },
+    ],
   },
 
   flags: { weather: true, seeded: true, upgrades: true, eras: false, multiShip: false, inspections: false },

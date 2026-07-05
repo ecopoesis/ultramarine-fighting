@@ -251,7 +251,15 @@ export interface Config {
     vNotchTokenValue: number;
     conservationBagHealthVP: number;
     repToVP: number;
-    combineMode: 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink';
+    combineMode: 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink' | 'sumWeakLink';
+    // For sumWeakLink (the pen-and-paper combine): total = sum(tracks) × the mult of
+    // the FIRST row whose `atLeast` your lowest track meets (rows high→low). A printed
+    // lookup card: add the three tracks, find the smallest, read the multiplier.
+    weakLink?: { atLeast: number; mult: number }[];
+    // Commons-health VP as a STEPPED read (a depletion track), not the raw ratio —
+    // hand-computable at the table. VP of the first row your end-game health meets.
+    // Falls back to conservationBagHealthVP × health if absent.
+    healthBuckets?: { atLeast: number; vp: number }[];
   };
 
   flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
