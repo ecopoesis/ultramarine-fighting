@@ -28,7 +28,7 @@ export const defaultConfig: Config = {
     nodes: {
       // --- market ports (dock: refuel/berth AND sell) ---
       ROCKLAND:   { type: 'port', label: 'Rockland', port: {
-        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.15, floor: 2, rareBonus: 0 } } },   // SW mainland: deep appetite, cheap fuel, far from the edge
+        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.6, floor: 2, rareBonus: 0 } } },   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
       VINALHAVEN: { type: 'port', label: 'Vinalhaven', port: {
         fuelCostPerUnit: 2, market: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 } } },     // island: high price, floods fast, dear fuel, the offshore springboard
       STONINGTON: { type: 'port', label: 'Stonington', port: {
@@ -169,8 +169,8 @@ export const defaultConfig: Config = {
   soakCurves: {
     inshore: ['SET', 'PRIME', 'PRIME', 'PRIME', 'FOULED'],                    // wide prime, forgiving
     mid: ['SET', 'SOAKING', 'PRIME', 'PRIME', 'OVERRIPE', 'FOULED'],
-    offshore: ['SET', 'SOAKING', 'SOAKING', 'PRIME', 'OVERRIPE', 'FOULED'],   // narrow prime
-    deep: ['SET', 'SOAKING', 'SOAKING', 'PRIME', 'FOULED'],                   // prime day 3 only, then fouls fast — a real commitment
+    offshore: ['SET', 'SOAKING', 'PRIME', 'PRIME', 'OVERRIPE', 'FOULED'],     // primes day 2 (sped up: the far grounds' travel is the cost, not an endless soak wait)
+    deep: ['SET', 'SOAKING', 'PRIME', 'PRIME', 'FOULED'],                     // primes day 2, then fouls — the far gamble without the double time-tax
   },
 
   drawByStage: {
