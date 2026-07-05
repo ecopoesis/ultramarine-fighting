@@ -62,7 +62,7 @@ export interface UpgradeDef {
   cost: number;             // money to install (also costs an action, at a market port)
   stepsPerSteam?: number;   // engine: nodes moved per STEAM action (base 1)
   stormImmune?: boolean;    // radar: no storm entry hazard
-  freeHaul?: boolean;       // crane: HAUL costs 0 actions
+  freeAction?: string;      // makes this ACTION type cost 0 (crane→HAUL, tender→SELL, pot rack→DROP, …)
   fuelBonus?: number;       // tank: + fuel-tank capacity
   buoyBonus?: number;       // cargo: + buoy capacity
 }

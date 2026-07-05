@@ -2,7 +2,7 @@ import type { GameState, Ground } from './types';
 import { neighbors, distance } from './engine/movement';
 import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
 import { isRipe } from './engine/soak';
-import { upgradesOn, upgradeDisplay, canBuyUpgrade, hasFreeHaul, fuelCap, stepsPerSteam } from './engine/upgrades';
+import { upgradesOn, upgradeDisplay, canBuyUpgrade, freesAction, fuelCap, stepsPerSteam } from './engine/upgrades';
 import type { HaulPolicy } from './engine/buoys';
 
 export type Action =
@@ -23,10 +23,10 @@ export type Action =
 
 export function actionCost(state: GameState, a: Action): number {
   const base = state.config.actionCost[a.type] ?? 0;
-  // a hauling crane makes pulling pots free (0 actions)
-  if (a.type === 'HAUL' && base > 0) {
+  // a refit can make its action free (crane→HAUL, tender→SELL, pot rack→DROP, …)
+  if (base > 0) {
     const p = state.players[a.playerId];
-    if (p && hasFreeHaul(state, p)) return 0;
+    if (p && freesAction(state, p, a.type)) return 0;
   }
   return base;
 }

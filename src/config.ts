@@ -190,12 +190,22 @@ export const defaultConfig: Config = {
   // (a face-up race per port), and slot-limited (max 3: engine + radar + one second-
   // middle). Costs/counts are starting guesses; tune the cadence to ~2-3/player/game.
   upgrades: {
+    // Ideal: every costed action has a refit that makes it free; balance them by
+    // COST (freeing a frequent action is worth more). Three slots, so you pick one
+    // per slot — the catalog is wide, the ship is narrow.
     catalog: [
-      { id: 'engine', label: 'Bigger engine', slot: 'stern', cost: 18, stepsPerSteam: 2 },       // move 2 nodes per steam — halves travel to the far grounds
-      { id: 'radar', label: 'Radar', slot: 'midPrimary', cost: 14, stormImmune: true },           // no storm entry hazard
-      { id: 'crane', label: 'Hauling crane', slot: 'midSecondary', cost: 16, freeHaul: true },     // HAUL costs 0 actions
-      { id: 'tank', label: 'Bigger tanks', slot: 'midSecondary', cost: 10, fuelBonus: 6 },         // + fuel capacity
-      { id: 'cargo', label: 'Cargo hold', slot: 'midSecondary', cost: 14, buoyBonus: 1 },          // + one buoy
+      // stern — propulsion & fuel
+      { id: 'engine', label: 'Bigger engine', slot: 'stern', cost: 18, stepsPerSteam: 2 },        // STEAM moves 2 nodes/action
+      { id: 'fuelline', label: 'Fuel line', slot: 'stern', cost: 10, freeAction: 'REFUEL' },       // REFUEL free (still pays for the fuel)
+      // midPrimary — bridge / trade
+      { id: 'radar', label: 'Radar', slot: 'midPrimary', cost: 14, stormImmune: true },            // no storm entry hazard
+      { id: 'tender', label: 'Tender', slot: 'midPrimary', cost: 16, freeAction: 'SELL' },          // free docking: SELL costs 0
+      { id: 'grapple', label: 'Grappling gear', slot: 'midPrimary', cost: 8, freeAction: 'STEAL' }, // STEAL free (niche → cheap)
+      // midSecondary — deck gear
+      { id: 'crane', label: 'Hauling crane', slot: 'midSecondary', cost: 16, freeAction: 'HAUL' },  // HAUL free
+      { id: 'potrack', label: 'Pot rack', slot: 'midSecondary', cost: 14, freeAction: 'DROP' },     // DROP free
+      { id: 'cargo', label: 'Cargo hold', slot: 'midSecondary', cost: 14, buoyBonus: 1 },           // + one buoy
+      { id: 'tank', label: 'Bigger tanks', slot: 'midSecondary', cost: 10, fuelBonus: 6 },          // + fuel capacity
     ],
     perPortStock: 6, // each of the 3 market ports stocks this many refit tokens (drawn from the catalog)
     display: 3,      // face-up at once

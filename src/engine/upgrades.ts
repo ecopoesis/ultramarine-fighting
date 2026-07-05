@@ -40,8 +40,9 @@ export function stepsPerSteam(d: GameState, p: PlayerState): number {
 export function isStormImmune(d: GameState, p: PlayerState): boolean {
   return installed(d, p).some((u) => u.stormImmune);
 }
-export function hasFreeHaul(d: GameState, p: PlayerState): boolean {
-  return installed(d, p).some((u) => u.freeHaul);
+// Does any installed refit make this action type free (0 actions)?
+export function freesAction(d: GameState, p: PlayerState, type: string): boolean {
+  return installed(d, p).some((u) => u.freeAction === type);
 }
 export function fuelCap(d: GameState, p: PlayerState): number {
   return d.config.fuelTankMax + installed(d, p).reduce((s, u) => s + (u.fuelBonus ?? 0), 0);
