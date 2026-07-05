@@ -267,7 +267,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
       // while keeping a money reserve. Only early enough to recoup the investment.
       if (upgradesOn(state) && !last && state.season <= cfg.seasons - 1) {
         const buys = ofType(legal, 'BUY_UPGRADE');
-        const wish = cc.upgradeWishlist ?? ['engine', 'crane', 'potrack', 'tender', 'cargo', 'radar', 'fuelline', 'tank', 'grapple'];
+        const wish = cc.upgradeWishlist ?? ['engine', 'crane', 'potrack', 'tender', 'cargo', 'radar', 'fuelline', 'tank', 'grapple', 'flares'];
         for (const id of wish) {
           const b = buys.find((x) => x.upgradeId === id);
           if (b && p.money - (upgradeDef(state, id)?.cost ?? Infinity) >= UPGRADE_RESERVE) return b;

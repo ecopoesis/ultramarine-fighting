@@ -201,6 +201,7 @@ export const defaultConfig: Config = {
       { id: 'radar', label: 'Radar', slot: 'midPrimary', cost: 14, stormImmune: true },            // no storm entry hazard
       { id: 'tender', label: 'Tender', slot: 'midPrimary', cost: 16, freeAction: 'SELL' },          // free docking: SELL costs 0
       { id: 'grapple', label: 'Grappling gear', slot: 'midPrimary', cost: 8, freeAction: 'STEAL' }, // STEAL free (niche → cheap)
+      { id: 'flares', label: 'Signal flares', slot: 'midPrimary', cost: 5, freeAction: 'REPORT' },  // REPORT free — near-junk (report is rare); intentional chaff that clogs the display
       // midSecondary — deck gear
       { id: 'crane', label: 'Hauling crane', slot: 'midSecondary', cost: 16, freeAction: 'HAUL' },  // HAUL free
       { id: 'potrack', label: 'Pot rack', slot: 'midSecondary', cost: 14, freeAction: 'DROP' },     // DROP free
