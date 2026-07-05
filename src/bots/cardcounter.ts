@@ -35,6 +35,7 @@ export interface CardCounter {
   farBias?: number;         // multiply offshore/deep EV by this when picking a ground (>1 = works the edge sooner)
   stormBias?: number;       // multiply a STORMED zone's (already risk/reward-adjusted) score by this — >1 chases the gamble, <1 gives storms a wide berth (default 1 = price it honestly)
   seedBias?: number;        // weight on a space's accumulated SEEDED pile when scoring it — >1 chases neglected jackpots (a would-be "sniper"), <1 ignores them (default 1 = price it in)
+  guzzle?: boolean;         // the GAS-GUZZLER: fish one-way-reachable zones, never reserve return fuel, never refuel — deliberately run dry and lean on the tow. The tow must be priced to KILL this (else "run dry, take the cheap tow" beats honest fuel management).
   // Restock draft:
   restockReturn?: 'heavy' | 'light'; // which pile tiles to put back — heaviest keepers (rebuild) or lightest (stock it thin)
   vnotchContribute?: number;         // how many v-notch tokens to SPEND per bag to add more lobsters (0 = hoard for VP)
@@ -70,10 +71,11 @@ export const CC_GAMBLER: CardCounter = { ...ARCH_BASE, name: 'gambler', farBias:
 export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 4, vnotchContribute: 0, stormBias: 1.3 }; // dirty money anywhere, rides the storm
 export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 2, vnotchContribute: 3, stormBias: 0.6 };  // patient: only prime hauls (keep 2) — max conservation, avoids the blow
 export const CC_NOMAD: CardCounter = { ...ARCH_BASE, name: 'nomad', reachCostPerStep: 0.25, stormBias: 1.2 };     // ranges the whole map for the best EV anywhere — including the churn (else it wanders into storms untaxed-for-nothing)
+export const CC_GUZZLER: CardCounter = { ...ARCH_BASE, name: 'guzzler', guzzle: true, minKeep: 1, farBias: 1.3, refuelBelow: 0 }; // fishes hard & far, never reserves return fuel, never refuels — runs dry and takes the tow. A CANARY for the tow price: if it's viable, the tow is too cheap.
 
 // The full roster (index builds BOTS from this; the arena seats N of them).
 export const ROSTER: CardCounter[] = [
-  CC_STEWARD, CC_GREEDY, CC_HIGHLINER, CC_GRINDER, CC_GAMBLER, CC_HUSTLER, CC_MONK, CC_NOMAD,
+  CC_STEWARD, CC_GREEDY, CC_HIGHLINER, CC_GRINDER, CC_GAMBLER, CC_HUSTLER, CC_MONK, CC_NOMAD, CC_GUZZLER,
 ];
 
 // Best market base around — a stable reference for valuing a landed pound (the
@@ -144,12 +146,22 @@ function chooseTarget(
   const sellPort = nearestMarketPort(state, p.node) ?? nearestPort(state, p.node)!;
   const anyPort = nearestPort(state, p.node)!;
   const home = () => (p.hold.length > 0 ? sellPort : anyPort);
+  // Guzzlers fish anything one-way REACHABLE (no return reserve); everyone else
+  // sticks to round-trip-SAFE zones so they can make harbor.
+  const okReach = (node: string) => (cc.guzzle ? reach[node]?.reachable : reach[node]?.safe);
 
-  // Holding catch and the day is winding down — cash it in.
-  if (p.hold.length > 0 && (last || hoursLeftToday(state) <= 1)) return sellPort;
+  // Make harbor in time: if we can't reach a port before the day ends, head in NOW
+  // rather than get caught at sea and towed. The gas-guzzler skips this on purpose.
+  if (!cc.guzzle && !isPort(state, p.node) && distanceToNearestPort(state, p.node) >= hoursLeftToday(state)) {
+    return home();
+  }
 
-  // Harvest ripe, safely-reachable gear (nearest first).
-  const ripe = buoys.filter((b) => (last || b.keep >= cc.minKeep) && reach[b.node]?.safe);
+  // Holding catch and the day is winding down — cash it in. The gas-guzzler skips
+  // this too: it never heads in on its own, fishing until it strands and gets towed.
+  if (!cc.guzzle && p.hold.length > 0 && (last || hoursLeftToday(state) <= 1)) return sellPort;
+
+  // Harvest ripe, reachable gear (nearest first).
+  const ripe = buoys.filter((b) => (last || b.keep >= cc.minKeep) && okReach(b.node));
   if (ripe.length) return nearest(state, p.node, ripe.map((b) => b.node)) ?? anyPort;
 
   // Deploy an idle pot on the best-scoring ground we can fish: over every empty,
@@ -163,7 +175,7 @@ function chooseTarget(
     for (const g of Object.keys(state.bags) as Ground[]) {
       if (daysToPrime(state, g) > daysLeft - cc.dropSlack) continue; // must prime with time to spare to HAUL it, not abandon it
       for (const zone of groundNodesOfType(state, g)) {
-        if (!reach[zone]?.safe || buoys.some((b) => b.node === zone)) continue;
+        if (!okReach(zone) || buoys.some((b) => b.node === zone)) continue;
         const s = scoreZone(state, p.node, zone, g, cc);
         if (s > bestScore) { bestScore = s; best = zone; }
       }
@@ -235,6 +247,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
 
     const target = chooseTarget(state, pid, cc, buoys, reach, last);
     const targetIsGround = cfg.map.nodes[target]?.type === 'ground';
+    const targetOk = cc.guzzle ? reach[target]?.reachable : reach[target]?.safe; // guzzlers steam to one-way-reachable grounds
 
     // 2) AT A PORT: report, sell, refuel, then fish again or berth.
     if (atPort) {
@@ -243,9 +256,9 @@ export function makeCardCounter(cc: CardCounter): Policy {
       const sell = firstOfType(legal, 'SELL');
       if (sell && p.hold.length > 0) return sell;
       const refuel = firstOfType(legal, 'REFUEL');
-      if (refuel && !last && p.fuel <= cc.refuelBelow) return refuel;
+      if (refuel && !last && !cc.guzzle && p.fuel <= cc.refuelBelow) return refuel;
 
-      if (!last && targetIsGround && reach[target]?.safe) {
+      if (!last && targetIsGround && targetOk) {
         const step = stepToward(state, p.node, target);
         const steam = step ? ofType(legal, 'STEAM').find((s) => s.to === step) : undefined;
         if (steam) return steam;
@@ -268,7 +281,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
     const step = stepToward(state, p.node, target);
     if (step) {
       const steam = ofType(legal, 'STEAM').find((s) => s.to === step);
-      if (steam && (!targetIsGround || reach[target]?.safe)) return steam;
+      if (steam && (!targetIsGround || targetOk)) return steam;
     }
     // Otherwise limp toward the nearest port.
     const homePort = nearestPort(state, p.node);

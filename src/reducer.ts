@@ -7,7 +7,7 @@ import { sell, reportTheft } from './engine/market';
 import { berth, bribe } from './engine/turnorder';
 import { advanceSoak } from './engine/soak';
 import { enterRestock, applyRestockAction, finishSeasonRollover } from './engine/restock';
-import { fuelPriceAt } from './engine/ports';
+import { fuelPriceAt, isPort, nearestPort } from './engine/ports';
 import { stormWhittle } from './engine/weather';
 import { daysThisSeason } from './selectors';
 
@@ -73,9 +73,10 @@ function advanceTurn(d: GameState): void {
       d.hour++;
       if (d.hour > d.config.hoursPerDay) { dayRollover(d); return; }
     }
-    const id = d.turnOrder[d.activePlayerIndex];
-    if (!d.players[id].berthed) {
-      d.players[id].actionsLeft = d.config.actionsPerTurn;
+    const pl = d.players[d.turnOrder[d.activePlayerIndex]];
+    if (!pl.berthed) {
+      if ((pl.towCooldown ?? 0) > 0) { pl.towCooldown!--; continue; } // still recovering from the tow — lose this turn
+      pl.actionsLeft = d.config.actionsPerTurn;
       return;
     }
   }
@@ -83,10 +84,22 @@ function advanceTurn(d: GameState): void {
 }
 
 function dayRollover(d: GameState): void {
-  // auto-berth anyone still out, into the remaining (worst) slots
+  // auto-berth anyone still out, into the remaining (worst) slots. A boat caught
+  // AT SEA (not at a port) is towed in to the nearest port — never stranded for the
+  // season — but pays for it (money + rep) and gets a little emergency fuel. This
+  // also prices "camping at sea" overnight instead of returning to harbor.
   for (const id of d.turnOrder) {
     const p = d.players[id];
     if (!p.berthed) {
+      if (!isPort(d, p.node)) {
+        const port = nearestPort(d, p.node);
+        if (port) { p.node = port; p.berthNode = port; }
+        const fee = Math.min(p.money, d.config.tow.fee);
+        p.money -= fee;
+        p.fuel = Math.max(p.fuel, d.config.tow.emergencyFuel);
+        p.towCooldown = d.config.tow.lostTurns; // lose the next morning to the rescue
+        d.log.push(`${p.name} is towed in to ${p.node} — caught at sea (-${fee.toFixed(0)} money, loses ${d.config.tow.lostTurns} turn(s))`);
+      }
       d.pendingNextOrder.push(id);
       p.berthed = true;
       d.nextSlot++;
@@ -127,7 +140,19 @@ function dayRollover(d: GameState): void {
   if (d.day > daysThisSeason(d)) { seasonRollover(d); return; }
   d.hour = 1;
   d.activePlayerIndex = 0;
-  d.players[d.turnOrder[0]].actionsLeft = d.config.actionsPerTurn;
+  // grant the first turn, skipping any boat still recovering from a tow (it loses
+  // the morning). With small lostTurns vs hoursPerDay, someone is always eligible.
+  for (let guard = 0; guard < 10000; guard++) {
+    const pl = d.players[d.turnOrder[d.activePlayerIndex]];
+    if ((pl.towCooldown ?? 0) > 0) {
+      pl.towCooldown!--;
+      d.activePlayerIndex++;
+      if (d.activePlayerIndex >= d.turnOrder.length) { d.activePlayerIndex = 0; d.hour++; if (d.hour > d.config.hoursPerDay) break; }
+      continue;
+    }
+    pl.actionsLeft = d.config.actionsPerTurn;
+    break;
+  }
   d.log.push(`--- Season ${d.season} Day ${d.day} begins. Order: ${d.turnOrder.join(', ')} ---`);
 }
 

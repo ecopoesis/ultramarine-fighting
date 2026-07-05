@@ -7,7 +7,7 @@ export type { Policy } from './helpers';
 export { makePolicy, STEWARD, GREEDY, THIEF, HIGHLINER } from './archetypes';
 export {
   makeCardCounter, CARD_COUNTER, ROSTER,
-  CC_STEWARD, CC_GREEDY, CC_HIGHLINER, CC_GRINDER, CC_GAMBLER, CC_HUSTLER, CC_MONK, CC_NOMAD,
+  CC_STEWARD, CC_GREEDY, CC_HIGHLINER, CC_GRINDER, CC_GAMBLER, CC_HUSTLER, CC_MONK, CC_NOMAD, CC_GUZZLER,
 } from './cardcounter';
 export type { Archetype } from './archetypes';
 export type { CardCounter } from './cardcounter';

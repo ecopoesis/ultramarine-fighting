@@ -42,6 +42,7 @@ export interface PlayerState {
   berthed: boolean;
   berthNode?: string;   // the port a captain berthed in — where they start tomorrow (daily home-port choice)
   vTokens: number;
+  towCooldown?: number; // turns still to skip after an end-of-day tow (the rescue costs you the next morning)
   tracks: { conservation: number; reputation: number };
 }
 
@@ -193,6 +194,14 @@ export interface Config {
   poleRepCost: number;
   bribeMoneyCost: number;
   lastSlotSweetenerFuel: number;
+  // End-of-day rescue: a boat that ends the day NOT at a port is towed to the
+  // nearest one — you never get stranded at sea for the season, but it costs you.
+  // The decisive cost is TIME: `lostTurns` turns are burned the next morning (you
+  // spend it getting sorted after the rescue), which is what negates the whole point
+  // of "never returning" — the reason a money-only fee can't kill the gas-guzzler
+  // (it wins on fishing VOLUME → conservation, not money). Plus a money `fee` and
+  // only a splash of `emergencyFuel` (no free tank).
+  tow: { fee: number; emergencyFuel: number; lostTurns: number };
   rep: { steal: number; illegalKeep: number; report: number; vNotch: number; bribe: number; reported: number };
 
   holdDecayLbPerDay: number;

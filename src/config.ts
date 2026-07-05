@@ -187,6 +187,7 @@ export const defaultConfig: Config = {
   poleRepCost: 1,
   bribeMoneyCost: 4,
   lastSlotSweetenerFuel: 2,
+  tow: { fee: 5, emergencyFuel: 2, lostTurns: 4 }, // end-of-day rescue for a boat caught at sea: towed to nearest port, a money fee, a splash of emergency fuel, and — the real teeth — 4 lost turns next morning. The lost time negates the guzzler's edge (never-returning = more fishing = more conservation), which a money fee alone can't reach. Honest bots make harbor in time (cardcounter time-bail), so this falls almost only on the guzzler.
   // theft/dirty play burns rep, but priced to be survivable if rationed:
   //   steal      -1  (was -2)  — cost of stealing a rival buoy
   //   illegalKeep -0.5 (was -1) — cost per illegal tile kept (high-grading)
