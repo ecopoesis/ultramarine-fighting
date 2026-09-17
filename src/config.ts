@@ -28,7 +28,7 @@ export const defaultConfig: Config = {
     nodes: {
       // --- market ports (dock: refuel/berth AND sell) ---
       ROCKLAND:   { type: 'port', label: 'Rockland', port: {
-        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.6, floor: 2, rareBonus: 0 } } },   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
+        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.6, floor: 2, rareBonus: 0, coopRep: 0.5 } } }, // THE CO-OP: pays least per lb, but every landing here earns standing   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
       VINALHAVEN: { type: 'port', label: 'Vinalhaven', port: {
         fuelCostPerUnit: 2, market: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 } } },     // island: high price, floods fast, dear fuel, the offshore springboard
       STONINGTON: { type: 'port', label: 'Stonington', port: {
@@ -215,12 +215,13 @@ export const defaultConfig: Config = {
   poleRepCost: 1,
   bribeMoneyCost: 4,
   lastSlotSweetenerFuel: 2,
-  tow: { fee: 5, emergencyFuel: 2, lostTurns: 4 }, // end-of-day rescue for a boat caught at sea: towed to nearest port, a money fee, a splash of emergency fuel, and — the real teeth — 4 lost turns next morning. The lost time negates the guzzler's edge (never-returning = more fishing = more conservation), which a money fee alone can't reach. Honest bots make harbor in time (cardcounter time-bail), so this falls almost only on the guzzler.
+  lastSlotRep: 0.5, // the tail of the berth order earns standing ("after you") — makes the order a gradient, not a pole-trap
+  tow: { fee: 5, emergencyFuel: 2, lostTurns: 4, rep: -0.5 }, // end-of-day rescue for a boat caught at sea: towed to nearest port, a money fee, a splash of emergency fuel, and — the real teeth — 4 lost turns next morning. The lost time negates the guzzler's edge (never-returning = more fishing = more conservation), which a money fee alone can't reach. Honest bots make harbor in time (cardcounter time-bail), so this falls almost only on the guzzler.
   // theft/dirty play burns rep, but priced to be survivable if rationed:
   //   steal      -1  (was -2)  — cost of stealing a rival buoy
   //   illegalKeep -0.5 (was -1) — cost per illegal tile kept (high-grading)
   //   reported   -0.5 (own dial; was a 2nd full steal penalty) — extra heat when a theft is reported
-  rep: { steal: -1, illegalKeep: -0.5, report: 1, vNotch: 1, bribe: -1, reported: -0.5 },
+  rep: { steal: -1, illegalKeep: -0.5, report: 1, vNotch: 2, bribe: -1, reported: -0.5 }, // vNotch is the CONSERVATION track gain per egger notched (scaled to money with vNotchTokenValue)
 
   holdDecayLbPerDay: 1,
   reportBountyShare: 0.5,
@@ -229,28 +230,33 @@ export const defaultConfig: Config = {
 
   scoring: {
     moneyPerVP: 5,
-    vNotchTokenValue: 1,
+    vNotchTokenValue: 2,  // scaled to MONEY: an egger notched is worth 4 VP total (token + track), so a conservation run lands in the same band as a money run
     conservationBagHealthVP: 10, // shared end-game health bonus; floors conservation so specialists aren't zeroed
-    repToVP: 4, // rescaled so reputation lands on the same ~0-25 scale as money/conservation — the weak-link's "lowest track" is only fair if the tracks are comparable
+    repToVP: 4, // reputation is scored on the same ~0-45 scale as money once the co-op gives it a real income
     // sumWeakLink: the PEN-AND-PAPER combine (geometricMean is a cube root, unscoreable
     // by hand). Total = (sum of the three tracks) × the multiplier for your LOWEST
     // track, from the printed card below. Add three numbers, find the smallest, read
     // the row. Rewards balance, craters a dumped track — like geomean, by hand.
     combineMode: 'sumWeakLink',
     // Clean halve/quarter multipliers — easy to apply to a two-digit sum by hand.
+    // Rescaled to the money band (~20-45 VP) and SOFTENED at the top: the old card
+    // stepped 1 → 0.75 at a single threshold, so half a reputation point could cost a
+    // quarter of the score. Near the top the steps are now gentle; the cliff only
+    // appears where a track really has been dumped.
     weakLink: [
-      { atLeast: 22, mult: 1 },      // balanced across all three → full score
-      { atLeast: 16, mult: 0.75 },
-      { atLeast: 10, mult: 0.5 },
-      { atLeast: 4, mult: 0.25 },
-      { atLeast: -Infinity, mult: 0 }, // a dumped track (below 4) zeroes you
+      { atLeast: 30, mult: 1 },
+      { atLeast: 24, mult: 0.9 },
+      { atLeast: 18, mult: 0.75 },
+      { atLeast: 12, mult: 0.5 },
+      { atLeast: 6, mult: 0.25 },
+      { atLeast: -Infinity, mult: 0 }, // a dumped track zeroes you
     ],
     // Commons-health depletion track → VP (one end-game read, no ratio math).
     healthBuckets: [
-      { atLeast: 0.8, vp: 10 },
-      { atLeast: 0.6, vp: 7 },
-      { atLeast: 0.4, vp: 4 },
-      { atLeast: 0.2, vp: 2 },
+      { atLeast: 0.8, vp: 12 },
+      { atLeast: 0.6, vp: 9 },
+      { atLeast: 0.4, vp: 6 },
+      { atLeast: 0.2, vp: 3 },
       { atLeast: 0, vp: 0 },
     ],
   },

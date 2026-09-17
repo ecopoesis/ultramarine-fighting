@@ -11,6 +11,7 @@ export function berth(d: GameState, playerId: string): void {
   const slot = d.nextSlot++;
   d.pendingNextOrder.push(playerId);
   p.berthed = true;
+  p.madeHarbour = true; // came in under their own power
   p.berthNode = p.node;
   if (slot === 0) p.tracks.reputation -= d.config.poleRepCost; // front slot: the pole costs rep
   d.log.push(`${p.name} berths at ${p.node} into slot ${slot}${slot === 0 ? ' (pole, -rep)' : ''}`);
@@ -27,6 +28,6 @@ export function bribe(d: GameState, playerId: string): void {
   const existing = d.pendingNextOrder.indexOf(playerId);
   if (existing >= 0) d.pendingNextOrder.splice(existing, 1);
   d.pendingNextOrder.unshift(playerId);
-  if (!p.berthed) { p.berthed = true; p.berthNode = p.node; d.nextSlot++; }
+  if (!p.berthed) { p.berthed = true; p.madeHarbour = true; p.berthNode = p.node; d.nextSlot++; }
   d.log.push(`${p.name} bribes the harbormaster to take the front slot at ${p.node}`);
 }

@@ -1,7 +1,7 @@
 import type { GameState, Ground, Tile, Stage } from '../types';
 import { takeRandom } from '../rng';
 import { stageFor, isRipe } from './soak';
-import { isKeeper, isIllegal, isEgger } from '../tiles';
+import { isKeeper, isIllegal, isEgger, isVnotched, tileTemplate } from '../tiles';
 import { marketPorts, portOf } from './ports';
 import { weatherOn } from './weather';
 import { pullSeeded } from './seeded';
@@ -66,12 +66,22 @@ function resolveDraw(
       } else {
         d.bags[ground].push(t); // over the keep limit, back it goes
       }
+    } else if (isVnotched(t)) {
+      // Already notched: she is released, always, whatever your policy. No score —
+      // you only ever get paid for notching a lobster once.
+      d.bags[ground].push(t);
+      d.log.push(`${p.name} draws an already-notched breeder at ${ground} — released`);
     } else if (isEgger(t)) {
       if (policy === 'greedy') {
         p.hold.push(t); // illegal keep of a berried female (indiscriminate greed)
         p.tracks.reputation += d.config.rep.illegalKeep;
       } else {
-        d.bags[ground].push(t); // clean & highgrade v-notch: back to the bag (refills the commons)
+        // V-NOTCH: you TAKE the egger (she leaves the world as your scoring proof)
+        // and put a v-notch MEEPLE in her place in the bag. Bag size is unchanged —
+        // the closed census still balances — but that lobster can never score again.
+        // Eggers are therefore FINITE: stewardship is front-loaded, and the meeples
+        // you leave behind dilute every later haul.
+        d.bags[ground].push({ id: `vn-${t.id}`, ground, ...tileTemplate('VNOTCH') });
         p.vTokens += 1;
         p.tracks.conservation += d.config.rep.vNotch;
       }

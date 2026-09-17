@@ -1,6 +1,10 @@
 // All shared types live here to avoid circular imports.
 
-export type TileKind = 'KEEPER' | 'SHORT' | 'JUMBO' | 'EGGER';
+// VNOTCHED: a berried female who has been v-notched and released. Physically she is
+// a v-notch lobster MEEPLE that takes the egger's place in the bag — the egger tile
+// leaves the world, the meeple stays in the sea. She can never be scored again and
+// she dilutes every future draw: the standing cost of having protected her.
+export type TileKind = 'KEEPER' | 'SHORT' | 'JUMBO' | 'EGGER' | 'VNOTCHED';
 export type Color = 'common' | 'rare';
 export type Ground = 'inshore' | 'mid' | 'offshore' | 'deep';
 export type Stage = 'SET' | 'SOAKING' | 'PRIME' | 'OVERRIPE' | 'FOULED';
@@ -40,6 +44,7 @@ export interface PlayerState {
   hold: Tile[];
   soldToday: boolean;
   berthed: boolean;
+  madeHarbour?: boolean;  // ended the day at a dock under their own power (not towed in). Only these captains earn the last-slot courtesy — otherwise "never go home" farms the standing the tow is meant to cost.
   berthNode?: string;   // the port a captain berthed in — where they start tomorrow (daily home-port choice)
   vTokens: number;
   towCooldown?: number; // turns still to skip after an end-of-day tow (the rescue costs you the next morning)
@@ -138,6 +143,12 @@ export interface BuyerConfig {
   elasticity: number;
   floor: number;
   rareBonus: number;
+  // THE CO-OP: the working harbour's own buyer pays less per pound but landing your
+  // catch with your own community earns STANDING. This is reputation's repeatable,
+  // player-chosen income — without it reputation only ever decays from its start
+  // value and is structurally always your weakest track. It also gives the home port
+  // a reason to exist once the island buyers out-price it.
+  coopRep?: number;
 }
 
 // A dock. Every port lets you refuel/berth; only ports with a `market` buy lobster.
@@ -228,6 +239,12 @@ export interface Config {
   poleRepCost: number;
   bribeMoneyCost: number;
   lastSlotSweetenerFuel: number;
+  // "After you." The tail of the berth order gains STANDING as well as fuel. With the
+  // pole costing rep and the last slot paying it, the berth order is a GRADIENT rather
+  // than a single square every informed captain learns to dodge — and reputation gets
+  // a second income, priced in tempo: fish latest, berth last, gain standing, lose
+  // tomorrow's initiative.
+  lastSlotRep: number;
   // End-of-day rescue: a boat that ends the day NOT at a port is towed to the
   // nearest one — you never get stranded at sea for the season, but it costs you.
   // The decisive cost is TIME: `lostTurns` turns are burned the next morning (you
@@ -235,7 +252,11 @@ export interface Config {
   // of "never returning" — the reason a money-only fee can't kill the gas-guzzler
   // (it wins on fishing VOLUME → conservation, not money). Plus a money `fee` and
   // only a splash of `emergencyFuel` (no free tank).
-  tow: { fee: number; emergencyFuel: number; lostTurns: number };
+  // `rep`: needing the lifeboat is embarrassing in a small harbour. This was removed
+  // when reputation was a one-way budget and any rep cost was ruinous; now that the
+  // co-op gives reputation a real income, a standing cost is affordable again — and
+  // it is what stops a clean captain from farming standing while never coming home.
+  tow: { fee: number; emergencyFuel: number; lostTurns: number; rep: number };
   rep: { steal: number; illegalKeep: number; report: number; vNotch: number; bribe: number; reported: number };
 
   holdDecayLbPerDay: number;

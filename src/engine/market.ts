@@ -30,6 +30,12 @@ export function sell(d: GameState, playerId: string): void {
   d.markets[p.node].lbsSoldToday += lbs; // flood: depresses THIS port for the rest of the day
   p.money += revenue;
   p.soldToday = true;
+  // Landing at the co-op: less money per pound, but standing in the harbour.
+  const coop = portOf(d, p.node)?.market?.coopRep ?? 0;
+  if (coop > 0) {
+    p.tracks.reputation += coop;
+    d.log.push(`${p.name} lands at the co-op (+${coop} reputation, now ${p.tracks.reputation})`);
+  }
   d.log.push(`${p.name} sells ${p.hold.length} tiles (${lbs}lb) at ${p.node} for ${revenue.toFixed(1)}`);
   // Sold BAG lobsters aren't destroyed — they land on their home bag's extraction
   // pile, where the inter-season restock draft can return some to the commons.

@@ -112,6 +112,7 @@ export function finishSeasonRollover(d: GameState): void {
     p.node = d.config.map.startPort;
     p.berthNode = undefined;
     p.berthed = false;
+    p.madeHarbour = false;
     p.soldToday = false;
     p.actionsLeft = 0;
   }

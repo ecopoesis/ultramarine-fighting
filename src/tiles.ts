@@ -14,6 +14,7 @@ export function tileTemplate(name: string): Omit<Tile, 'id' | 'ground'> {
     case 'SHORT': return { kind: 'SHORT', weightLb: 0, color: 'common' };   // undersized: illegal
     case 'JUMBO': return { kind: 'JUMBO', weightLb: 5, color: 'common' };   // oversized: illegal but heavy
     case 'EGGER': return { kind: 'EGGER', weightLb: 0, color: 'common' };   // berried female: v-notch
+    case 'VNOTCH': return { kind: 'VNOTCHED', weightLb: 0, color: 'common' }; // already notched & released: a dead draw
     default: throw new Error(`Unknown tile template: ${name}`);
   }
 }
@@ -36,3 +37,4 @@ export function buildBag(spec: Record<string, number>, ground: Ground): Tile[] {
 export const isKeeper = (t: Tile) => t.kind === 'KEEPER';
 export const isIllegal = (t: Tile) => t.kind === 'SHORT' || t.kind === 'JUMBO';
 export const isEgger = (t: Tile) => t.kind === 'EGGER';
+export const isVnotched = (t: Tile) => t.kind === 'VNOTCHED';

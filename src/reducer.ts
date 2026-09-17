@@ -93,6 +93,7 @@ function dayRollover(d: GameState): void {
   for (const id of d.turnOrder) {
     const p = d.players[id];
     if (!p.berthed) {
+      if (isPort(d, p.node)) p.madeHarbour = true; // got home on their own, just didn't formally berth
       if (!isPort(d, p.node)) {
         const port = nearestPort(d, p.node);
         if (port) { p.node = port; p.berthNode = port; }
@@ -100,18 +101,28 @@ function dayRollover(d: GameState): void {
         p.money -= fee;
         p.fuel = Math.max(p.fuel, d.config.tow.emergencyFuel);
         p.towCooldown = d.config.tow.lostTurns; // lose the next morning to the rescue
-        d.log.push(`${p.name} is towed in to ${p.node} — caught at sea (-${fee.toFixed(0)} money, loses ${d.config.tow.lostTurns} turn(s))`);
+        p.tracks.reputation += d.config.tow.rep; // the harbour talks
+        d.log.push(`${p.name} is towed in to ${p.node} — caught at sea (-${fee.toFixed(0)} money, ${d.config.tow.rep} reputation, loses ${d.config.tow.lostTurns} turn(s))`);
       }
       d.pendingNextOrder.push(id);
       p.berthed = true;
       d.nextSlot++;
     }
   }
-  // last-slot sweetener
+  // last-slot sweetener: fuel AND standing. Whoever ends up at the back of tomorrow's
+  // order let everyone else in ahead of them; the harbour notices.
   const lastId = d.pendingNextOrder[d.pendingNextOrder.length - 1];
-  if (lastId) {
+  if (lastId && d.pendingNextOrder.length > 1) {
     const lp = d.players[lastId];
     lp.fuel = Math.min(d.config.fuelTankMax, lp.fuel + d.config.lastSlotSweetenerFuel);
+    // The courtesy is only earned by a captain who CHOSE to come in and take the back
+    // of the line. A boat that simply never returned — and was auto-berthed or towed
+    // in — gets the fuel but no standing: otherwise "never go home" farms the very
+    // track the tow is meant to cost it.
+    if (d.config.lastSlotRep && lp.madeHarbour) {
+      lp.tracks.reputation += d.config.lastSlotRep;
+      d.log.push(`${lp.name} takes the last berth ("after you") (+${d.config.lastSlotRep} reputation, now ${lp.tracks.reputation})`);
+    }
   }
 
   // tomorrow's order
@@ -134,6 +145,7 @@ function dayRollover(d: GameState): void {
         : t));
     p.soldToday = false;
     p.berthed = false;
+    p.madeHarbour = false;
     p.actionsLeft = 0;
   }
   for (const m of Object.keys(d.markets)) d.markets[m].lbsSoldToday = 0; // prices recover overnight
