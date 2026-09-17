@@ -10,7 +10,7 @@ import type { Config } from '../src/types';
 //
 //   npx tsx scripts/llmTournament.ts run    [--run-id ID] [--rounds 5] [--final 5] [--effort medium]
 //                                           [--models fable=claude-fable-5-1,opus=claude-opus-5]
-//                                           [--archetypes a,b,c] [--mean 4] [--sd 1] [--seed 7] [--concurrency 8]
+//                                           [--archetypes a,b,c] [--mean 4] [--sd 1] [--seed 7] [--concurrency 8] [--no-final]
 //   npx tsx scripts/llmTournament.ts smoke  [--model claude-haiku-4-5-20251001] [--players 2] [--seasons 2]   (tiny game: plumbing check; 3+ seasons exercises the restock draft)
 //   npx tsx scripts/llmTournament.ts status --run-id ID
 //   npx tsx scripts/llmTournament.ts report --run-id ID        (writes runs/ID/report.md)
@@ -64,7 +64,8 @@ async function main() {
     const archetypes = (flag('archetypes') ?? LLM_ARCHETYPES.map((a) => a.id).join(',')).split(',').map((s) => s.trim()).filter(Boolean);
     const t = new Tournament({
       runId, rootDir: ROOT, rounds: Number(flag('rounds', '5')), finalSize: Number(flag('final', '5')), effort, models, archetypes,
-      meanPlayers: Number(flag('mean', '4')), sdPlayers: Number(flag('sd', '1')), seed: Number(flag('seed', '7')), config: defaultConfig, log: logger,
+      meanPlayers: Number(flag('mean', '4')), sdPlayers: Number(flag('sd', '1')), seed: Number(flag('seed', '7')),
+      skipFinal: args.includes('--no-final'), config: defaultConfig, log: logger,
     });
     logger(`run ${runId}: ${Object.keys(t.run.agents).length} captains, ${t.opts.rounds} rounds, final of ${t.opts.finalSize}, effort ${effort}`);
     try { await t.play(); }

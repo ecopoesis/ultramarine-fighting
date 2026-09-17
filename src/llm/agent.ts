@@ -124,8 +124,11 @@ export class LlmCaptain {
     const trace: DecisionTrace = { pid, season: state.season, day: state.day, hour: state.hour, asked: false, action: { type: 'PASS', playerId: pid } };
 
     let reason: string | undefined;
+    // A plan PERSISTS across days — a captain can commit to a multi-day trip (steam
+    // out, drop, let it soak overnight, haul, run in and sell) in one decision. Only
+    // the restock draft, something happening TO the captain, or an impossible step
+    // clears it; otherwise they keep sailing their own orders.
     if (state.phase === 'RESTOCK') this.rt.plan = [];
-    else if (this.rt.plan.length && dayKey !== this.rt.lastDayKey) { reason = 'A new day has begun; your previous plan was cleared.'; this.rt.plan = []; }
     else if (this.rt.plan.length && interrupt) { reason = `Plan interrupted: ${interrupt}.`; this.rt.plan = []; }
 
     // Circuit breaker: a captain that keeps producing unusable plans is muted for
@@ -150,7 +153,7 @@ export class LlmCaptain {
         trace.reply = reply; trace.ms = Date.now() - t0;
         this.rt.lastLogIndex = state.log.length;
         this.rt.lastDayKey = dayKey;
-        this.rt.plan = reply.plan.slice(0, 12);
+        this.rt.plan = reply.plan.slice(0, 24); // room for a multi-day trip
         if (this.rt.plan.length === 0) { reason = 'Your reply contained no commands.'; this.rt.invalid++; continue; }
       }
 

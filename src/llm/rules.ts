@@ -181,6 +181,11 @@ Commands (one per string, uppercase keyword first):
 - BERTH — end your day here (claims the next berth slot).
 - BRIBE — pay to take the front slot (and berth).
 - PASS — end this turn (unspent actions are lost).
+- REPLAN — abandon the rest of your plan and be asked again with a fresh situation report.
 - During a restock draft: CLAIM <ground> [heavy|light] — claim that bag and return up to your roll of the heaviest (default) or lightest lobsters from its pile; CONTRIBUTE <n> [heavy|light] — spend n v-tokens on the open bag (0 to pass).
-Your plan is executed in order, across turns, until it is exhausted, a step becomes illegal (you are then asked again with the reason), a new day begins, or something happens to you (theft, storm damage, tow). Actions cost points as listed; a turn ends when your points are spent, on PASS/BERTH/BRIBE, or when nothing else in the plan is affordable. A plan of several commands saves you decisions — but the ocean moves between your turns, so keep plans short when the situation is contested. Always reply with valid JSON and at least one command.`;
+Your plan is executed in order and CARRIES ACROSS TURNS AND DAYS — it runs until it is exhausted, a step becomes impossible (you are asked again, with the reason), something happens to you (theft, storm damage, tow), or you REPLAN. So you can commit to a whole multi-day trip in one decision: steam out, drop, BERTH for the night, haul the next morning once it has ripened, run in and SELL. That is the intended way to play the far grounds, where a round trip cannot fit in a day.
+
+A step that is legal but simply unaffordable this turn (you are out of action points) is NOT an error — it waits for your next turn automatically. Actions cost points as listed; a turn ends when your points are spent, on PASS/BERTH/BRIBE, or when nothing else in the plan is affordable.
+
+The trade-off is judgement: a long plan saves you decisions and buys tempo, but the ocean moves between your turns — rivals haul the ground you were steaming to, a port floods before you reach it, a storm re-rolls at the season change. Plan long where you are committed (a far trip) and short where the situation is contested, and REPLAN when you want to look again. Always reply with valid JSON and at least one command.`;
 }

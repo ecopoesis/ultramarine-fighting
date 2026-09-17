@@ -23,6 +23,7 @@ export interface TournamentOptions {
   meanPlayers: number;
   sdPlayers: number;
   seed: number;
+  skipFinal?: boolean; // run the rounds only — for a single measurement game
   config: Config;
   log?: (line: string) => void;
 }
@@ -245,6 +246,7 @@ export class Tournament {
       if (errored.length) throw new Error(`round ${round}: ${errored.length} game(s) errored — fix and re-run to resume (${errored.map((g) => g.id).join(', ')})`);
       this.printStandings(`after round ${round}`);
     }
+    if (this.opts.skipFinal) { this.run.finished = true; this.save(); this.printStandings('STANDINGS (no final)'); return; }
     // FINAL
     if (!this.run.final) {
       const top = standings(this.run).slice(0, this.opts.finalSize).map((s) => s.name);

@@ -295,6 +295,9 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
     }
     case 'PASS': case 'WAIT': case 'END':
       return { ok: true, action: { type: 'PASS', playerId: pid } };
+    case 'REPLAN': case 'STOP':
+      // Not an engine action: the captain is asking to be consulted again.
+      return { ok: false, error: 'REPLAN — you asked to reconsider; here is the current situation.' };
     default:
       return { ok: false, error: `unknown command "${raw}"` };
   }
