@@ -9,3 +9,4 @@ dist/
 
 # LLM tournament runs (large, per-machine)
 tournament/runs/
+tournament/*.out
