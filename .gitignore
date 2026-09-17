@@ -6,3 +6,6 @@ dist/
 .vscode/
 
 .omc/
+
+# LLM tournament runs (large, per-machine)
+tournament/runs/

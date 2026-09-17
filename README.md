@@ -23,6 +23,29 @@ public state (boats, pots, storms ⛈, seeded piles); the active player's panel 
 their private hold + pot ripeness and legal actions. `npm run build` / `npm run
 typecheck:web` for the app; `web/app.smoke.test.tsx` renders it against the engine.
 
+## LLM battle-test tournament (`src/llm/`, `scripts/llmTournament.ts`)
+Claude captains play the game against each other through the Claude Code CLI in
+headless mode (your subscription; no API key). Each captain = one archetype
+(`src/llm/archetypes.ts`) × one model, holds one resumable CLI session per game
+(full in-game context), receives a rules prompt generated from the live config
+(`src/llm/rules.ts`) plus a per-decision text view (`src/llm/view.ts`), and
+replies with a JSON plan of commands the harness executes across turns
+(`src/llm/agent.ts`). After every game it writes a journal entry that is fed into
+its next game's prompt — the captains learn between games. `src/llm/tournament.ts`
+schedules Swiss-style rounds of concurrent tables (sizes ~N(4,1), 2–6 players) and
+a final of the top captains; everything under `tournament/runs/<id>/` persists, so
+re-running the same `--run-id` resumes (half-played games replay from transcript).
+
+```bash
+npx tsx scripts/llmTournament.ts smoke                      # tiny 2-player Haiku game: plumbing check
+npx tsx scripts/llmTournament.ts run --run-id rr1 --rounds 5 --final 5 --effort medium
+npx tsx scripts/llmTournament.ts status --run-id rr1
+npx tsx scripts/llmTournament.ts report --run-id rr1        # writes tournament/runs/rr1/report.md
+```
+Per game you get `games/<id>.log` (engine log + every plan/note), `.trace.jsonl`
+(full prompts and replies), `.actions.jsonl` (replayable transcript) and
+`.result.json`; per captain `agents/<name>.md` (its journal).
+
 ## Architecture (the decoupling)
 - `src/config.ts` — **the only file you touch to rebalance.** Every tunable number.
 - `src/types.ts` — all shared types.
