@@ -153,6 +153,15 @@ function dayRollover(d: GameState): void {
   // the storm's daily turn: part pots left out in the blow (before they can be hauled)
   stormWhittle(d);
 
+  // Crew wages: every captain pays for the day just worked, whatever it landed.
+  if (d.config.wagePerDay > 0) {
+    for (const p of Object.values(d.players)) {
+      const paid = Math.min(p.money, d.config.wagePerDay); // never below zero
+      p.money -= paid;
+      if (paid < d.config.wagePerDay) d.log.push(`${p.name} cannot make the full crew wage (paid ${paid.toFixed(1)} of ${d.config.wagePerDay})`);
+    }
+  }
+
   // hold decay + reset day flags + recover prices
   for (const p of Object.values(d.players)) {
     p.hold = p.hold

@@ -229,6 +229,7 @@ export const defaultConfig: Config = {
   //   reported   -0.5 (own dial; was a 2nd full steal penalty) — extra heat when a theft is reported
   rep: { steal: -1, illegalKeep: -0.5, report: 1, vNotch: 2, bribe: -1, reported: -0.5 }, // vNotch is the CONSERVATION track gain per egger notched (scaled to money with vNotchTokenValue)
 
+  wagePerDay: 2, // the sternman's day rate — see types.ts; tuned in scripts/tuneWages.ts
   holdDecayLbPerDay: 1,
   reportBountyShare: 0.5,
 

@@ -264,6 +264,15 @@ export interface Config {
   tow: { fee: number; emergencyFuel: number; lostTurns: number; rep: number };
   rep: { steal: number; illegalKeep: number; report: number; vNotch: number; bribe: number; reported: number };
 
+  // CREW WAGES: your sternman is paid for every day of the season, fished or not.
+  // The point is not the drain — it is that a day is the unit you pay for, so a day
+  // that lands nothing is a day you paid for nothing. Staggering your pots (two waves
+  // of two rather than all four at once) yields the SAME hauls per day and eliminates
+  // the waiting days entirely; what it costs you is mobility, since you must work the
+  // ground daily instead of having every other day free to steam elsewhere. The wage
+  // is what makes that trade bite. Capped at what you have — a bad season must not
+  // spiral into a negative track, which the weak link would turn into a zero.
+  wagePerDay: number;
   holdDecayLbPerDay: number;
   reportBountyShare: number;
 
