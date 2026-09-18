@@ -9,6 +9,7 @@ import { parseCommand, renderView } from '../src/llm/view';
 import { buildRulesPrompt } from '../src/llm/rules';
 import { BOTS } from '../src/bots';
 import { LlmCaptain } from '../src/llm/agent';
+import { enterAuction } from '../src/engine/auction';
 import { parseLimitWaitMs } from '../src/llm/claude';
 
 function rng(seed: number) {
@@ -92,7 +93,7 @@ describe('LLM tournament harness (pure parts)', () => {
     const cfg = { ...defaultConfig, players: 3 };
     let state = createInitialState(cfg, 7);
     const bot = BOTS.cardcounter;
-    let n = 0; let restockSeen = false;
+    let n = 0; let restockSeen = false; let auctionSeen = false;
     while (state.phase !== 'GAME_OVER' && n++ < 5000) {
       const pid = activePlayerId(state);
       const legal = legalActions(state, pid);
@@ -106,6 +107,8 @@ describe('LLM tournament harness (pure parts)', () => {
         case 'BUY_UPGRADE': cmd = `BUY ${a.upgradeId}`; break;
         case 'RESTOCK_CLAIM': cmd = `CLAIM ${a.ground} heavy`; restockSeen = true; break;
         case 'RESTOCK_CONTRIBUTE': cmd = `CONTRIBUTE ${a.tileIds.length}`; break;
+        case 'LICENSE_BID': cmd = `BID ${a.amount}`; auctionSeen = true; break;
+        case 'LICENSE_BUY': cmd = a.take ? 'TAKE' : 'LEAVE'; break;
         default: cmd = a.type;
       }
       const parsed = parseCommand(state, pid, cmd, legal);
@@ -115,6 +118,73 @@ describe('LLM tournament harness (pure parts)', () => {
     }
     expect(state.phase).toBe('GAME_OVER');
     expect(restockSeen).toBe(true);
+    expect(auctionSeen).toBe(true);   // the licence auction runs every season after the first
+  });
+});
+
+describe('the licence auction', () => {
+  it('prices at the SECOND-highest bid, commits the top two, and makes the bid order the turn order', () => {
+    const cfg = { ...defaultConfig, players: 4 };
+    // Drive the auction directly with known money, rather than depending on what four
+    // bots happen to have in hand at the first rollover (some arrive broke, which is
+    // real but makes a poor fixture).
+    let state = createInitialState(cfg, 99);
+    state = { ...state, season: 2 };
+    const seats = Object.keys(state.players);
+    for (const id of seats) state.players[id].money = 100;
+    enterAuction(state);
+    expect(state.phase).toBe('AUCTION');
+    const minBid = state.auction!.minBid;
+    expect(minBid).toBeGreaterThan(0);
+
+    const bids: Record<string, number> = {
+      [seats[0]]: minBid + 6, [seats[1]]: minBid + 4, [seats[2]]: minBid + 2, [seats[3]]: minBid,
+    };
+    for (const id of seats) {
+      expect(activePlayerId(state)).toBe(id);
+      state = reduce(state, { type: 'LICENSE_BID', playerId: id, amount: bids[id] });
+    }
+
+    // the winner pays the RUNNER-UP's bid, not their own, and both are committed
+    expect(state.players[seats[0]].money).toBe(100 - bids[seats[1]]);
+    expect(state.players[seats[1]].money).toBe(100 - bids[seats[1]]);
+    expect(state.players[seats[0]].licensed).toBe(true);
+    expect(state.players[seats[1]].licensed).toBe(true);
+
+    // everyone else is offered it at that price and may decline
+    expect(activePlayerId(state)).toBe(seats[2]);
+    state = reduce(state, { type: 'LICENSE_BUY', playerId: seats[2], take: true });
+    expect(state.players[seats[2]].money).toBe(100 - bids[seats[1]]);
+    state = reduce(state, { type: 'LICENSE_BUY', playerId: seats[3], take: false });
+    expect(state.players[seats[3]].money).toBe(100);          // paid nothing
+    expect(state.players[seats[3]].licensed).toBe(false);     // and fishes as a poacher
+
+    // the bid ranking IS the season's turn order — what the auction really sold
+    expect(state.phase).toBe('PLAYING');
+    expect(state.turnOrder).toEqual(seats);
+    expect(state.day).toBe(1);
+  });
+
+  it('a bid beyond your money is no bid at all', () => {
+    const cfg = { ...defaultConfig, players: 3 };
+    let state = createInitialState(cfg, 7);
+    state = { ...state, season: 2 };
+    const seats = Object.keys(state.players);
+    state.players[seats[0]].money = 4;   // cannot even meet the reserve
+    state.players[seats[1]].money = 50;
+    state.players[seats[2]].money = 50;
+    enterAuction(state);
+    const minBid = state.auction!.minBid;
+    state = reduce(state, { type: 'LICENSE_BID', playerId: seats[0], amount: 999 });
+    state = reduce(state, { type: 'LICENSE_BID', playerId: seats[1], amount: minBid + 5 });
+    state = reduce(state, { type: 'LICENSE_BID', playerId: seats[2], amount: minBid + 1 });
+    expect(state.players[seats[1]].money).toBe(50 - (minBid + 1)); // priced off the real runner-up
+    // the non-bidder is still offered it at that price — they bid nothing, not "no"
+    expect(state.phase).toBe('AUCTION');
+    expect(activePlayerId(state)).toBe(seats[0]);
+    state = reduce(state, { type: 'LICENSE_BUY', playerId: seats[0], take: true });
+    expect(state.players[seats[0]].licensed).toBe(false);           // 4 money cannot cover it
+    expect(state.turnOrder[2]).toBe(seats[0]);                      // and they open the season last
   });
 });
 

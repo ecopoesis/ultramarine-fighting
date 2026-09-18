@@ -29,7 +29,7 @@ export const defaultConfig: Config = {
     nodes: {
       // --- market ports (dock: refuel/berth AND sell) ---
       ROCKLAND:   { type: 'port', label: 'Rockland', port: {
-        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.6, floor: 2, rareBonus: 0, coopRep: 0.5, coopMinLb: 5 } } }, // THE CO-OP: pays least per lb, but landing a real day's catch here (5lb+) earns standing   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
+        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.6, floor: 2, rareBonus: 0, coopRep: 1.5, coopMinLb: 5 } } }, // THE CO-OP: pays least per lb, but landing a real day's catch here (5lb+) earns standing   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
       VINALHAVEN: { type: 'port', label: 'Vinalhaven', port: {
         fuelCostPerUnit: 2, market: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 } } },     // island: high price, floods fast, dear fuel, the offshore springboard
       STONINGTON: { type: 'port', label: 'Stonington', port: {

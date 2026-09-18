@@ -8,7 +8,7 @@ export type TileKind = 'KEEPER' | 'SHORT' | 'JUMBO' | 'EGGER' | 'VNOTCHED';
 export type Color = 'common' | 'rare';
 export type Ground = 'inshore' | 'mid' | 'offshore' | 'deep';
 export type Stage = 'SET' | 'SOAKING' | 'PRIME' | 'OVERRIPE' | 'FOULED';
-export type Phase = 'PLAYING' | 'RESTOCK' | 'GAME_OVER';
+export type Phase = 'PLAYING' | 'RESTOCK' | 'AUCTION' | 'GAME_OVER';
 
 export interface Tile {
   id: string;
@@ -96,11 +96,14 @@ export interface RestockState {
   contribTurn?: number;   // index into contribOrder
 }
 
+import type { AuctionState } from './engine/auction';
+
 export interface GameState {
   config: Config;
   rngSeed: number;
   phase: Phase;
   restock?: RestockState; // present only during the RESTOCK phase
+  auction?: AuctionState; // present only during the AUCTION phase (the licence sale)
   season: number;         // 1-based; game ends after config.seasons
   day: number;            // 1-based day WITHIN the current season
   hour: number;
@@ -273,7 +276,12 @@ export interface Config {
   tow: { fee: number; emergencyFuel: number; lostTurns: number; rep: number };
   rep: { steal: number; illegalKeep: number; report: number; vNotch: number; bribe: number; reported: number };
 
-  // FISHING LICENCE: the price of being allowed to fish at all, paid at the start of
+  // FISHING LICENCE: sold at a sealed-bid, SECOND-PRICE auction at the start of every
+  // season after the first — these values are the reserve (minimum bid), not the price.
+  // The price the table pays is the second-highest bid, so it scales with how rich the
+  // fleet actually is instead of being a number I guessed. See engine/auction.ts for
+  // why the bid order is the season's turn order.
+  // The price of being allowed to fish at all, paid at the start of
   // each season. Lumpy rather than daily — five payments a game instead of 130 — and
   // it lands as a cash-flow decision (licence AND a refit this season, or one of
   // them?) rather than a rounding error. An unlicensed captain may not set or haul

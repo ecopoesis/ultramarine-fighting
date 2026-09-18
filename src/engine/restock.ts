@@ -4,6 +4,7 @@ import { randInt } from '../rng';
 import { placeStorms } from './weather';
 import { seedSpaces } from './seeded';
 import { buoyCap } from './upgrades';
+import { enterAuction, auctionMinBid } from './auction';
 
 // The inter-season RESTOCK DRAFT as a real, action-driven phase (what a human UI
 // will drive too). Going around in berth order, each captain CLAIMS one remaining
@@ -119,32 +120,28 @@ export function finishSeasonRollover(d: GameState): void {
   d.restock = undefined;
   d.phase = 'PLAYING';
   d.season++;
-  // The season's fishing licence falls due. Pay it and you fish; can't (or won't) and
-  // you are a pirate for the year — no gear of your own, only what you can lift.
-  const fee = d.config.licensePerSeason?.[Math.min(d.season - 1, (d.config.licensePerSeason.length - 1))] ?? 0;
-  for (const id of ids) {
-    const p = d.players[id];
-    if (fee <= 0) { p.licensed = true; continue; }
-    if (p.money >= fee) {
-      p.money -= fee; p.licensed = true;
-      d.log.push(`${p.name} buys a season ${d.season} fishing licence (-${fee}, money ${p.money.toFixed(1)})`);
-    } else {
-      p.licensed = false;
-      d.log.push(`${p.name} CANNOT AFFORD the season ${d.season} licence (${fee}, has ${p.money.toFixed(1)}) — unlicensed: no gear of their own this season`);
-    }
-  }
   // Re-roll the weather for the new season: old tokens clear, the storm intensifies
   // inward. Happens on EVERY rollover, including the no-restock 4→5 (the ocean stops
   // recovering, but the weather keeps worsening).
   placeStorms(d);
   // Drop this season's generic lobsters onto every space (accumulating on the unfished).
   seedSpaces(d);
-  d.turnOrder = ids;
+  // The season's licences now go under the hammer (engine/auction.ts), and the bid
+  // order becomes the turn order — so the auction, not this function, opens the season.
+  // Season 1's licence came with the boat, so a zero reserve means no sale.
+  if (auctionMinBid(d) > 0) { enterAuction(d); return; }
+  for (const id of ids) d.players[id].licensed = true;
+  openSeason(d, ids);
+}
+
+// Set the season running: turn order, day one, first captain on the clock.
+export function openSeason(d: GameState, order: string[]): void {
+  d.turnOrder = order;
   d.pendingNextOrder = [];
   d.nextSlot = 0;
   d.day = 1;
   d.hour = 1;
   d.activePlayerIndex = 0;
   d.players[d.turnOrder[0]].actionsLeft = d.config.actionsPerTurn;
-  d.log.push(`=== Season ${d.season} begins at ${d.config.map.startPort}. Order: ${ids.join(', ')} ===`);
+  d.log.push(`=== Season ${d.season} begins at ${d.config.map.startPort}. Order: ${order.map((id) => d.players[id].name).join(', ')} ===`);
 }

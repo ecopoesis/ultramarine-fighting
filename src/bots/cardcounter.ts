@@ -11,6 +11,7 @@ import {
 } from './helpers';
 import { upgradesOn, upgradeDef, stepsPerSteam } from '../engine/upgrades';
 import { spaceHasRoom } from '../engine/buoys';
+import { auctionMinBid } from '../engine/auction';
 
 const UPGRADE_RESERVE = 10; // money a bot keeps in hand rather than sinking into a refit
 
@@ -44,6 +45,10 @@ export interface CardCounter {
   // Restock draft:
   restockReturn?: 'heavy' | 'light'; // which pile tiles to put back — heaviest keepers (rebuild) or lightest (stock it thin)
   vnotchContribute?: number;         // how many v-notch tokens to SPEND per bag to add more lobsters (0 = hoard for VP)
+  // Licence auction: what fraction of money on hand to put behind a bid, over the
+  // reserve. Second-price, so bidding your true valuation is safe — you pay what your
+  // closest rival thought it was worth, not what you did.
+  bidFraction?: number;
 }
 
 // The neutral fair optimizer / measuring stick. Clean, no theft — the baseline
@@ -222,6 +227,18 @@ function restockDecision(state: GameState, pid: string, cc: CardCounter): Action
 export function makeCardCounter(cc: CardCounter): Policy {
   return (state: GameState, pid: string, legal: Action[]): Action => {
     if (state.phase === 'RESTOCK') return restockDecision(state, pid, cc);
+    if (state.phase === 'AUCTION') {
+      const a = state.auction!;
+      const me = state.players[pid];
+      if (!a.revealed) {
+        const reserve = auctionMinBid(state);
+        // Bid the reserve plus a slice of what's in hand: the season's turn order is
+        // worth more to a rich boat that can act on going first.
+        const bid = Math.min(Math.floor(me.money), reserve + Math.floor(me.money * (cc.bidFraction ?? 0.08)));
+        return { type: 'LICENSE_BID', playerId: pid, amount: me.money >= reserve ? Math.max(reserve, bid) : 0 };
+      }
+      return { type: 'LICENSE_BUY', playerId: pid, take: me.money >= a.price };
+    }
     const cfg = state.config;
     const p = state.players[pid];
     const atPort = isPort(state, p.node);

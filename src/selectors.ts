@@ -11,6 +11,10 @@ export function daysThisSeason(state: GameState): number {
 }
 
 export function activePlayerId(state: GameState): string {
+  if (state.phase === 'AUCTION') {
+    const a = state.auction!;
+    return a.revealed ? a.optionOrder[a.optionTurn] : a.bidOrder[a.bidTurn];
+  }
   if (state.phase === 'RESTOCK') {
     const r = state.restock!;
     return r.step === 'claim' ? r.claimOrder[r.claimTurn] : r.contribOrder![r.contribTurn!];

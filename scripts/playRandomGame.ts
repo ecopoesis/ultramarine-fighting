@@ -18,6 +18,8 @@ function pickAction(state: GameState, legal: Action[]): Action {
       case 'DROP': return 5;
       case 'STEAL': return 1;
       case 'REPORT': return 6;
+      case 'LICENSE_BID': return 1;
+      case 'LICENSE_BUY': return a.take ? 9 : 1;
       case 'REFUEL': return 2;
       case 'STEAM': return 4;
       case 'BERTH': return state.hour >= state.config.hoursPerDay - 1 ? 7 : 1;

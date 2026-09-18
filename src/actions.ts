@@ -20,7 +20,10 @@ export type Action =
   | { type: 'PASS'; playerId: string }
   // restock draft (phase === 'RESTOCK')
   | { type: 'RESTOCK_CLAIM'; playerId: string; ground: Ground; tileIds: string[] }        // claim a bag, return these pile tiles
-  | { type: 'RESTOCK_CONTRIBUTE'; playerId: string; tileIds: string[] };                   // spend v-notch: return these (empty = pass)
+  | { type: 'RESTOCK_CONTRIBUTE'; playerId: string; tileIds: string[] }                    // spend v-notch: return these (empty = pass)
+  // licence auction (phase === 'AUCTION')
+  | { type: 'LICENSE_BID'; playerId: string; amount: number }                              // sealed bid; below the reserve or above your money counts as no bid
+  | { type: 'LICENSE_BUY'; playerId: string; take: boolean };                               // take it or leave it at the revealed price
 
 export function actionCost(state: GameState, a: Action): number {
   const base = state.config.actionCost[a.type] ?? 0;
@@ -35,6 +38,11 @@ export function actionCost(state: GameState, a: Action): number {
 // Enumerate legal actions for a player right now. Always includes PASS so the
 // game can never deadlock. Powers both the UI buttons and the runner.
 export function legalActions(state: GameState, playerId: string): Action[] {
+  if (state.phase === 'AUCTION') {
+    const a = state.auction!;
+    if (!a.revealed) return [{ type: 'LICENSE_BID', playerId, amount: a.minBid }];
+    return [{ type: 'LICENSE_BUY', playerId, take: true }, { type: 'LICENSE_BUY', playerId, take: false }];
+  }
   if (state.phase === 'RESTOCK') return legalRestock(state, playerId);
 
   const p = state.players[playerId];

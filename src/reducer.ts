@@ -7,6 +7,7 @@ import { sell, reportTheft } from './engine/market';
 import { berth, bribe } from './engine/turnorder';
 import { advanceSoak } from './engine/soak';
 import { enterRestock, applyRestockAction, finishSeasonRollover } from './engine/restock';
+import { applyAuctionAction } from './engine/auction';
 import { fuelPriceAt, isPort, nearestPort } from './engine/ports';
 import { stormWhittle } from './engine/weather';
 import { buyUpgrade, fuelCap } from './engine/upgrades';
@@ -18,8 +19,9 @@ export function reduce(state: GameState, action: Action): GameState {
   if (state.phase === 'GAME_OVER') return state;
   const d: GameState = structuredClone(state);
 
-  // The inter-season restock draft is its own action-driven phase.
+  // The inter-season restock draft and licence auction are action-driven phases.
   if (d.phase === 'RESTOCK') { applyRestockAction(d, action); return d; }
+  if (d.phase === 'AUCTION') { applyAuctionAction(d, action); return d; }
 
   const p = d.players[action.playerId];
   if (!p) throw new Error('Unknown player');
@@ -58,6 +60,9 @@ function applyAction(d: GameState, a: Action): boolean {
     case 'RESTOCK_CLAIM':
     case 'RESTOCK_CONTRIBUTE':
       throw new Error('restock actions are only legal during the RESTOCK phase');
+    case 'LICENSE_BID':
+    case 'LICENSE_BUY':
+      throw new Error('licence actions are only legal during the AUCTION phase');
   }
 }
 

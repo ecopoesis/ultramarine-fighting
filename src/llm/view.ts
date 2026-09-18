@@ -65,6 +65,8 @@ function describeAction(state: GameState, a: Action): string {
     case 'PASS': return 'PASS';
     case 'RESTOCK_CLAIM': return `CLAIM ${a.ground}`;
     case 'RESTOCK_CONTRIBUTE': return 'CONTRIBUTE <n>';
+    case 'LICENSE_BID': return `BID <amount> (reserve ${a.amount})`;
+    case 'LICENSE_BUY': return a.take ? 'TAKE the licence' : 'LEAVE it';
   }
 }
 
@@ -80,6 +82,7 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   const lines: string[] = [];
 
   if (state.phase === 'RESTOCK') return renderRestockView(state, pid, legal, opts);
+  if (state.phase === 'AUCTION') return renderAuctionView(state, pid, opts);
 
   const dis = daysThisSeason(state);
   lines.push(`=== Season ${state.season}/${cfg.seasons}, Day ${state.day}/${dis}, Hour ${state.hour}/${cfg.hoursPerDay} — YOUR TURN (${p.actionsLeft} action points)`);
@@ -155,6 +158,35 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   return lines.join('\n');
 }
 
+// The licence auction. Rival bids are SECRET until every captain has bid — this view
+// must never show them, only who has and has not bid yet.
+function renderAuctionView(state: GameState, pid: string, opts: ViewOptions): string {
+  const a = state.auction!;
+  const p = state.players[pid];
+  const L: string[] = [];
+  L.push(`=== SEASON ${state.season} LICENCE AUCTION — YOUR DECISION (${p.name})`);
+  L.push('Sealed bids. The price everyone pays is the SECOND-highest bid. The top two bidders are committed and must buy at that price; everyone else may take it or leave it.');
+  L.push('The bid order is THIS SEASON\'S TURN ORDER — you are bidding for first pick of the water on opening day as much as for the licence.');
+  L.push(`Reserve (minimum bid): ${a.minBid}. You have ${p.money.toFixed(1)} money.`);
+  L.push(`Without a licence you may still fish, but every haul is poaching: ${state.config.unlicensed.repPerHaul} reputation each, and the co-op will not take your catch.`);
+  L.push('');
+  for (const id of Object.keys(state.players)) {
+    const r = state.players[id];
+    L.push(`${id === pid ? 'YOU  ' : 'RIVAL'} ${r.name}: money ${r.money.toFixed(1)} | reputation ${r.tracks.reputation} | ${a.bids[id] !== undefined ? 'has bid (amount sealed)' : 'has not bid yet'}`);
+  }
+  L.push('');
+  if (!a.revealed) {
+    L.push(`Command: BID <amount>  — at least ${a.minBid}, at most what you hold. A bid below the reserve or beyond your money counts as no bid at all.`);
+  } else {
+    L.push(`Bids are open. The price is ${a.price}. You were not among the committed two.`);
+    L.push('Command: TAKE (buy the licence at that price) or LEAVE (fish unlicensed this season).');
+  }
+  if (opts.events.length) { L.push('SINCE YOUR LAST DECISION:'); for (const e of opts.events) L.push(`  - ${e}`); }
+  if (opts.reason) L.push(`NOTE: ${opts.reason}`);
+  L.push('Reply with JSON: {"plan": ["..."], "note": "..."}');
+  return L.join('\n');
+}
+
 function renderRestockView(state: GameState, pid: string, legal: Action[], opts: ViewOptions): string {
   const r = state.restock!;
   const p = state.players[pid];
@@ -209,6 +241,18 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
   const policyOf = (toks: string[]): HaulPolicy => (toks.map((t) => t.toLowerCase()).find((t) => POLICIES.includes(t as HaulPolicy)) as HaulPolicy) ?? 'clean';
   const tokenOf = (toks: string[]) => toks.some((t) => t.toLowerCase() === 'token');
 
+  if (state.phase === 'AUCTION') {
+    const a = state.auction!;
+    if (!a.revealed) {
+      if (kw !== 'BID') return { ok: false, error: `the licence auction is open — reply with BID <amount> (reserve ${a.minBid}), not "${raw}"` };
+      const n = Number(args[0]);
+      if (!Number.isFinite(n)) return { ok: false, error: 'BID needs a number' };
+      return { ok: true, action: { type: 'LICENSE_BID', playerId: pid, amount: Math.floor(n) } };
+    }
+    if (kw === 'TAKE' || kw === 'BUY') return { ok: true, action: { type: 'LICENSE_BUY', playerId: pid, take: true } };
+    if (kw === 'LEAVE' || kw === 'PASS' || kw === 'DECLINE') return { ok: true, action: { type: 'LICENSE_BUY', playerId: pid, take: false } };
+    return { ok: false, error: `the licence price is ${a.price} — reply TAKE or LEAVE, not "${raw}"` };
+  }
   if (state.phase === 'RESTOCK') {
     const r = state.restock!;
     if (kw === 'CLAIM') {

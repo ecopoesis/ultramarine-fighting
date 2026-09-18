@@ -128,14 +128,14 @@ export class LlmCaptain {
     // out, drop, let it soak overnight, haul, run in and sell) in one decision. Only
     // the restock draft, something happening TO the captain, or an impossible step
     // clears it; otherwise they keep sailing their own orders.
-    if (state.phase === 'RESTOCK') this.rt.plan = [];
+    if (state.phase === 'RESTOCK' || state.phase === 'AUCTION') this.rt.plan = [];
     else if (this.rt.plan.length && interrupt) { reason = `Plan interrupted: ${interrupt}.`; this.rt.plan = []; }
 
     // Circuit breaker: a captain that keeps producing unusable plans is muted for
     // the rest of the day (auto-PASS / default draft move) instead of burning calls.
     if (this.rt.muted && this.rt.muted !== dayKey) this.rt.muted = undefined;
     if (this.rt.muted) {
-      trace.command = '(muted)'; trace.action = state.phase === 'RESTOCK' ? legal[0] : { type: 'PASS', playerId: pid };
+      trace.command = '(muted)'; trace.action = state.phase !== 'PLAYING' ? legal[0] : { type: 'PASS', playerId: pid };
       this.onTrace?.(trace);
       return trace.action;
     }
@@ -194,7 +194,7 @@ export class LlmCaptain {
     }
 
     // Gave up: take a sensible default so the game never stalls.
-    const fallback = state.phase === 'RESTOCK' ? legal[0] : { type: 'PASS' as const, playerId: pid };
+    const fallback = state.phase !== 'PLAYING' ? legal[0] : { type: 'PASS' as const, playerId: pid };
     trace.command = '(fallback)'; trace.action = fallback;
     this.finish(trace, false);
     if (this.rt.badStreak >= BAD_STREAK_LIMIT) { this.rt.muted = dayKey; trace.error = (trace.error ?? '') + ' [breaker: muted for the day]'; }
