@@ -57,7 +57,7 @@ export function buildRulesPrompt(cfg: Config, players: number): string {
     if (n.type === 'port') {
       const p = n.port!;
       kind = p.market
-        ? `MARKET PORT — sells lobster (base ${p.market.base}/lb, price drops ${p.market.elasticity}/lb per lb landed here today, floor ${p.market.floor}/lb, rare bonus +${p.market.rareBonus}/lb); fuel ${p.fuelCostPerUnit}/unit`
+        ? `MARKET PORT — sells lobster (base ${p.market.base}/lb, price drops ${p.market.elasticity}/lb per lb landed here today, floor ${p.market.floor}/lb, rare bonus +${p.market.rareBonus}/lb); fuel ${p.fuelCostPerUnit}/unit${p.market.coopRep ? ` — THE CO-OP: landing ${p.market.coopMinLb ?? 0} lb or more here earns +${p.market.coopRep} reputation` : ''}`
         : `SHELTER — refuge and emergency fuel only (${p.fuelCostPerUnit}/unit, dear), NO market; never storms`;
     } else {
       kind = `${n.ground!.toUpperCase()} fishing ground`;
@@ -130,13 +130,13 @@ ${GROUNDS.map((g) => bagLine(cfg, g, scale)).join('\n')}
 Throwbacks return to the bag. Sold bag lobsters do not vanish: they land on that ground's extraction PILE, from which the restock draft can return them (seeded lobsters are the exception: sold, they leave the world). Keeper DENSITY (keeper lb per tile in the bag) is what makes a ground worth fishing; as keepers are stripped, hauls turn up junk. The bag contents are public knowledge (you may track what has been taken).
 
 ## 5. Selling, markets, fuel
-- SELL (${cfg.actionCost.SELL} action) sells your ENTIRE hold at the market port you are docked in, once per day. Price per lb = max(floor, base − elasticity × lb already landed at that port today) (+ rare bonus for RARE keepers). Landing catch floods that port for the rest of the day — for everyone. Prices recover overnight.
+- SELL (${cfg.actionCost.SELL} action) sells your ENTIRE hold at the market port you are docked in, once per day. THE CO-OP: the home port pays the least per pound, but landing a real day's catch there (see the port list for the poundage) earns reputation — the only repeatable way to raise it. A token landing does not count. Price per lb = max(floor, base − elasticity × lb already landed at that port today) (+ rare bonus for RARE keepers). Landing catch floods that port for the rest of the day — for everyone. Prices recover overnight.
 - Unsold keepers/jumbos lose ${cfg.holdDecayLbPerDay} lb per night in the hold (to a minimum of 1 lb).
 - REFUEL (${cfg.actionCost.REFUEL} action) at any port buys fuel at that port's price, up to your tank (base ${cfg.fuelTankMax}, more with the tank refit). You start with ${cfg.startFuel} fuel and ${cfg.startMoney} money.
 - TOW: if the day ends and you are not at a port, you are towed to the nearest port: −${cfg.tow.fee} money (never below zero), fuel topped up to at least ${cfg.tow.emergencyFuel} (you keep more if you had more), and you LOSE your next ${cfg.tow.lostTurns} turns. Make harbor before the day ends.
 
 ## 6. Berthing and turn order
-- BERTH (free) at any port ends your day there; you start tomorrow at that port. The ORDER captains berth is tomorrow's turn order. Berthing FIRST (slot 0, the pole) costs ${cfg.poleRepCost} reputation. Anyone not berthed by the end of hour ${cfg.hoursPerDay} is auto-berthed into the remaining slots in today's turn order (today's first mover takes the best remaining slot), for free. The captain in the LAST slot gets +${cfg.lastSlotSweetenerFuel} fuel.
+- BERTH (free) at any port ends your day there; you start tomorrow at that port. The ORDER captains berth is tomorrow's turn order. Anyone not berthed by the end of hour ${cfg.hoursPerDay} is auto-berthed into the remaining slots in today's turn order. The order is a GRADIENT paid at day's end, and you cannot dodge either end of it by refusing to decide: whoever holds slot 0 (tomorrow's first mover) pays ${cfg.poleRepCost} reputation for pushing to the front, however they got there; whoever holds the LAST slot gains +${cfg.lastSlotRep} reputation ("after you") plus ${cfg.lastSlotSweetenerFuel} fuel, provided they made harbour under their own power — a boat that was towed in gets the fuel but no standing. The captain in the LAST slot gets +${cfg.lastSlotSweetenerFuel} fuel.
 - BRIBE (free, at a port): pay ${cfg.bribeMoneyCost} money and ${cfg.rep.bribe} reputation to jump to the FRONT of tomorrow's order (and berth now if not yet berthed).
 - Turn order matters: first mover gets first pick of ripe grounds, seeded piles, chandlery refits and unflooded markets — and first claim in the restock draft.
 

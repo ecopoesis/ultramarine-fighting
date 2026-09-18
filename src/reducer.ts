@@ -90,7 +90,14 @@ function dayRollover(d: GameState): void {
   // AT SEA (not at a port) is towed in to the nearest port — never stranded for the
   // season — but pays for it (money + rep) and gets a little emergency fuel. This
   // also prices "camping at sea" overnight instead of returning to harbor.
-  for (const id of d.turnOrder) {
+  // Anyone who didn't claim a berth is seated in REVERSE of today's order: today's
+  // first mover goes to the back. Without this the queue is STICKY — nobody berths
+  // voluntarily, auto-berth reseats everyone in the same order, and the same captain
+  // holds the pole (and pays for it) every single day while another collects the tail
+  // every single day. Reversing rotates the queue, makes a deliberate BERTH a real
+  // claim on a slot rather than a formality, and hands tomorrow's first pick to
+  // whoever was stuck going last today.
+  for (const id of [...d.turnOrder].reverse()) {
     const p = d.players[id];
     if (!p.berthed) {
       if (isPort(d, p.node)) p.madeHarbour = true; // got home on their own, just didn't formally berth
@@ -111,6 +118,15 @@ function dayRollover(d: GameState): void {
   }
   // last-slot sweetener: fuel AND standing. Whoever ends up at the back of tomorrow's
   // order let everyone else in ahead of them; the harbour notices.
+  // THE POLE: first slot in tomorrow's order costs standing — to whoever ends up with
+  // it, whether they berthed for it, bribed for it, or simply got seated there. You
+  // cannot dodge the front of the queue by refusing to make a decision.
+  const poleId = d.pendingNextOrder[0];
+  if (poleId && d.config.poleRepCost && d.pendingNextOrder.length > 1) {
+    const pp = d.players[poleId];
+    pp.tracks.reputation -= d.config.poleRepCost;
+    d.log.push(`${pp.name} takes the pole (slot 0) — -${d.config.poleRepCost} reputation, now ${pp.tracks.reputation}`);
+  }
   const lastId = d.pendingNextOrder[d.pendingNextOrder.length - 1];
   if (lastId && d.pendingNextOrder.length > 1) {
     const lp = d.players[lastId];

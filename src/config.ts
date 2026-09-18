@@ -28,7 +28,7 @@ export const defaultConfig: Config = {
     nodes: {
       // --- market ports (dock: refuel/berth AND sell) ---
       ROCKLAND:   { type: 'port', label: 'Rockland', port: {
-        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.6, floor: 2, rareBonus: 0, coopRep: 0.5 } } }, // THE CO-OP: pays least per lb, but every landing here earns standing   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
+        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.6, floor: 2, rareBonus: 0, coopRep: 0.5, coopMinLb: 5 } } }, // THE CO-OP: pays least per lb, but landing a real day's catch here (5lb+) earns standing   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
       VINALHAVEN: { type: 'port', label: 'Vinalhaven', port: {
         fuelCostPerUnit: 2, market: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 } } },     // island: high price, floods fast, dear fuel, the offshore springboard
       STONINGTON: { type: 'port', label: 'Stonington', port: {
@@ -212,7 +212,13 @@ export const defaultConfig: Config = {
     display: 3,      // face-up at once
   },
 
-  poleRepCost: 1,
+  // MATCHED to lastSlotRep: the berth queue is zero-sum (somebody is always first and
+  // somebody always last), so an unavoidable charge at the front must be balanced by
+  // the reward at the back or the whole table's standing just drains away — at 1 vs
+  // 0.5 it bled half a point per table per day and reputation went NEGATIVE. Matched,
+  // the queue REDISTRIBUTES standing instead of destroying it: push to the front and
+  // lose it, yield and gain it.
+  poleRepCost: 0.5,
   bribeMoneyCost: 4,
   lastSlotSweetenerFuel: 2,
   lastSlotRep: 0.5, // the tail of the berth order earns standing ("after you") — makes the order a gradient, not a pole-trap

@@ -149,6 +149,11 @@ export interface BuyerConfig {
   // value and is structurally always your weakest track. It also gives the home port
   // a reason to exist once the island buyers out-price it.
   coopRep?: number;
+  // ...but only for a REAL landing. Without a floor, one token lobster a day buys the
+  // same standing as a full day's catch, and reputation stops being earned and starts
+  // being printed. With it, bringing a big load to the lowest-paying buyer is a
+  // deliberate trade of money for standing.
+  coopMinLb?: number;
 }
 
 // A dock. Every port lets you refuel/berth; only ports with a `market` buy lobster.

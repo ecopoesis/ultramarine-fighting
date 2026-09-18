@@ -13,8 +13,12 @@ export function berth(d: GameState, playerId: string): void {
   p.berthed = true;
   p.madeHarbour = true; // came in under their own power
   p.berthNode = p.node;
-  if (slot === 0) p.tracks.reputation -= d.config.poleRepCost; // front slot: the pole costs rep
-  d.log.push(`${p.name} berths at ${p.node} into slot ${slot}${slot === 0 ? ' (pole, -rep)' : ''}`);
+  // NB the pole's reputation cost is NOT charged here — it is charged at day end to
+  // whoever actually HOLDS slot 0 (see reducer.dayRollover). Charging it only on a
+  // voluntary berth made the cost dodgeable: the end-of-day auto-berth handed out the
+  // same slot for free, so the dominant line was to never berth deliberately at all,
+  // and the cost fell only on captains who hadn't noticed yet.
+  d.log.push(`${p.name} berths at ${p.node} into slot ${slot}`);
 }
 
 // Bribe to jump to the front of tomorrow's order if you didn't berth early enough.
