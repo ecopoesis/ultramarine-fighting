@@ -33,7 +33,7 @@ export function sell(d: GameState, playerId: string): void {
   // Landing at the co-op: less money per pound, but standing in the harbour.
   const mkt = portOf(d, p.node)?.market;
   const coop = mkt?.coopRep ?? 0;
-  if (coop > 0 && lbs >= (mkt?.coopMinLb ?? 0)) {
+  if (coop > 0 && lbs >= (mkt?.coopMinLb ?? 0) && (p.licensed !== false || d.config.unlicensed.mayUseCoop)) {
     p.tracks.reputation += coop;
     d.log.push(`${p.name} lands at the co-op (+${coop} reputation, now ${p.tracks.reputation})`);
   }

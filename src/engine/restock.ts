@@ -119,6 +119,20 @@ export function finishSeasonRollover(d: GameState): void {
   d.restock = undefined;
   d.phase = 'PLAYING';
   d.season++;
+  // The season's fishing licence falls due. Pay it and you fish; can't (or won't) and
+  // you are a pirate for the year — no gear of your own, only what you can lift.
+  const fee = d.config.licensePerSeason?.[Math.min(d.season - 1, (d.config.licensePerSeason.length - 1))] ?? 0;
+  for (const id of ids) {
+    const p = d.players[id];
+    if (fee <= 0) { p.licensed = true; continue; }
+    if (p.money >= fee) {
+      p.money -= fee; p.licensed = true;
+      d.log.push(`${p.name} buys a season ${d.season} fishing licence (-${fee}, money ${p.money.toFixed(1)})`);
+    } else {
+      p.licensed = false;
+      d.log.push(`${p.name} CANNOT AFFORD the season ${d.season} licence (${fee}, has ${p.money.toFixed(1)}) — unlicensed: no gear of their own this season`);
+    }
+  }
   // Re-roll the weather for the new season: old tokens clear, the storm intensifies
   // inward. Happens on EVERY rollover, including the no-restock 4→5 (the ocean stops
   // recovering, but the weather keeps worsening).

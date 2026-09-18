@@ -59,13 +59,13 @@ export function legalActions(state: GameState, playerId: string): Action[] {
     }
   }
   // drop
-  if (node?.type === 'ground' && p.buoysAvailable > 0 && spaceHasRoom(state, p.node)) {
+  if (node?.type === 'ground' && p.buoysAvailable > 0 && spaceHasRoom(state, p.node) && (p.licensed !== false || cfg.unlicensed.mayFish)) {
     const t: Action = { type: 'DROP', playerId };
     if (canAfford(t)) out.push(t);
   }
   // haul own buoys here — only once they've ripened to PRIME
   for (const b of p.deployed) {
-    if (b.node === p.node && isRipe(state, p.soak[b.buoyId].ground, p.soak[b.buoyId].daysSoaked)) {
+    if (b.node === p.node && (p.licensed !== false || cfg.unlicensed.mayFish) && isRipe(state, p.soak[b.buoyId].ground, p.soak[b.buoyId].daysSoaked)) {
       const t: Action = { type: 'HAUL', playerId, buoyId: b.buoyId };
       if (canAfford(t)) out.push(t);
     }

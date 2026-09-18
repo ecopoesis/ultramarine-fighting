@@ -92,6 +92,7 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   // me
   const node = cfg.map.nodes[p.node];
   const where = node.type === 'port' ? `${p.node} (${node.port!.market ? 'market port' : 'shelter'})` : `${p.node} (${node.ground} ground${state.stormed.includes(p.node) ? ', STORMED' : ''})`;
+  if (p.licensed === false) lines.push(`*** YOU ARE UNLICENSED THIS SEASON — everything you haul is poached: ${cfg.unlicensed.repPerHaul} reputation per haul, and the co-op will not take your catch. ***`);
   lines.push(`YOU — ${p.name}: at ${where} | fuel ${p.fuel}/${fuelCap(state, p)} | money ${p.money.toFixed(1)} | reputation ${p.tracks.reputation} | conservation ${p.tracks.conservation} | v-tokens ${p.vTokens} | pots in hand ${p.buoysAvailable}/${buoyCap(state, p)} | sold today: ${p.soldToday ? 'yes' : 'no'}`);
   lines.push(`Your hold: ${holdSummary(p.hold)}`);
   const ups = Object.values(p.upgrades).filter(Boolean) as string[];

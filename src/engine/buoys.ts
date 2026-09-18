@@ -147,6 +147,10 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
   const rec = p.soak[buoyId];
   if (!isRipe(d, rec.ground, rec.daysSoaked)) throw new Error('Pot is not ripe yet (must reach PRIME)');
   const stage = stageFor(d, rec.ground, rec.daysSoaked);
+  if (p.licensed === false) { // poaching: every trap you pull is illegal
+    p.tracks.reputation += d.config.unlicensed.repPerHaul;
+    d.log.push(`${p.name} hauls without a licence (${d.config.unlicensed.repPerHaul} reputation)`);
+  }
   pullSeeded(d, playerId, buoy.node); // the space's seeded pile comes up first, then the bag
   resolveDraw(d, playerId, rec.ground, stage, policy, useToken, d.stormed.includes(buoy.node));
   // recover the gear

@@ -24,6 +24,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
       soldToday: false,
       berthed: false,
       vTokens: 0,
+      licensed: true, // season 1's licence comes with the boat
       upgrades: {},
       tracks: { conservation: 0, reputation: config.startReputation },
     };

@@ -40,6 +40,10 @@ export function stepsPerSteam(d: GameState, p: PlayerState): number {
 export function isStormImmune(d: GameState, p: PlayerState): boolean {
   return installed(d, p).some((u) => u.stormImmune);
 }
+// A plotter marks your gear, so you get it back up before the storm takes it.
+export function whittleMultiplier(d: GameState, p: PlayerState): number {
+  return installed(d, p).reduce((m, u) => m * (u.whittleMult ?? 1), 1);
+}
 // Does any installed refit make this action type free (0 actions)?
 export function freesAction(d: GameState, p: PlayerState, type: string): boolean {
   return installed(d, p).some((u) => u.freeAction === type);

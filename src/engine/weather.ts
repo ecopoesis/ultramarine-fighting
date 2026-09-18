@@ -1,5 +1,6 @@
 import type { GameState, Ground } from '../types';
 import { nextRandom, randInt } from '../rng';
+import { whittleMultiplier } from './upgrades';
 
 // Every zone node of a given ground type (a tier can have several — e.g. six mid).
 function nodesOfTier(d: GameState, g: Ground): string[] {
@@ -60,8 +61,9 @@ export function placeStorms(d: GameState): void {
 // (a soaking pot holds none), so the census stays closed.
 export function stormWhittle(d: GameState): void {
   if (!weatherOn(d) || d.stormed.length === 0) return;
-  const chance = d.config.weather.whittleChance;
+  const base = d.config.weather.whittleChance;
   for (const p of Object.values(d.players)) {
+    const chance = base * whittleMultiplier(d, p); // a GPS plotter halves it
     for (const b of p.deployed.slice()) {
       if (!isStormed(d, b.node)) continue;
       if (nextRandom(d) < chance) {

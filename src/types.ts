@@ -44,6 +44,8 @@ export interface PlayerState {
   hold: Tile[];
   soldToday: boolean;
   berthed: boolean;
+  licensed?: boolean;     // paid this season's fishing licence — may set and haul gear. Unlicensed captains can only steal.
+
   madeHarbour?: boolean;  // ended the day at a dock under their own power (not towed in). Only these captains earn the last-slot courtesy — otherwise "never go home" farms the standing the tow is meant to cost.
   berthNode?: string;   // the port a captain berthed in — where they start tomorrow (daily home-port choice)
   vTokens: number;
@@ -66,7 +68,8 @@ export interface UpgradeDef {
   slot: UpgradeSlot;
   cost: number;             // money to install (also costs an action, at a market port)
   stepsPerSteam?: number;   // engine: nodes moved per STEAM action (base 1)
-  stormImmune?: boolean;    // radar: no storm entry hazard
+  stormImmune?: boolean;    // no storm entry hazard
+  whittleMult?: number;     // GPS: multiplies the chance a pot left in a storm is parted. Radar guarded against the ENTRY hazard (1 fuel) but not the WHITTLE (82 pots lost across 5 games) — it protected against the wrong half of the weather, and two captains called it worthless by name. A plotter that lets you find your gear in a blow is the half that matters.
   freeAction?: string;      // makes this ACTION type cost 0 (crane→HAUL, tender→SELL, pot rack→DROP, …)
   fuelBonus?: number;       // tank: + fuel-tank capacity
   buoyBonus?: number;       // cargo: + buoy capacity
@@ -270,7 +273,24 @@ export interface Config {
   tow: { fee: number; emergencyFuel: number; lostTurns: number; rep: number };
   rep: { steal: number; illegalKeep: number; report: number; vNotch: number; bribe: number; reported: number };
 
-  // CREW WAGES: your sternman is paid for every day of the season, fished or not.
+  // FISHING LICENCE: the price of being allowed to fish at all, paid at the start of
+  // each season. Lumpy rather than daily — five payments a game instead of 130 — and
+  // it lands as a cash-flow decision (licence AND a refit this season, or one of
+  // them?) rather than a rounding error. An unlicensed captain may not set or haul
+  // gear of their own. They may still STEAL: you are not out of the game, you are
+  // just a pirate.
+  licensePerSeason: number[];
+  // What being unlicensed actually costs. A HARD gate (mayFish false) is an absorbing
+  // state: no fishing means no income means you cannot pay next season either, and
+  // piracy cannot carry you because theft fires ~3 times a game. Measured, ANY
+  // non-zero fee then cost a third of all player-seasons. The soft gate keeps the
+  // fiction — you are poaching, the co-op will not touch your catch and the harbour
+  // knows — while leaving you a way back in.
+  unlicensed: { mayFish: boolean; repPerHaul: number; mayUseCoop: boolean };
+  // CREW WAGES (kept at 0): tested and abandoned. A per-day charge did not reduce
+  // idle days at all — captains never mentioned it and never replanned around it,
+  // because 2/day is noise against a morning that can land 210. Gear congestion is
+  // what fixed idling. Left in place as a dial, set to zero.
   // The point is not the drain — it is that a day is the unit you pay for, so a day
   // that lands nothing is a day you paid for nothing. Staggering your pots (two waves
   // of two rather than all four at once) yields the SAME hauls per day and eliminates

@@ -199,7 +199,7 @@ export const defaultConfig: Config = {
       { id: 'engine', label: 'Bigger engine', slot: 'stern', cost: 18, stepsPerSteam: 2 },        // STEAM moves 2 nodes/action
       { id: 'fuelline', label: 'Fuel line', slot: 'stern', cost: 10, freeAction: 'REFUEL' },       // REFUEL free (still pays for the fuel)
       // midPrimary — bridge / trade
-      { id: 'radar', label: 'Radar', slot: 'midPrimary', cost: 14, stormImmune: true },            // no storm entry hazard
+      { id: 'gps', label: 'GPS plotter', slot: 'midPrimary', cost: 14, stormImmune: true, whittleMult: 0.5 }, // no storm entry hazard AND your gear is half as likely to be parted — you can find your pots in a blow
       { id: 'tender', label: 'Tender', slot: 'midPrimary', cost: 16, freeAction: 'SELL' },          // free docking: SELL costs 0
       { id: 'grapple', label: 'Grappling gear', slot: 'midPrimary', cost: 8, freeAction: 'STEAL' }, // STEAL free (niche → cheap)
       { id: 'flares', label: 'Signal flares', slot: 'midPrimary', cost: 5, freeAction: 'REPORT' },  // REPORT free — near-junk (report is rare); intentional chaff that clogs the display
@@ -230,7 +230,14 @@ export const defaultConfig: Config = {
   //   reported   -0.5 (own dial; was a 2nd full steal penalty) — extra heat when a theft is reported
   rep: { steal: -1, illegalKeep: -0.5, report: 1, vNotch: 2, bribe: -1, reported: -0.5 }, // vNotch is the CONSERVATION track gain per egger notched (scaled to money with vNotchTokenValue)
 
-  wagePerDay: 2, // the sternman's day rate — see types.ts; tuned in scripts/tuneWages.ts
+  // You inherit season 1's licence with the boat; after that the fishery is limited
+  // entry and the price climbs as the stock falls — the cost of staying in rises just
+  // as the catch gets harder. Swept in scripts/tuneLicense.ts.
+  licensePerSeason: [0, 6, 8, 10, 12],
+  // Poaching: you can still fish, but every haul is illegal and the co-op is shut to you.
+  // Set mayFish:false for a hard "no licence, no fishing" gate (measured as a death spiral).
+  unlicensed: { mayFish: true, repPerHaul: -0.5, mayUseCoop: false },
+  wagePerDay: 0, // tested (opus3) and abandoned — see types.ts
   holdDecayLbPerDay: 1,
   reportBountyShare: 0.5,
 

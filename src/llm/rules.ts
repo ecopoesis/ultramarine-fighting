@@ -79,6 +79,7 @@ export function buildRulesPrompt(cfg: Config, players: number): string {
     const fx: string[] = [];
     if (u.stepsPerSteam) fx.push(`STEAM moves up to ${u.stepsPerSteam} nodes per action`);
     if (u.stormImmune) fx.push('immune to the storm entry hazard');
+    if (u.whittleMult !== undefined) fx.push(`your pots are ${Math.round((1 - u.whittleMult) * 100)}% less likely to be parted by a storm overnight`);
     if (u.freeAction) fx.push(`${u.freeAction} costs 0 actions`);
     if (u.fuelBonus) fx.push(`+${u.fuelBonus} fuel capacity`);
     if (u.buoyBonus) fx.push(`+${u.buoyBonus} pot`);
@@ -132,7 +133,7 @@ Throwbacks return to the bag. Sold bag lobsters do not vanish: they land on that
 ## 5. Selling, markets, fuel
 - SELL (${cfg.actionCost.SELL} action) sells your ENTIRE hold at the market port you are docked in, once per day. THE CO-OP: the home port pays the least per pound, but landing a real day's catch there (see the port list for the poundage) earns reputation — the only repeatable way to raise it. A token landing does not count. Price per lb = max(floor, base − elasticity × lb already landed at that port today) (+ rare bonus for RARE keepers). Landing catch floods that port for the rest of the day — for everyone. Prices recover overnight.
 - Unsold keepers/jumbos lose ${cfg.holdDecayLbPerDay} lb per night in the hold (to a minimum of 1 lb).
-- CREW WAGES: at the end of EVERY day you pay your sternman ${cfg.wagePerDay} money, whether you landed anything or not (you cannot be taken below zero). A day is the unit you pay for, so a day your gear isn't ready is a day you paid for nothing. Note that four pots set as two waves of two yield the same hauls per day as all four at once, but with no waiting days — what that costs you is the freedom to be somewhere else on the off day.
+- FISHING LICENCE: at the start of each season you must pay that season's licence to fish at all. Season 1 comes with the boat; after that the fee is ${cfg.licensePerSeason.slice(1).join(', ')} for seasons 2 to ${cfg.seasons}. It is taken automatically if you can afford it. **If you cannot, you are UNLICENSED for that whole season and everything you pull is POACHED: every haul costs ${cfg.unlicensed.repPerHaul} reputation, and the co-op will not take your catch (no standing from landing at the home port). You can still fish and still steal — you are just doing it outside the law.** Budget for the fee: it rises as the fishery is squeezed, and a season spent poaching will gut the reputation track that sets your multiplier.
 - REFUEL (${cfg.actionCost.REFUEL} action) at any port buys fuel at that port's price, up to your tank (base ${cfg.fuelTankMax}, more with the tank refit). You start with ${cfg.startFuel} fuel and ${cfg.startMoney} money.
 - TOW: if the day ends and you are not at a port, you are towed to the nearest port: −${cfg.tow.fee} money (never below zero), fuel topped up to at least ${cfg.tow.emergencyFuel} (you keep more if you had more), and you LOSE your next ${cfg.tow.lostTurns} turns. Make harbor before the day ends.
 
@@ -150,7 +151,7 @@ Season 1 is calm. From season 2 storms are placed at random on some nodes per ti
 - ENTERING a stormed node: ${cfg.weather.hazardChance * 100}% chance to lose ${cfg.weather.hazardFuel} fuel.
 - Each night, every pot left in a stormed node has a ${cfg.weather.whittleChance * 100}% chance to be PARTED — lost for the rest of the season (you get it back at the season change).
 - HAULING a pot in a stormed node draws +${cfg.weather.bonusDraws} extra tiles and raises the keep limit by ${cfg.weather.bonusKeep}: a fat, risky haul.
-- The radar refit makes you immune to the entry hazard (not the whittle).
+- The GPS plotter refit makes you immune to the entry hazard AND halves the chance your gear is parted overnight.
 
 ## 9. Restock draft (between seasons, except into the final season)
 ${draftSeasons.length ? `After season${draftSeasons.length > 1 ? 's' : ''} ${draftSeasons.join(', ')} there is a RESTOCK DRAFT (none before the final season: the ocean gets no relief for the last year).` : 'There is NO restock draft in this game (it only happens between seasons that are not the last).'} In berth order (the order you berthed on the last day), each captain in turn CLAIMS one bag that has not yet been claimed, rolls the lobster die (faces ${cfg.restock.dieFaces.join('/')}) and returns that many lobsters of their choice from that bag's PILE into the bag (a roll of 0 wastes the claim but still locks the bag). After each claim, going around from the claimer's left, every other captain may CONTRIBUTE v-tokens: each token spent returns one more lobster of their choice from the pile to that bag (the token is gone — you trade end-game VP for a healthier commons). With ${GROUNDS.length} bags and ${players} captains, ${players > GROUNDS.length ? 'the tail of the berth order never gets to claim' : 'every captain claims once'}.
