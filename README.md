@@ -81,3 +81,6 @@ git remote add origin git@github.com:YOUR_USER/lobsters.git
 git branch -M main
 git push -u origin main
 ```
+
+## Component manifest
+`npm run components` regenerates `docs/components.html` from `src/config.ts` — every piece in the box and the text printed on it. Regenerate it in the same commit as any rules-number change; see `CLAUDE.md`.

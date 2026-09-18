@@ -1,0 +1,595 @@
+<title>Lobsters Component Manifest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{
+    --fog:#E8EDEB; --panel:#F3F6F5; --ink:#16232B; --muted:#5C6B6E;
+    --rule:#BDC9C6; --accent:#C93F1D; --verdigris:#357367; --verdigris-wash:#E2ECE8;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --fog:#0E171C; --panel:#152128; --ink:#DCE5E3; --muted:#8FA2A4;
+      --rule:#2A3A42; --accent:#F0663F; --verdigris:#6FB8A6; --verdigris-wash:#16262A;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --fog:#0E171C; --panel:#152128; --ink:#DCE5E3; --muted:#8FA2A4;
+    --rule:#2A3A42; --accent:#F0663F; --verdigris:#6FB8A6; --verdigris-wash:#16262A;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--fog); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,"Times New Roman",serif;
+    font-size:16px; line-height:1.55;
+  }
+  .sheet{max-width:60rem; margin:0 auto; padding-block:clamp(2rem,6vw,4.5rem); padding-left:20px; padding-right:20px;}
+
+  .masthead{border-bottom:3px solid var(--ink); padding-bottom:1.25rem; display:flex; flex-wrap:wrap; align-items:flex-end; gap:1rem 2rem;}
+  .masthead h1{
+    font-family:"Archivo Narrow",Arial Narrow,Helvetica,sans-serif;
+    font-weight:700; font-size:clamp(2.4rem,7vw,4rem); line-height:.95; margin:0;
+    letter-spacing:-.01em; text-transform:uppercase; text-wrap:balance; flex:1 1 18rem;
+  }
+  .masthead h1 small{display:block; font-size:.28em; letter-spacing:.22em; color:var(--accent); font-weight:600; margin-bottom:.5rem;}
+  .stamp{
+    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.72rem; line-height:1.7;
+    color:var(--muted); text-align:right; border-left:1px solid var(--rule); padding-left:1.25rem;
+  }
+  .stamp b{color:var(--ink); font-weight:500;}
+
+  .standfirst{
+    font-size:1.1rem; max-width:62ch; margin:1.75rem 0 0; color:var(--ink);
+  }
+  .standfirst em{color:var(--accent); font-style:normal; font-weight:600;}
+
+  .scales{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px;
+    background:var(--rule); border:1px solid var(--rule); margin-top:2.25rem;
+  }
+  .scale{background:var(--panel); padding:.9rem 1rem;}
+  .scale dt{
+    font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase;
+    letter-spacing:.14em; font-size:.66rem; color:var(--muted); font-weight:600;
+  }
+  .scale dd{
+    margin:.3rem 0 0; font-family:"IBM Plex Mono",monospace; font-size:1.35rem;
+    font-variant-numeric:tabular-nums; color:var(--ink);
+  }
+
+  .group{margin-top:3.5rem;}
+  .group-head{display:flex; align-items:baseline; gap:1rem; border-bottom:1px solid var(--ink); padding-bottom:.4rem;}
+  .group-head h2{
+    font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase;
+    letter-spacing:.1em; font-size:1.05rem; font-weight:700; margin:0; flex:1;
+  }
+  .tally{
+    font-family:"IBM Plex Mono",monospace; font-size:.75rem; color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+  .blurb{color:var(--muted); max-width:62ch; margin:.9rem 0 0; font-size:.95rem;}
+
+  .parts{list-style:none; margin:1.25rem 0 0; padding:0; display:flex; flex-direction:column; gap:1.5rem;}
+  .part{display:grid; grid-template-columns:4.5rem 1fr; gap:1.25rem; align-items:start;}
+  .qty{
+    font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+    font-size:1rem; color:var(--accent); text-align:right; padding-top:.1rem;
+    border-right:1px solid var(--rule); padding-right:1.25rem; min-height:1.4rem;
+  }
+  .detail h3{
+    font-family:"Archivo Narrow",Arial Narrow,sans-serif; font-weight:600; font-size:1.02rem;
+    margin:0; letter-spacing:.01em;
+  }
+  .printed{
+    font-family:"IBM Plex Mono",monospace; font-size:.78rem; line-height:1.65;
+    background:var(--verdigris-wash); border-left:2px solid var(--verdigris);
+    color:var(--ink); margin:.5rem 0 0; padding:.6rem .8rem; white-space:pre-wrap;
+    overflow-x:auto;
+  }
+  .note{color:var(--muted); font-size:.9rem; margin:.5rem 0 0; max-width:62ch;}
+
+  footer{
+    margin-top:4rem; border-top:1px solid var(--rule); padding-top:1.25rem;
+    color:var(--muted); font-size:.85rem; max-width:62ch;
+  }
+  footer code{font-family:"IBM Plex Mono",monospace; color:var(--ink); font-size:.95em;}
+
+  @media (max-width:520px){
+    .part{grid-template-columns:3.2rem 1fr; gap:.85rem;}
+    .qty{padding-right:.85rem;}
+    .stamp{text-align:left; border-left:0; padding-left:0;}
+  }
+</style>
+
+<div class="sheet">
+  <header class="masthead">
+    <h1><small>What's in the box</small>Lobsters</h1>
+    <div class="stamp">
+      Component manifest<br>
+      Generated from <b>src/config.ts</b><br>
+      Counts quoted at <b>6 players</b><br>
+      2026-09-18
+    </div>
+  </header>
+
+  <p class="standfirst">
+    Five seasons on Penobscot Bay. The bags only ever empty, and what you throw back is
+    the only thing that puts anything in them. Every count below is <em>generated from the
+    rules the engine actually plays</em>, so the box and the game cannot drift apart.
+  </p>
+
+  <dl class="scales">
+    <div class="scale"><dt>Players</dt><dd>2–6</dd></div>
+    <div class="scale"><dt>Seasons</dt><dd>5</dd></div>
+    <div class="scale"><dt>Fishing days</dt><dd>26</dd></div>
+    <div class="scale"><dt>Spaces</dt><dd>22</dd></div>
+    <div class="scale"><dt>Lobster tiles</dt><dd>226</dd></div>
+    <div class="scale"><dt>Pieces, about</dt><dd>486</dd></div>
+  </dl>
+
+
+      <section class="group" id="board">
+        <header class="group-head">
+          <h2>The board</h2>
+          
+        </header>
+        <p class="blurb">Penobscot Bay, from the working harbour at Rockland south into the open Gulf. Everything printed on it.</p>
+        <ul class="parts">
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Game board — Penobscot Bay</h3>
+              <pre class="printed">22 spaces joined by 36 sea lanes. 1 fuel per lane.</pre>
+              <p class="note">Four depth tiers running south into the Gulf: inshore 4 · mid 6 · offshore 6 · deep 1.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Rockland (market port)</h3>
+              <pre class="printed">4.5/lb · −0.6/lb per lb landed today · floor 2/lb · fuel 1/unit · CO-OP: land 5lb+ for +0.5 reputation</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Vinalhaven (market port)</h3>
+              <pre class="printed">7/lb · −1/lb per lb landed today · floor 3/lb · rare +0.5/lb · fuel 2/unit</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Stonington (market port)</h3>
+              <pre class="printed">6/lb · −0.5/lb per lb landed today · floor 3/lb · rare +0.4/lb · fuel 1.5/unit</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Monhegan (shelter)</h3>
+              <pre class="printed">Refuge and emergency fuel at 4/unit. No market. Never storms.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Matinicus (shelter)</h3>
+              <pre class="printed">Refuge and emergency fuel at 4/unit. No market. Never storms.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Fishing grounds</h3>
+              <pre class="printed">Muscle Ridge (inshore) · Upper Bay (inshore) · Owls Head (inshore) · Mussel Shoals (inshore) · West Bay (mid) · Hurricane Sound (mid) · Fox Islands (mid) · Seal Bay (mid) · Eggemoggin Reach (mid) · Isle au Haut (mid) · Outer West (offshore) · Two Bush (offshore) · Large Green (offshore) · Seal Ledge (offshore) · Outer East (offshore) · Saddleback (offshore) · The Edge (deep)</pre>
+              <p class="note">Each ground holds at most 4 pots per 3 players — 8 at a 6-player table — counting every captain's.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Season track (printed on board)</h3>
+              <pre class="printed">Season 1: 4 days  ·  Season 2: 5 days  ·  Season 3: 5 days  ·  Season 4: 6 days  ·  Season 5: 6 days</pre>
+              <p class="note">Licence due each season: S1 free with the boat · S2 6 · S3 8 · S4 10 · S5 12</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Weather escalation track (printed on board)</h3>
+              <pre class="printed">S1: 0/0/0/0  ·  S2: 0/0/1/1  ·  S3: 0/1/2/1  ·  S4: 0/2/3/1  ·  S5: 0/2/3/1</pre>
+              <p class="note">Storms placed per tier (inshore / mid / offshore / deep) at each season change. Inshore never storms.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Berth order track (printed on board)</h3>
+              <pre class="printed">6 numbered slots. Slot 1 costs 0.5 reputation; the last slot gains +0.5 reputation and +2 fuel.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Landmarks (printed, decorative)</h3>
+              <pre class="printed">Saddleback Ledge · Goose Rocks · Eagle Island · Heron Neck Light</pre>
+              
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="group" id="lobster">
+        <header class="group-head">
+          <h2>Lobster tiles</h2>
+          <span class="tally">226 tiles</span>
+        </header>
+        <p class="blurb">The commons itself, 200 tiles across four cloth bags at a 6-player table. Smaller tables use proportionally fewer, so pressure per boat holds.</p>
+        <ul class="parts">
+          <li class="part">
+            <span class="qty">40</span>
+            <div class="detail">
+              <h3>Inshore bag</h3>
+              <pre class="printed">16× 1 lb · 8× 2 lb · 8× SHORT — under the measure · 2× JUMBO 5 lb — over the measure · 6× EGGER — berried female</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">40</span>
+            <div class="detail">
+              <h3>Mid bag</h3>
+              <pre class="printed">14× 2 lb · 6× 3 lb · 2× 2 lb RARE · 8× SHORT — under the measure · 4× JUMBO 5 lb — over the measure · 6× EGGER — berried female</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">60</span>
+            <div class="detail">
+              <h3>Offshore bag</h3>
+              <pre class="printed">18× 3 lb · 6× 3 lb RARE · 12× SHORT — under the measure · 10× JUMBO 5 lb — over the measure · 14× EGGER — berried female</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">60</span>
+            <div class="detail">
+              <h3>Deep bag</h3>
+              <pre class="printed">8× 4 lb · 4× 4 lb RARE · 14× SHORT — under the measure · 10× JUMBO 5 lb — over the measure · 24× EGGER — berried female</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">26</span>
+            <div class="detail">
+              <h3>Extraction pile starters</h3>
+              <pre class="printed">2 of every sellable tile per ground, set out beside the board at setup so the first restock draft has something to return.</pre>
+              
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="group" id="wood">
+        <header class="group-head">
+          <h2>Meeples &amp; tokens</h2>
+          
+        </header>
+        <p class="blurb">The pieces that move, and the ones that mark what has been done to the water.</p>
+        <ul class="parts">
+          <li class="part">
+            <span class="qty">50</span>
+            <div class="detail">
+              <h3>V-notch lobster meeples</h3>
+              <pre class="printed">A notched breeder, released.</pre>
+              <p class="note">Take the egger out of the bag and put one of these in her place. She can never be scored again: whoever draws her releases her for nothing. One per egger in the game (50 at 6 players).</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">85</span>
+            <div class="detail">
+              <h3>Seeded lobsters (generic)</h3>
+              <pre class="printed">2 lb</pre>
+              <p class="note">1 placed on every fishing ground at the start of each season, accumulating on grounds nobody works. The first haul on a space takes the whole pile.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">6</span>
+            <div class="detail">
+              <h3>Storm tokens</h3>
+              <pre class="printed">⛈</pre>
+              <p class="note">Placed at each season change per the weather track. The most ever on the board at once is the full-blow count.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">6 × 5</span>
+            <div class="detail">
+              <h3>Pots (buoys), player-coloured</h3>
+              <pre class="printed">4 to a captain, plus one spare for the cargo hold refit.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">6</span>
+            <div class="detail">
+              <h3>Boats, player-coloured</h3>
+              <pre class="printed">One per captain.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">60+</span>
+            <div class="detail">
+              <h3>V-notch tokens</h3>
+              <pre class="printed">Worth 2 victory points each at the end, or spend one on a lean haul to draw 1 extra tile and keep the best keeper.</pre>
+              
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="group" id="refits">
+        <header class="group-head">
+          <h2>Refit tiles</h2>
+          <span class="tally">20 tiles</span>
+        </header>
+        <p class="blurb">Two of each, 20 in all, forming one shared deck. Each market port's chandlery draws 6 at setup and shows 3 face up.</p>
+        <ul class="parts">
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Bigger engine — stern</h3>
+              <pre class="printed">18 · STEAM moves up to 2 spaces</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Fuel line — stern</h3>
+              <pre class="printed">10 · REFUEL costs no action</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>GPS plotter — midPrimary</h3>
+              <pre class="printed">14 · no storm entry hazard · storms part your gear 50% less often</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Tender — midPrimary</h3>
+              <pre class="printed">16 · SELL costs no action</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Grappling gear — midPrimary</h3>
+              <pre class="printed">8 · STEAL costs no action</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Signal flares — midPrimary</h3>
+              <pre class="printed">5 · REPORT costs no action</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Hauling crane — midSecondary</h3>
+              <pre class="printed">16 · HAUL costs no action</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Pot rack — midSecondary</h3>
+              <pre class="printed">14 · DROP costs no action</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Cargo hold — midSecondary</h3>
+              <pre class="printed">14 · +1 pot</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Bigger tanks — midSecondary</h3>
+              <pre class="printed">10 · +6 fuel capacity</pre>
+              
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="group" id="dice">
+        <header class="group-head">
+          <h2>Dice</h2>
+          
+        </header>
+        <p class="blurb">Three, each doing one job.</p>
+        <ul class="parts">
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Lobster die</h3>
+              <pre class="printed">blank / 1 / 2 / 3 / 4 / 5</pre>
+              <p class="note">Rolled on your claim in the restock draft: how many lobsters you may return from that bag's pile. A blank wastes the claim but still locks the bag.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Storm die (d6)</h3>
+              <pre class="printed">1–6</pre>
+              <p class="note">Picks which ground in a tier the storm lands on. The rings are six spaces wide for exactly this reason.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Weather die (d10)</h3>
+              <pre class="printed">1–10</pre>
+              <p class="note">Entering a storm: a beating on 4 or less (−1 fuel). Each night, gear left in a storm parts on a 1 (the engine uses 12%, rounded to 10% for hand play).</p>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="group" id="cards">
+        <header class="group-head">
+          <h2>Cards &amp; mats</h2>
+          
+        </header>
+        <p class="blurb">Everything you would otherwise have to remember. All of it hand-computable by design — no roots, no ratios.</p>
+        <ul class="parts">
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Scoring card</h3>
+              <pre class="printed">Add your three tracks. Find your LOWEST. Multiply.
+  lowest 30 or more → ×1
+  lowest 24 or more → ×0.9
+  lowest 18 or more → ×0.75
+  lowest 12 or more → ×0.5
+  lowest 6 or more → ×0.25
+  lowest below 6 → ×0</pre>
+              <p class="note">Money ÷ 5 · reputation × 4 · conservation = v-notch tokens (×2) + notches made + the shared commons bonus.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Commons health card</h3>
+              <pre class="printed">80% of the bags remaining → 12 VP
+60% of the bags remaining → 9 VP
+40% of the bags remaining → 6 VP
+20% of the bags remaining → 3 VP
+0% of the bags remaining → 0 VP</pre>
+              <p class="note">One end-of-game read, shared by everyone at the table. A stripped ocean costs the steward too.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Soak card</h3>
+              <pre class="printed">inshore: 0n SET → 1n PRIME → 2n PRIME → 3n PRIME → 4n FOULED
+mid: 0n SET → 1n SOAKING → 2n PRIME → 3n PRIME → 4n OVERRIPE → 5n FOULED
+offshore: 0n SET → 1n SOAKING → 2n PRIME → 3n PRIME → 4n OVERRIPE → 5n FOULED
+deep: 0n SET → 1n SOAKING → 2n PRIME → 3n PRIME → 4n FOULED</pre>
+              <p class="note">Nights soaked, left to right. A pot cannot be hauled until it reaches PRIME.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Draw card</h3>
+              <pre class="printed">SET: draw 1, keep 1
+SOAKING: draw 2, keep 1
+PRIME: draw 3, keep 2
+OVERRIPE: draw 2, keep 1
+FOULED: draw 1, keep 1</pre>
+              <p class="note">Hauling in a storm: draw +4, keep +4.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Action card</h3>
+              <pre class="printed">STEAM 1 · DROP 1 · HAUL 1 · STEAL 2 · SELL 1 · REFUEL 1 · REPORT 1 · BERTH 0 · BRIBE 0 · BUY_UPGRADE 1 · PASS 0</pre>
+              <p class="note">2 actions a turn, 6 turns a day. Unspent actions are lost.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Reputation card</h3>
+              <pre class="printed">steal -1
+keep an illegal lobster -0.5
+reported -0.5
+bribe -1
+towed in -0.5
+haul without a licence -0.5
+take the pole −0.5
+report a theft +1
+land at the co-op +0.5
+take the last berth +0.5</pre>
+              <p class="note">Everyone starts at 8.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">6</span>
+            <div class="detail">
+              <h3>Captain mats</h3>
+              <pre class="printed">Three refit slots (stern · mid primary · mid secondary), a fuel track to 10 (16 with bigger tanks), a hold, and the three score tracks.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Tow card</h3>
+              <pre class="printed">Caught at sea at day's end: towed to the nearest port, −5 money, -0.5 reputation, fuel topped up to at least 2, and you lose your next 4 turns.</pre>
+              
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="group" id="money">
+        <header class="group-head">
+          <h2>Money &amp; bags</h2>
+          
+        </header>
+        
+        <ul class="parts">
+          <li class="part">
+            <span class="qty">~400</span>
+            <div class="detail">
+              <h3>Money (1 / 5 / 20)</h3>
+              <pre class="printed">Everyone starts with 10. A good season can land several hundred.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">4</span>
+            <div class="detail">
+              <h3>Cloth bags</h3>
+              <pre class="printed">One per ground type. Opaque — you draw blind.</pre>
+              
+            </div>
+          </li>
+        </ul>
+      </section>
+
+  <footer>
+    This sheet is generated. Change a number in <code>src/config.ts</code> and run
+    <code>npm run components</code> to rebuild it — never edit the counts by hand, or the
+    manifest and the rules will disagree and only one of them is right.
+  </footer>
+</div>

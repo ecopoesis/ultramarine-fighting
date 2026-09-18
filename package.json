@@ -13,7 +13,8 @@
     "typecheck:web": "tsc -p tsconfig.web.json --noEmit",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "components": "tsx scripts/components.ts"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
