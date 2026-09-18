@@ -4,6 +4,7 @@ import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
 import { isRipe } from './engine/soak';
 import { upgradesOn, upgradeDisplay, canBuyUpgrade, freesAction, fuelCap, stepsPerSteam } from './engine/upgrades';
 import type { HaulPolicy } from './engine/buoys';
+import { spaceHasRoom } from './engine/buoys';
 
 export type Action =
   | { type: 'STEAM'; playerId: string; to: string }
@@ -58,7 +59,7 @@ export function legalActions(state: GameState, playerId: string): Action[] {
     }
   }
   // drop
-  if (node?.type === 'ground' && p.buoysAvailable > 0) {
+  if (node?.type === 'ground' && p.buoysAvailable > 0 && spaceHasRoom(state, p.node)) {
     const t: Action = { type: 'DROP', playerId };
     if (canAfford(t)) out.push(t);
   }

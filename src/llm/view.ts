@@ -5,6 +5,7 @@ import { stageFor, isRipe } from '../engine/soak';
 import { pricePerLb } from '../engine/market';
 import { fuelPriceAt, isPort } from '../engine/ports';
 import { upgradeDisplay, upgradeDef, fuelCap, buoyCap, stepsPerSteam } from '../engine/upgrades';
+import { potCapacity, potsOnNode } from '../engine/buoys';
 import { hopToward } from '../bots/helpers';
 import { daysThisSeason, activePlayerId } from '../selectors';
 
@@ -52,7 +53,7 @@ function pileSummary(state: GameState, g: Ground): string {
 function describeAction(state: GameState, a: Action): string {
   switch (a.type) {
     case 'STEAM': return `STEAM ${a.to}${state.stormed.includes(a.to) ? ' (STORM)' : ''}`;
-    case 'DROP': return 'DROP';
+    case 'DROP': return `DROP (${potCapacity(state) - potsOnNode(state, state.players[a.playerId].node)} of ${potCapacity(state)} berths left on this ground)`;
     case 'HAUL': return `HAUL ${a.buoyId}`;
     case 'STEAL': return `STEAL ${a.buoyId} (${state.players[a.ownerId].name}'s)`;
     case 'SELL': return 'SELL';
@@ -121,6 +122,10 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   lines.push('BAGS (public):');
   for (const g of GROUNDS) lines.push(`  ${bagSummary(state, g)}`);
   lines.push(`PILES (sold lobsters awaiting restock): ${GROUNDS.map((g) => pileSummary(state, g)).join(' | ')}`);
+  const occupied = Object.keys(cfg.map.nodes)
+    .filter((n) => cfg.map.nodes[n].type === 'ground' && potsOnNode(state, n) > 0)
+    .map((n) => `${n} ${potsOnNode(state, n)}/${potCapacity(state)}`);
+  lines.push(`GEAR ON THE GROUND (every captain's pots; a ground takes ${potCapacity(state)} pots and no more): ${occupied.length ? occupied.join(', ') : 'the bay is clear'}`);
   const seeded = Object.entries(state.seeded).filter(([, n]) => n > 0).map(([n, c]) => `${n}:${c}`);
   lines.push(`SEEDED piles (generic ${cfg.seeded.weightLb} lb keepers on nodes): ${seeded.length ? seeded.join(' ') : 'none'}`);
   lines.push('');

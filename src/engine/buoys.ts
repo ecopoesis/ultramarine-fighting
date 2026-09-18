@@ -19,10 +19,29 @@ function groundAt(d: GameState, node: string): Ground {
   return n.ground;
 }
 
+// How many pots this space can hold, all captains counted, scaled to the table size.
+export function potCapacity(d: GameState): number {
+  const cfg = d.config;
+  if (!cfg.maxPotsPerSpace) return Infinity;
+  return Math.max(1, Math.round(cfg.maxPotsPerSpace * (cfg.players / cfg.referencePlayers)));
+}
+
+// Pots currently on a space, across the whole fleet (public information — buoys float).
+export function potsOnNode(d: GameState, node: string): number {
+  let n = 0;
+  for (const p of Object.values(d.players)) for (const b of p.deployed) if (b.node === node) n++;
+  return n;
+}
+
+export function spaceHasRoom(d: GameState, node: string): boolean {
+  return potsOnNode(d, node) < potCapacity(d);
+}
+
 export function dropBuoy(d: GameState, playerId: string): void {
   const p = d.players[playerId];
   if (p.buoysAvailable <= 0) throw new Error('No buoys available');
   const ground = groundAt(d, p.node);
+  if (!spaceHasRoom(d, p.node)) throw new Error(`${p.node} is full — ${potCapacity(d)} pots is all that ground will take`);
   const buoyId = `b${d.buoyCounter++}`;
   p.buoysAvailable -= 1;
   p.deployed.push({ buoyId, node: p.node, ownerId: playerId });

@@ -108,7 +108,7 @@ ${nodeLines.join('\n')}
 Tiers: inshore (4 nodes, up-bay, never storms) → mid (6, the island belt) → offshore (6, outer water) → deep (1, "The Edge"). Round trip to the deep is long: plan fuel and days.
 
 ## 3. Pots (buoys), soaking, hauling
-- You own ${cfg.buoysPerPlayer} pots. DROP places one on the fishing ground you are standing on (1 action). Its position is PUBLIC, and rivals who pay attention see when you drop it; its soak stage is never displayed to them (they must infer it).
+- You own ${cfg.buoysPerPlayer} pots. DROP places one on the fishing ground you are standing on (1 action). GEAR CONGESTION: a ground only has so much bottom — at this table size each fishing space holds **${Math.max(1, Math.round(cfg.maxPotsPerSpace * (players / cfg.referencePlayers)))} pots in total, counting every captain's**. Once a space is full nobody can set there until gear comes up, so a rich ground is a race for berths as well as for lobster, and a fleet cannot all pile onto the same ledge. Its position is PUBLIC, and rivals who pay attention see when you drop it; its soak stage is never displayed to them (they must infer it).
 - A pot ripens overnight along its ground's soak curve (index = nights soaked):
 ${curveLines.join('\n')}
 - A pot can only be hauled (or stolen) once it has reached PRIME. Draw rules by stage (tiles drawn from that ground's bag; keep limit applies to keepers):

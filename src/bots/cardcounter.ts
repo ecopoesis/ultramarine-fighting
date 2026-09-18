@@ -10,6 +10,7 @@ import {
   isPort, nearestPort, nearestMarketPort,
 } from './helpers';
 import { upgradesOn, upgradeDef, stepsPerSteam } from '../engine/upgrades';
+import { spaceHasRoom } from '../engine/buoys';
 
 const UPGRADE_RESERVE = 10; // money a bot keeps in hand rather than sinking into a refit
 
@@ -180,6 +181,7 @@ function chooseTarget(
       if (daysToPrime(state, g) > daysLeft - cc.dropSlack) continue; // must prime with time to spare to HAUL it, not abandon it
       for (const zone of groundNodesOfType(state, g)) {
         if (!okReach(zone) || buoys.some((b) => b.node === zone)) continue;
+        if (!spaceHasRoom(state, zone)) continue; // that ground is already full of gear
         const s = scoreZone(state, p.node, zone, g, cc);
         if (s > bestScore) { bestScore = s; best = zone; }
       }

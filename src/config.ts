@@ -12,6 +12,7 @@ export const defaultConfig: Config = {
   hoursPerDay: 6,
   actionsPerTurn: 2,
   buoysPerPlayer: 4,
+  maxPotsPerSpace: 4, // at referencePlayers; scales with the table. Swept in scripts/tuneSpace.ts
   startMoney: 10,
   startReputation: 8, // buffer so dirty play (theft/high-grading) is a priced risk, not instant death under weak-link
   fuelTankMax: 10,

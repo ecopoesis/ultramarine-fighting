@@ -198,6 +198,12 @@ export interface Config {
   hoursPerDay: number;
   actionsPerTurn: number;
   buoysPerPlayer: number;
+  // GEAR CONGESTION: how many pots may sit on ONE fishing space, counting every
+  // captain's. The bottom is finite — you cannot pile the whole fleet's string onto
+  // one ledge — and measurement said the fleet was doing exactly that: The Edge took
+  // 45-61% of a season's pots in game after game, on a 22-node map. Scaled by player
+  // count the same way bags are, so crowding-per-boat holds across 2-6 players.
+  maxPotsPerSpace: number;
   startMoney: number;
   startReputation: number;
   fuelTankMax: number;
