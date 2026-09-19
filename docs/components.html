@@ -113,7 +113,7 @@
       Component manifest<br>
       Generated from <b>src/config.ts</b><br>
       Counts quoted at <b>6 players</b><br>
-      2026-09-18
+      2026-09-19
     </div>
   </header>
 
@@ -152,7 +152,7 @@
             <span class="qty">—</span>
             <div class="detail">
               <h3>Rockland (market port)</h3>
-              <pre class="printed">4.5/lb · −0.6/lb per lb landed today · floor 2/lb · fuel 1/unit · CO-OP: land 5lb+ for +1.5 reputation</pre>
+              <pre class="printed">5/lb · −1/lb for every 2 lb landed today · floor 2/lb · fuel 1/unit · CO-OP: land 5lb+ for +3 reputation</pre>
               
             </div>
           </li>
@@ -160,7 +160,7 @@
             <span class="qty">—</span>
             <div class="detail">
               <h3>Vinalhaven (market port)</h3>
-              <pre class="printed">7/lb · −1/lb per lb landed today · floor 3/lb · rare +0.5/lb · fuel 2/unit</pre>
+              <pre class="printed">7/lb · −1/lb for every 1 lb landed today · floor 3/lb · rare +1/lb · fuel 2/unit</pre>
               
             </div>
           </li>
@@ -168,7 +168,7 @@
             <span class="qty">—</span>
             <div class="detail">
               <h3>Stonington (market port)</h3>
-              <pre class="printed">6/lb · −0.5/lb per lb landed today · floor 3/lb · rare +0.4/lb · fuel 1.5/unit</pre>
+              <pre class="printed">6/lb · −1/lb for every 3 lb landed today · floor 3/lb · rare +1/lb · fuel 2/unit</pre>
               
             </div>
           </li>
@@ -216,7 +216,7 @@
             <span class="qty">—</span>
             <div class="detail">
               <h3>Berth order track (printed on board)</h3>
-              <pre class="printed">6 numbered slots. Slot 1 costs 0.5 reputation; the last slot gains +0.5 reputation and +2 fuel.</pre>
+              <pre class="printed">6 numbered slots. Slot 1 costs 1 reputation; the last slot gains +1 reputation and +2 fuel.</pre>
               
             </div>
           </li>
@@ -366,7 +366,7 @@
             <span class="qty">2</span>
             <div class="detail">
               <h3>GPS plotter — midPrimary</h3>
-              <pre class="printed">14 · no storm entry hazard · storms part your gear 50% less often</pre>
+              <pre class="printed">14 · no storm entry hazard</pre>
               
             </div>
           </li>
@@ -457,7 +457,7 @@
             <div class="detail">
               <h3>Weather die (d10)</h3>
               <pre class="printed">1–10</pre>
-              <p class="note">Entering a storm: a beating on 4 or less (−1 fuel). Each night, gear left in a storm parts on a 1 (the engine uses 12%, rounded to 10% for hand play).</p>
+              <p class="note">Entering a storm: a beating on 4 or less (−1 fuel). Each night, gear left in a storm parts on 1 or less — lost for the season, unless a GPS plotter finds it.</p>
             </div>
           </li>
         </ul>
@@ -474,14 +474,14 @@
             <span class="qty">1</span>
             <div class="detail">
               <h3>Scoring card</h3>
-              <pre class="printed">Add your three tracks. Find your LOWEST. Multiply.
-  lowest 30 or more → ×1
-  lowest 24 or more → ×0.9
-  lowest 18 or more → ×0.75
-  lowest 12 or more → ×0.5
-  lowest 6 or more → ×0.25
-  lowest below 6 → ×0</pre>
-              <p class="note">Money ÷ 5 · reputation × 4 · conservation = v-notch tokens (×2) + notches made + the shared commons bonus.</p>
+              <pre class="printed">Add your three tracks. Find your LOWEST. Subtract.
+  lowest 40 or more → −0
+  lowest 30 or more → −10
+  lowest 20 or more → −30
+  lowest 12 or more → −60
+  lowest 6 or more → −100
+  lowest below 6 → −150</pre>
+              <p class="note">Money ÷ 5 · reputation × 2 · conservation = v-notch tokens (×2) + notches made + the shared commons bonus.</p>
             </div>
           </li>
           <li class="part">
@@ -531,17 +531,17 @@ FOULED: draw 1, keep 1</pre>
             <span class="qty">1</span>
             <div class="detail">
               <h3>Reputation card</h3>
-              <pre class="printed">steal -1
-keep an illegal lobster -0.5
-reported -0.5
-bribe -1
-towed in -0.5
-haul without a licence -0.5
-take the pole −0.5
-report a theft +1
-land at the co-op +1.5
-take the last berth +0.5</pre>
-              <p class="note">Everyone starts at 8.</p>
+              <pre class="printed">steal -2
+keep an illegal lobster -1
+reported -1
+bribe -2
+towed in -1
+haul without a licence -1
+take the pole −1
+report a theft +2
+land at the co-op +3
+take the last berth +1</pre>
+              <p class="note">Everyone starts at 16.</p>
             </div>
           </li>
           <li class="part">
@@ -556,7 +556,7 @@ take the last berth +0.5</pre>
             <span class="qty">1</span>
             <div class="detail">
               <h3>Tow card</h3>
-              <pre class="printed">Caught at sea at day's end: towed to the nearest port, −5 money, -0.5 reputation, fuel topped up to at least 2, and you lose your next 4 turns.</pre>
+              <pre class="printed">Caught at sea at day's end: towed to the nearest port, −5 money, -1 reputation, fuel topped up to at least 2, and you lose your next 4 turns.</pre>
               
             </div>
           </li>

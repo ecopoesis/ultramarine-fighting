@@ -14,7 +14,10 @@ export const defaultConfig: Config = {
   buoysPerPlayer: 4,
   maxPotsPerSpace: 4, // at referencePlayers; scales with the table. Swept in scripts/tuneSpace.ts
   startMoney: 10,
-  startReputation: 8, // buffer so dirty play (theft/high-grading) is a priced risk, not instant death under weak-link
+  // The reputation track runs on a DOUBLED scale (start 16, not 8) purely so every
+  // change is a whole number — half-points were the single biggest source of fractions
+  // in the game. repToVP is halved to match, so scoring is unchanged.
+  startReputation: 16,
   fuelTankMax: 10,
   startFuel: 8,
 
@@ -29,11 +32,11 @@ export const defaultConfig: Config = {
     nodes: {
       // --- market ports (dock: refuel/berth AND sell) ---
       ROCKLAND:   { type: 'port', label: 'Rockland', port: {
-        fuelCostPerUnit: 1, market: { base: 4.5, elasticity: 0.6, floor: 2, rareBonus: 0, coopRep: 1.5, coopMinLb: 5 } } }, // THE CO-OP: pays least per lb, but landing a real day's catch here (5lb+) earns standing   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
+        fuelCostPerUnit: 1, market: { base: 5, dropPerLbs: 2, floor: 2, rareBonus: 0, coopRep: 3, coopMinLb: 5 } } }, // THE CO-OP: pays least per lb, but landing a real day's catch here (5lb+) earns standing   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
       VINALHAVEN: { type: 'port', label: 'Vinalhaven', port: {
-        fuelCostPerUnit: 2, market: { base: 7, elasticity: 1.0, floor: 3, rareBonus: 0.5 } } },     // island: high price, floods fast, dear fuel, the offshore springboard
+        fuelCostPerUnit: 2, market: { base: 7, dropPerLbs: 1, floor: 3, rareBonus: 1 } } },     // island: high price, floods fast, dear fuel, the offshore springboard
       STONINGTON: { type: 'port', label: 'Stonington', port: {
-        fuelCostPerUnit: 1.5, market: { base: 6, elasticity: 0.5, floor: 3, rareBonus: 0.4 } } },   // eastern premium, near the mid grounds
+        fuelCostPerUnit: 2, market: { base: 6, dropPerLbs: 3, floor: 3, rareBonus: 1 } } },   // eastern premium, near the mid grounds
 
       // --- shelters (refuge + emergency fuel, NO market) — stage the outer run ---
       MONHEGAN:   { type: 'port', label: 'Monhegan', port: { fuelCostPerUnit: 4, shelter: true } },  // SW lighthouse, by the outer-west water
@@ -143,7 +146,9 @@ export const defaultConfig: Config = {
       { inshore: 0, mid: 2, offshore: 3, deep: 1 }, // S4
       { inshore: 0, mid: 2, offshore: 3, deep: 1 }, // S5 — full blow: a third of the mid grounds and most of the outer water (the near-water haven shrinks late)
     ],
-    hazardChance: 0.4, // entering a storm: a chance of a beating (chancy, not a wall)
+    hazardInTen: 4,  // d10: a beating on 4 or less when you push into a storm
+    whittleInTen: 1, // d10: gear left in a storm parts on a 1
+    hazardChance: 0.4, // (legacy, unused — the d10 above is what the engine rolls)
     hazardFuel: 1,     // a light beating — kept gentle so the fuel bleed at dear far ports doesn't bankrupt the far gamble; the whittle (lost gear) is the real teeth
     whittleChance: 0.12, // a pot left out overnight parts. Gentle: a far pot (3-night soak) survives
                          // ~2/3 of the time (0.88^3), so the churn bonus makes a stormed far ground a
@@ -199,7 +204,7 @@ export const defaultConfig: Config = {
       { id: 'engine', label: 'Bigger engine', slot: 'stern', cost: 18, stepsPerSteam: 2 },        // STEAM moves 2 nodes/action
       { id: 'fuelline', label: 'Fuel line', slot: 'stern', cost: 10, freeAction: 'REFUEL' },       // REFUEL free (still pays for the fuel)
       // midPrimary — bridge / trade
-      { id: 'gps', label: 'GPS plotter', slot: 'midPrimary', cost: 14, stormImmune: true, whittleMult: 0.5 }, // no storm entry hazard AND your gear is half as likely to be parted — you can find your pots in a blow
+      { id: 'gps', label: 'GPS plotter', slot: 'midPrimary', cost: 14, stormImmune: true, whittleRecover: true }, // no storm entry hazard, AND a parted pot comes back to your hand instead of being lost for the season
       { id: 'tender', label: 'Tender', slot: 'midPrimary', cost: 16, freeAction: 'SELL' },          // free docking: SELL costs 0
       { id: 'grapple', label: 'Grappling gear', slot: 'midPrimary', cost: 8, freeAction: 'STEAL' }, // STEAL free (niche → cheap)
       { id: 'flares', label: 'Signal flares', slot: 'midPrimary', cost: 5, freeAction: 'REPORT' },  // REPORT free — near-junk (report is rare); intentional chaff that clogs the display
@@ -219,16 +224,16 @@ export const defaultConfig: Config = {
   // 0.5 it bled half a point per table per day and reputation went NEGATIVE. Matched,
   // the queue REDISTRIBUTES standing instead of destroying it: push to the front and
   // lose it, yield and gain it.
-  poleRepCost: 0.5,
+  poleRepCost: 1,
   bribeMoneyCost: 4,
   lastSlotSweetenerFuel: 2,
-  lastSlotRep: 0.5, // the tail of the berth order earns standing ("after you") — makes the order a gradient, not a pole-trap
-  tow: { fee: 5, emergencyFuel: 2, lostTurns: 4, rep: -0.5 }, // end-of-day rescue for a boat caught at sea: towed to nearest port, a money fee, a splash of emergency fuel, and — the real teeth — 4 lost turns next morning. The lost time negates the guzzler's edge (never-returning = more fishing = more conservation), which a money fee alone can't reach. Honest bots make harbor in time (cardcounter time-bail), so this falls almost only on the guzzler.
+  lastSlotRep: 1, // the tail of the berth order earns standing ("after you") — makes the order a gradient, not a pole-trap
+  tow: { fee: 5, emergencyFuel: 2, lostTurns: 4, rep: -1 }, // end-of-day rescue for a boat caught at sea: towed to nearest port, a money fee, a splash of emergency fuel, and — the real teeth — 4 lost turns next morning. The lost time negates the guzzler's edge (never-returning = more fishing = more conservation), which a money fee alone can't reach. Honest bots make harbor in time (cardcounter time-bail), so this falls almost only on the guzzler.
   // theft/dirty play burns rep, but priced to be survivable if rationed:
   //   steal      -1  (was -2)  — cost of stealing a rival buoy
   //   illegalKeep -0.5 (was -1) — cost per illegal tile kept (high-grading)
   //   reported   -0.5 (own dial; was a 2nd full steal penalty) — extra heat when a theft is reported
-  rep: { steal: -1, illegalKeep: -0.5, report: 1, vNotch: 2, bribe: -1, reported: -0.5 }, // vNotch is the CONSERVATION track gain per egger notched (scaled to money with vNotchTokenValue)
+  rep: { steal: -2, illegalKeep: -1, report: 2, vNotch: 2, bribe: -2, reported: -1 }, // vNotch is the CONSERVATION gain per egger (not on the doubled rep scale) // vNotch is the CONSERVATION track gain per egger notched (scaled to money with vNotchTokenValue)
 
   // You inherit season 1's licence with the boat; after that the fishery is limited
   // entry and the price climbs as the stock falls — the cost of staying in rises just
@@ -236,10 +241,10 @@ export const defaultConfig: Config = {
   licensePerSeason: [0, 6, 8, 10, 12],
   // Poaching: you can still fish, but every haul is illegal and the co-op is shut to you.
   // Set mayFish:false for a hard "no licence, no fishing" gate (measured as a death spiral).
-  unlicensed: { mayFish: true, repPerHaul: -0.5, mayUseCoop: false },
+  unlicensed: { mayFish: true, repPerHaul: -1, mayUseCoop: false },
   wagePerDay: 0, // tested (opus3) and abandoned — see types.ts
   holdDecayLbPerDay: 1,
-  reportBountyShare: 0.5,
+  reportBountyDivisor: 2, // the reporter takes half the confiscated value, rounded down
 
   vToken: { insuranceDraws: 1 }, // spend a token on a lean haul → draw 1 extra, keep best keeper (dial #4)
 
@@ -247,31 +252,40 @@ export const defaultConfig: Config = {
     moneyPerVP: 5,
     vNotchTokenValue: 2,  // scaled to MONEY: an egger notched is worth 4 VP total (token + track), so a conservation run lands in the same band as a money run
     conservationBagHealthVP: 10, // shared end-game health bonus; floors conservation so specialists aren't zeroed
-    repToVP: 4, // reputation is scored on the same ~0-45 scale as money once the co-op gives it a real income
+    repToVP: 2, // halved because the track itself is doubled — the VP are identical, the fractions are gone
     // sumWeakLink: the PEN-AND-PAPER combine (geometricMean is a cube root, unscoreable
     // by hand). Total = (sum of the three tracks) × the multiplier for your LOWEST
     // track, from the printed card below. Add three numbers, find the smallest, read
     // the row. Rewards balance, craters a dumped track — like geomean, by hand.
-    combineMode: 'sumWeakLink',
+    combineMode: 'sumMinusPenalty',
     // Clean halve/quarter multipliers — easy to apply to a two-digit sum by hand.
     // Rescaled to the money band (~20-45 VP) and SOFTENED at the top: the old card
     // stepped 1 → 0.75 at a single threshold, so half a reputation point could cost a
     // quarter of the score. Near the top the steps are now gentle; the cliff only
     // appears where a track really has been dumped.
-    weakLink: [
-      { atLeast: 30, mult: 1 },
-      { atLeast: 24, mult: 0.9 },
-      { atLeast: 18, mult: 0.75 },
-      { atLeast: 12, mult: 0.5 },
-      { atLeast: 6, mult: 0.25 },
-      { atLeast: -Infinity, mult: 0 }, // a dumped track zeroes you
+    // THE SCORING CARD. Add the three tracks, find your smallest, subtract the penalty
+    // on its row. Every number is a whole one — the old card asked you to multiply a
+    // three-digit sum by 0.75, which is exactly the arithmetic this game must not have.
+    // Thresholds raised so the card actually DISCRIMINATES. At the old 30 line, four
+    // captains in five paid nothing and the weak link was decorative — the same
+    // complaint as the multiplier it replaced. Against the last full game's lowest
+    // tracks (18 / 30 / 36 / 42 / 54) this charges three of the five, across three
+    // different bands.
+    weakLinkPenalty: [
+      { atLeast: 40, penalty: 0 },    // genuinely balanced across all three
+      { atLeast: 30, penalty: 10 },
+      { atLeast: 20, penalty: 30 },
+      { atLeast: 12, penalty: 60 },
+      { atLeast: 6, penalty: 100 },
+      { atLeast: -Infinity, penalty: 150 }, // a dumped track is close to fatal
     ],
     // Commons-health depletion track → VP (one end-game read, no ratio math).
+    // whole percent, read off the depletion track
     healthBuckets: [
-      { atLeast: 0.8, vp: 12 },
-      { atLeast: 0.6, vp: 9 },
-      { atLeast: 0.4, vp: 6 },
-      { atLeast: 0.2, vp: 3 },
+      { atLeast: 80, vp: 12 },
+      { atLeast: 60, vp: 9 },
+      { atLeast: 40, vp: 6 },
+      { atLeast: 20, vp: 3 },
       { atLeast: 0, vp: 0 },
     ],
   },

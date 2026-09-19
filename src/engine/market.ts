@@ -7,7 +7,8 @@ export function pricePerLb(d: GameState, portNode: string, rare: boolean): numbe
   const cfg = portOf(d, portNode)?.market;
   if (!cfg) return 0; // not a market
   const sold = d.markets[portNode]?.lbsSoldToday ?? 0;
-  const base = Math.max(cfg.floor, cfg.base - cfg.elasticity * sold);
+  // one whole money off for every dropPerLbs already landed here today
+  const base = Math.max(cfg.floor, cfg.base - Math.floor(sold / cfg.dropPerLbs));
   return base + (rare ? cfg.rareBonus : 0);
 }
 
@@ -52,7 +53,7 @@ export function reportTheft(d: GameState, reporterId: string): void {
   if (recIdx < 0) throw new Error('Nothing to report');
   const rec = d.thefts[recIdx];
   const thief = d.players[rec.thiefId];
-  const bounty = rec.value * d.config.reportBountyShare;
+  const bounty = Math.floor(rec.value / d.config.reportBountyDivisor);
   p.money += bounty;
   p.tracks.reputation += d.config.rep.report;
   thief.tracks.reputation += d.config.rep.reported; // extra heat on confiscation

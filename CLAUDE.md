@@ -36,6 +36,24 @@ as the change:
 - **Keep negative results.** Commit messages here carry what did *not* work and why,
   so the next session doesn't retry it. That is deliberate.
 
+## No fractions
+
+Nothing a player tracks or computes may be fractional. `npm run check-integers` plays
+real games and fails if any money, reputation, conservation, fuel, market price or
+score comes out non-whole. Run it after touching any number.
+
+The devices that keep it that way, so you don't undo them by accident:
+- **Reputation runs on a DOUBLED scale** (start 16, not 8) with `repToVP` halved to
+  match. Every rep change is a whole number; the VP are identical. Half-points were
+  the single biggest source of fractions in the game.
+- **Market prices drop in whole steps**: `dropPerLbs` means "one money off for every
+  N lb landed here today", not a rate per pound.
+- **Weather is a d10**: `hazardInTen` / `whittleInTen` are "this number or less".
+- **Scoring SUBTRACTS a penalty** from a printed card rather than multiplying by a
+  fraction. Add three numbers, find the smallest, subtract one integer.
+- **Money VP floors** — it is a track on the board marked every 5, and you stand on
+  the last mark you passed.
+
 ## Guardrails for the physical game
 
 Everything must stay hand-computable at a table. No roots, no ratios, no running

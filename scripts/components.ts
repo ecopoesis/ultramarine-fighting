@@ -37,7 +37,7 @@ for (const [id, n] of markets) {
   boardRows.push({
     qty: '—',
     part: `${n.label} (market port)`,
-    text: `${m.base}/lb · −${m.elasticity}/lb per lb landed today · floor ${m.floor}/lb${m.rareBonus ? ` · rare +${m.rareBonus}/lb` : ''} · fuel ${n.port!.fuelCostPerUnit}/unit${m.coopRep ? ` · CO-OP: land ${m.coopMinLb}lb+ for +${m.coopRep} reputation` : ''}`,
+    text: `${m.base}/lb · −1/lb for every ${m.dropPerLbs} lb landed today · floor ${m.floor}/lb${m.rareBonus ? ` · rare +${m.rareBonus}/lb` : ''} · fuel ${n.port!.fuelCostPerUnit}/unit${m.coopRep ? ` · CO-OP: land ${m.coopMinLb}lb+ for +${m.coopRep} reputation` : ''}`,
   });
 }
 for (const [, n] of shelters) {
@@ -120,19 +120,19 @@ const faces = cfg.restock.dieFaces;
 const diceRows: Row[] = [
   { qty: '1', part: 'Lobster die', text: faces.map((f) => (f === 0 ? 'blank' : String(f))).join(' / '), note: 'Rolled on your claim in the restock draft: how many lobsters you may return from that bag\'s pile. A blank wastes the claim but still locks the bag.' },
   { qty: '1', part: 'Storm die (d6)', text: '1–6', note: 'Picks which ground in a tier the storm lands on. The rings are six spaces wide for exactly this reason.' },
-  { qty: '1', part: 'Weather die (d10)', text: '1–10', note: `Entering a storm: a beating on ${Math.round(cfg.weather.hazardChance * 10)} or less (−${cfg.weather.hazardFuel} fuel). Each night, gear left in a storm parts on a 1 (the engine uses ${Math.round(cfg.weather.whittleChance * 100)}%, rounded to 10% for hand play).` },
+  { qty: '1', part: 'Weather die (d10)', text: '1–10', note: `Entering a storm: a beating on ${cfg.weather.hazardInTen} or less (−${cfg.weather.hazardFuel} fuel). Each night, gear left in a storm parts on ${cfg.weather.whittleInTen} or less — lost for the season, unless a GPS plotter finds it.` },
 ];
 
-const wl = cfg.scoring.weakLink ?? [];
+const wl = cfg.scoring.weakLinkPenalty ?? [];
 const hb = cfg.scoring.healthBuckets ?? [];
 const cardRows: Row[] = [
   {
     qty: '1',
     part: 'Scoring card',
-    text: `Add your three tracks. Find your LOWEST. Multiply.\n${wl.map((r) => `  lowest ${r.atLeast === -Infinity ? 'below ' + wl[wl.length - 2].atLeast : r.atLeast + ' or more'} → ×${r.mult}`).join('\n')}`,
+    text: `Add your three tracks. Find your LOWEST. Subtract.\n${wl.map((r) => `  lowest ${r.atLeast === -Infinity ? 'below ' + wl[wl.length - 2].atLeast : r.atLeast + ' or more'} → −${r.penalty}`).join('\n')}`,
     note: `Money ÷ ${cfg.scoring.moneyPerVP} · reputation × ${cfg.scoring.repToVP} · conservation = v-notch tokens (×${cfg.scoring.vNotchTokenValue}) + notches made + the shared commons bonus.`,
   },
-  { qty: '1', part: 'Commons health card', text: hb.map((b) => `${Math.round(b.atLeast * 100)}% of the bags remaining → ${b.vp} VP`).join('\n'), note: 'One end-of-game read, shared by everyone at the table. A stripped ocean costs the steward too.' },
+  { qty: '1', part: 'Commons health card', text: hb.map((b) => `${b.atLeast}% of the bags remaining → ${b.vp} VP`).join('\n'), note: 'One end-of-game read, shared by everyone at the table. A stripped ocean costs the steward too.' },
   { qty: '1', part: 'Soak card', text: GROUNDS.map((g) => `${g}: ${cfg.soakCurves[g].map((s, i) => `${i}n ${s}`).join(' → ')}`).join('\n'), note: 'Nights soaked, left to right. A pot cannot be hauled until it reaches PRIME.' },
   { qty: '1', part: 'Draw card', text: Object.entries(cfg.drawByStage).map(([s, r]) => `${s}: draw ${r.draw}, keep ${r.keep}`).join('\n'), note: `Hauling in a storm: draw +${cfg.weather.bonusDraws}, keep +${cfg.weather.bonusKeep}.` },
   { qty: '1', part: 'Action card', text: Object.entries(cfg.actionCost).map(([a, c]) => `${a} ${c}`).join(' · '), note: `${cfg.actionsPerTurn} actions a turn, ${cfg.hoursPerDay} turns a day. Unspent actions are lost.` },

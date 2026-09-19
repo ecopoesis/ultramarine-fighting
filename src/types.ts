@@ -69,6 +69,10 @@ export interface UpgradeDef {
   cost: number;             // money to install (also costs an action, at a market port)
   stepsPerSteam?: number;   // engine: nodes moved per STEAM action (base 1)
   stormImmune?: boolean;    // no storm entry hazard
+  // A plotter marks your gear: a pot the storm parts is RECOVERED to your hand instead
+  // of being lost for the rest of the season. (Was a halved chance — a fraction of a
+  // die roll nobody can execute at a table.)
+  whittleRecover?: boolean;
   whittleMult?: number;     // GPS: multiplies the chance a pot left in a storm is parted. Radar guarded against the ENTRY hazard (1 fuel) but not the WHITTLE (82 pots lost across 5 games) — it protected against the wrong half of the weather, and two captains called it worthless by name. A plotter that lets you find your gear in a blow is the half that matters.
   freeAction?: string;      // makes this ACTION type cost 0 (crane→HAUL, tender→SELL, pot rack→DROP, …)
   fuelBonus?: number;       // tank: + fuel-tank capacity
@@ -145,8 +149,11 @@ export interface GameState {
 // A port's market. Sell where you dock — price = max(floor, base - elasticity*lbsSoldToday_here).
 // Low elasticity = deep appetite / slow flood (Rockland); high = small appetite / floods fast.
 export interface BuyerConfig {
-  base: number;
-  elasticity: number;
+  base: number;         // money per lb before any flooding
+  // The price drops ONE for every this-many pounds already landed here today. Stated
+  // as a step rather than a rate so the arithmetic is a division you can do in your
+  // head at the table, and the price is always a whole number.
+  dropPerLbs: number;
   floor: number;
   rareBonus: number;
   // THE CO-OP: the working harbour's own buyer pays less per pound but landing your
@@ -184,6 +191,10 @@ export interface WeatherConfig {
   // die picks WHICH nodes. Keep inshore 0 (the safe refuge tier); deep has one
   // node, so any count >= 1 means it always storms ('*'). Grows deep→inward.
   track: Record<Ground, number>[];
+  // Both weather rolls are a d10, quoted as "this number or less". Integers so the
+  // table rolls a die instead of consulting a probability.
+  hazardInTen: number;  // entering a stormed node: a beating on this or less
+  whittleInTen: number; // each night, gear left in a storm parts on this or less
   hazardChance: number; // prob of a hazard when ENTERING a stormed node
   hazardFuel: number;   // fuel lost on a hazard hit
   whittleChance: number; // prob per night that a pot left in a stormed node is parted (lost for the season)
@@ -308,7 +319,7 @@ export interface Config {
   // spiral into a negative track, which the weak link would turn into a zero.
   wagePerDay: number;
   holdDecayLbPerDay: number;
-  reportBountyShare: number;
+  reportBountyDivisor: number; // the reporter takes the confiscated catch's value divided by this (whole money)
 
   // v-token draw insurance (§7.4): on a lean haul (no keeper drawn) a player may
   // spend one v-token to draw `insuranceDraws` extra tiles and keep the best
@@ -320,14 +331,19 @@ export interface Config {
     vNotchTokenValue: number;
     conservationBagHealthVP: number;
     repToVP: number;
-    combineMode: 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink' | 'sumWeakLink';
+    combineMode: 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink' | 'sumWeakLink' | 'sumMinusPenalty';
     // For sumWeakLink (the pen-and-paper combine): total = sum(tracks) × the mult of
     // the FIRST row whose `atLeast` your lowest track meets (rows high→low). A printed
     // lookup card: add the three tracks, find the smallest, read the multiplier.
     weakLink?: { atLeast: number; mult: number }[];
+    // THE PEN-AND-PAPER COMBINE. Add the three tracks, find the smallest, read one
+    // PENALTY off a printed card and subtract it. All integers: no multiplying a
+    // three-digit sum by 0.75 in your head, which is what the old card asked for.
+    weakLinkPenalty?: { atLeast: number; penalty: number }[];
     // Commons-health VP as a STEPPED read (a depletion track), not the raw ratio —
     // hand-computable at the table. VP of the first row your end-game health meets.
     // Falls back to conservationBagHealthVP × health if absent.
+    // Commons health as whole PERCENT (80, 60, …), read off the depletion track.
     healthBuckets?: { atLeast: number; vp: number }[];
   };
 

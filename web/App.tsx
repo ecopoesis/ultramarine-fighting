@@ -233,6 +233,69 @@ function RestockPanel({ state, pid, apply }: { state: GameState; pid: string; ap
   );
 }
 
+// ------------------------------------------------------------- Licence auction panel
+function AuctionPanel({ state, pid, apply }: { state: GameState; pid: string; apply: (a: Action) => void }) {
+  const a = state.auction!;
+  const p = state.players[pid];
+  const [bid, setBid] = useState(a.minBid);
+  const max = Math.floor(p.money);
+
+  if (!a.revealed) {
+    return (
+      <div className="restock">
+        <h3>Season {state.season} licence — sealed bid</h3>
+        <p>
+          Everyone bids in secret. The price is the <b>second-highest</b> bid; the top two
+          bidders must buy at it, everyone else may take it or leave it. <b>The bid order is
+          this season&rsquo;s turn order</b> — you are bidding for first pick of the water.
+        </p>
+        <p className="muted small">
+          Reserve {a.minBid}. You hold {p.money.toFixed(1)}. Without a licence you may still
+          fish, but every haul is poaching ({state.config.unlicensed.repPerHaul} reputation)
+          and the co-op will not take your catch.
+        </p>
+        <div className="row">
+          <input
+            id="bid-slider" type="range" min={a.minBid} max={Math.max(a.minBid, max)}
+            value={Math.min(bid, Math.max(a.minBid, max))}
+            onChange={(e) => setBid(+e.target.value)}
+          />
+          <b>{Math.min(bid, Math.max(a.minBid, max))}</b>
+        </div>
+        <div className="btn-row">
+          <button className="accent" disabled={max < a.minBid}
+            onClick={() => apply({ type: 'LICENSE_BID', playerId: pid, amount: Math.min(bid, max) })}>
+            {max < a.minBid ? `Cannot meet the reserve (${a.minBid})` : `Bid ${Math.min(bid, max)}`}
+          </button>
+          <button onClick={() => apply({ type: 'LICENSE_BID', playerId: pid, amount: 0 })}>
+            Do not bid
+          </button>
+        </div>
+        <p className="muted small">
+          {Object.keys(state.players).filter((id) => a.bids[id] !== undefined).length} of{' '}
+          {Object.keys(state.players).length} captains have bid. Amounts stay sealed.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="restock">
+      <h3>Licence at {a.price} — take it or leave it</h3>
+      <p>The bidding closed at <b>{a.price}</b>. You were not among the committed two.</p>
+      <p className="muted small">You hold {p.money.toFixed(1)}.</p>
+      <div className="btn-row">
+        <button className="accent" disabled={p.money < a.price}
+          onClick={() => apply({ type: 'LICENSE_BUY', playerId: pid, take: true })}>
+          Take the licence (−{a.price})
+        </button>
+        <button onClick={() => apply({ type: 'LICENSE_BUY', playerId: pid, take: false })}>
+          Fish unlicensed
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ------------------------------------------------------------- Game over
 function GameOver({ state, controllers, onNew }: {
   state: GameState; controllers: Record<string, Controller>; onNew: () => void;
@@ -321,6 +384,7 @@ export function App() {
         <SeasonDay state={game} />
         <span className="badge">Hour {game.hour}/{game.config.hoursPerDay}</span>
         {game.phase === 'RESTOCK' && <span className="badge warn">RESTOCK DRAFT</span>}
+        {game.phase === 'AUCTION' && <span className="badge warn">LICENCE AUCTION</span>}
         {game.stormed.length > 0 && <span className="badge storm">⛈ {game.stormed.length} stormed</span>}
         <span className="badge">health {(avgBagHealth(game) * 100).toFixed(0)}%</span>
         <button className="ghost" onClick={() => { setGame(null); setControllers({}); }}>⟲ new</button>
@@ -357,6 +421,8 @@ export function App() {
               </h3>
               {game.phase === 'RESTOCK'
                 ? <RestockPanel state={game} pid={activePid} apply={apply} />
+                : game.phase === 'AUCTION'
+                ? <AuctionPanel state={game} pid={activePid} apply={apply} />
                 : <><ActivePanel state={game} pid={activePid} /><ActionButtons state={game} pid={activePid} apply={apply} /></>}
             </div>
           )}

@@ -21,16 +21,19 @@ export function score(state: GameState): ScoreBreakdown[] {
   const rows: ScoreBreakdown[] = [];
 
   for (const p of Object.values(state.players)) {
-    const moneyVP = p.money / s.moneyPerVP;
+    // A money TRACK on the board, marked every `moneyPerVP`: you stand on the last
+    // mark you have passed, so this floors rather than dividing. Keeps every score a
+    // whole number, which is the point of the whole scoring card.
+    const moneyVP = Math.floor(p.money / s.moneyPerVP);
     // a stripped commons devalues everyone's stewardship — read as a stepped
     // depletion track (hand-computable) when buckets are configured
     const healthVP = s.healthBuckets
-      ? (s.healthBuckets.find((b) => health >= b.atLeast)?.vp ?? 0)
+      ? (s.healthBuckets.find((b) => health * 100 >= b.atLeast)?.vp ?? 0)
       : s.conservationBagHealthVP * health;
     const conservationVP = p.vTokens * s.vNotchTokenValue + p.tracks.conservation + healthVP;
     const reputationVP = p.tracks.reputation * s.repToVP;
 
-    const total = combine(s.combineMode, [moneyVP, conservationVP, reputationVP], s.weakLink);
+    const total = combine(s.combineMode, [moneyVP, conservationVP, reputationVP], s.weakLink, s.weakLinkPenalty);
     rows.push({
       playerId: p.id, name: p.name,
       moneyVP: round(moneyVP), conservationVP: round(conservationVP),
@@ -53,9 +56,14 @@ export function score(state: GameState): ScoreBreakdown[] {
 //                        printed card). The pen-and-paper stand-in for geometricMean:
 //                        rewards balance, craters a dumped track, no roots.
 // Negative tracks clamp to 0 for every multiplicative mode (dumping = cratering).
-export type CombineMode = 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink' | 'sumWeakLink';
+export type CombineMode = 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink' | 'sumWeakLink' | 'sumMinusPenalty';
 
-export function combine(mode: CombineMode, tracks: number[], weakLink?: { atLeast: number; mult: number }[]): number {
+export function combine(
+  mode: CombineMode,
+  tracks: number[],
+  weakLink?: { atLeast: number; mult: number }[],
+  weakLinkPenalty?: { atLeast: number; penalty: number }[],
+): number {
   const sum = tracks.reduce((a, b) => a + b, 0);
   const clamped = tracks.map((v) => Math.max(0, v));
   switch (mode) {
@@ -72,6 +80,12 @@ export function combine(mode: CombineMode, tracks: number[], weakLink?: { atLeas
     }
     case 'weakestLink':
       return Math.min(...clamped);
+    case 'sumMinusPenalty': {
+      // Add the three, find the smallest, subtract the penalty its band carries.
+      const min = Math.min(...tracks);
+      const row = (weakLinkPenalty ?? []).find((r) => min >= r.atLeast);
+      return Math.max(0, sum - (row?.penalty ?? 0));
+    }
     case 'sumWeakLink': {
       const min = Math.min(...tracks);
       const table = weakLink ?? [{ atLeast: -Infinity, mult: 1 }];

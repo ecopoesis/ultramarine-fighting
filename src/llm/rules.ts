@@ -57,7 +57,7 @@ export function buildRulesPrompt(cfg: Config, players: number): string {
     if (n.type === 'port') {
       const p = n.port!;
       kind = p.market
-        ? `MARKET PORT — sells lobster (base ${p.market.base}/lb, price drops ${p.market.elasticity}/lb per lb landed here today, floor ${p.market.floor}/lb, rare bonus +${p.market.rareBonus}/lb); fuel ${p.fuelCostPerUnit}/unit${p.market.coopRep ? ` — THE CO-OP: landing ${p.market.coopMinLb ?? 0} lb or more here earns +${p.market.coopRep} reputation` : ''}`
+        ? `MARKET PORT — sells lobster (base ${p.market.base}/lb, dropping 1/lb for every ${p.market.dropPerLbs} lb landed here today, floor ${p.market.floor}/lb, rare bonus +${p.market.rareBonus}/lb); fuel ${p.fuelCostPerUnit}/unit${p.market.coopRep ? ` — THE CO-OP: landing ${p.market.coopMinLb ?? 0} lb or more here earns +${p.market.coopRep} reputation` : ''}`
         : `SHELTER — refuge and emergency fuel only (${p.fuelCostPerUnit}/unit, dear), NO market; never storms`;
     } else {
       kind = `${n.ground!.toUpperCase()} fishing ground`;
@@ -86,8 +86,8 @@ export function buildRulesPrompt(cfg: Config, players: number): string {
     return `- ${u.id} "${u.label}" — slot ${u.slot}, cost ${u.cost}: ${fx.join('; ')}`;
   });
 
-  const weakLink = (cfg.scoring.weakLink ?? []).map((r) => `lowest track ≥ ${r.atLeast === -Infinity ? 'anything' : r.atLeast} → ×${r.mult}`).join('; ');
-  const health = (cfg.scoring.healthBuckets ?? []).map((b) => `≥${Math.round(b.atLeast * 100)}% → ${b.vp} VP`).join('; ');
+  const weakLink = (cfg.scoring.weakLinkPenalty ?? []).map((r) => `lowest track ≥ ${r.atLeast === -Infinity ? 'anything' : r.atLeast} → −${r.penalty}`).join('; ');
+  const health = (cfg.scoring.healthBuckets ?? []).map((b) => `≥${b.atLeast}% → ${b.vp} VP`).join('; ');
 
   const actionCosts = Object.entries(cfg.actionCost).map(([k, v]) => `${k} ${v}`).join(', ');
   const draftSeasons = Array.from({ length: Math.max(0, cfg.seasons - 2) }, (_, i) => i + 1);
@@ -131,7 +131,7 @@ ${GROUNDS.map((g) => bagLine(cfg, g, scale)).join('\n')}
 Throwbacks return to the bag. Sold bag lobsters do not vanish: they land on that ground's extraction PILE, from which the restock draft can return them (seeded lobsters are the exception: sold, they leave the world). Keeper DENSITY (keeper lb per tile in the bag) is what makes a ground worth fishing; as keepers are stripped, hauls turn up junk. The bag contents are public knowledge (you may track what has been taken).
 
 ## 5. Selling, markets, fuel
-- SELL (${cfg.actionCost.SELL} action) sells your ENTIRE hold at the market port you are docked in, once per day. THE CO-OP: the home port pays the least per pound, but landing a real day's catch there (see the port list for the poundage) earns reputation — the only repeatable way to raise it. A token landing does not count. Price per lb = max(floor, base − elasticity × lb already landed at that port today) (+ rare bonus for RARE keepers). Landing catch floods that port for the rest of the day — for everyone. Prices recover overnight.
+- SELL (${cfg.actionCost.SELL} action) sells your ENTIRE hold at the market port you are docked in, once per day. THE CO-OP: the home port pays the least per pound, but landing a real day's catch there (see the port list for the poundage) earns reputation — the only repeatable way to raise it. A token landing does not count. Price per lb = max(floor, base − (lb already landed at that port today ÷ that port's step, rounded down)) (+ rare bonus for RARE keepers). Every price is a whole number. Landing catch floods that port for the rest of the day — for everyone. Prices recover overnight.
 - Unsold keepers/jumbos lose ${cfg.holdDecayLbPerDay} lb per night in the hold (to a minimum of 1 lb).
 - FISHING LICENCE — SOLD AT AUCTION. Season 1's comes with the boat. At the start of every season after that, the licences go to a SEALED-BID, SECOND-PRICE auction: everyone bids in secret, all bids are revealed at once, and the price everyone pays is the SECOND-highest bid. The top two bidders are COMMITTED and must buy at that price; everyone else may take it or leave it. The reserve (minimum bid) is ${cfg.licensePerSeason.slice(1).join(', ')} for seasons 2 to ${cfg.seasons}.
   **The bid order is that season's TURN ORDER.** You are bidding for the harbour's pecking order — first pick of the water on opening day, first crack at the seeded piles, and first choice of berths on the grounds — as much as for the licence itself. Because it is second-price, bidding what the position is genuinely worth to you is safe: you pay what your closest rival thought, not what you did. **If you cannot, you are UNLICENSED for that whole season and everything you pull is POACHED: every haul costs ${cfg.unlicensed.repPerHaul} reputation, and the co-op will not take your catch (no standing from landing at the home port). You can still fish and still steal — you are just doing it outside the law.** Budget for the fee: it rises as the fishery is squeezed, and a season spent poaching will gut the reputation track that sets your multiplier.
@@ -145,7 +145,7 @@ Throwbacks return to the bag. Sold bag lobsters do not vanish: they land on that
 
 ## 7. Theft and reporting
 - STEAL (${cfg.actionCost.STEAL} actions): haul a RIVAL's pot sitting on your node, if it is ripe (you only know it is ripe when the game lists it as stealable). You get the catch (and the node's seeded pile), the owner gets their empty pot back, you lose ${-cfg.rep.steal} reputation. The theft is public.
-- REPORT (${cfg.actionCost.REPORT} action, at any port, if you were robbed): you gain +${cfg.rep.report} reputation and a bounty of ${cfg.reportBountyShare * 100}% of the stolen catch's book value; the thief loses a further ${-cfg.rep.reported} reputation. One report per theft.
+- REPORT (${cfg.actionCost.REPORT} action, at any port, if you were robbed): you gain +${cfg.rep.report} reputation and a bounty of the stolen catch's book value divided by ${cfg.reportBountyDivisor}; the thief loses a further ${-cfg.rep.reported} reputation. One report per theft.
 
 ## 8. Weather
 Season 1 is calm. From season 2 storms are placed at random on some nodes per tier and re-rolled each season, intensifying: (nodes stormed per tier) ${stormTrack}. Shelters and inshore never storm.
@@ -166,7 +166,7 @@ Three tracks, each in victory points (VP):
 - MONEY VP = money ÷ ${cfg.scoring.moneyPerVP}.
 - CONSERVATION VP = your v-tokens still held (×${cfg.scoring.vNotchTokenValue}) + your conservation track (+1 per egger v-notched over the game) + a shared commons-health bonus read from the average bag fullness at the end (${health}) — everyone gets the same bonus, so a stripped ocean hurts every steward.
 - REPUTATION VP = reputation × ${cfg.scoring.repToVP}. You start at ${cfg.startReputation} reputation.
-- TOTAL = (money VP + conservation VP + reputation VP) × a multiplier from your LOWEST track: ${weakLink}. A dumped track zeroes you; a balanced captain scores in full. Highest total wins; ties share.
+- TOTAL = (money VP + conservation VP + reputation VP) MINUS a penalty read off a printed card using your LOWEST track: ${weakLink}. A balanced captain pays nothing; a dumped track is close to fatal. Highest total wins; ties share. Every number is a whole one.
 - Rough scale: a 20 VP track is 100 money, or 20 conservation, or 5 reputation points. Reputation is expensive to rebuild (only +1 per report, +0 otherwise), so treat it as a budget you spend, not a free resource.
 
 ## 12. How you play (command contract)

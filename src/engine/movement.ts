@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import { nextRandom } from '../rng';
+import { randInt } from '../rng';
 import { weatherOn, isStormed } from './weather';
 import { stepsPerSteam, isStormImmune } from './upgrades';
 
@@ -45,7 +45,7 @@ export function steam(d: GameState, playerId: string, to: string): void {
 
   // Storm entry hazard: pushing INTO a stormed node risks a beating (lost fuel).
   // Chancy, not a wall. Shelters are never stormed; RADAR makes you immune.
-  if (weatherOn(d) && isStormed(d, to) && !isStormImmune(d, p) && nextRandom(d) < d.config.weather.hazardChance) {
+  if (weatherOn(d) && isStormed(d, to) && !isStormImmune(d, p) && randInt(d, 10) < d.config.weather.hazardInTen) {
     const loss = Math.min(p.fuel, d.config.weather.hazardFuel);
     p.fuel -= loss;
     d.log.push(`${p.name} takes a beating in the storm at ${to} (-${loss} fuel, now ${p.fuel})`);

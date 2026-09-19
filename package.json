@@ -14,7 +14,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "components": "tsx scripts/components.ts"
+    "components": "tsx scripts/components.ts",
+    "check-integers": "tsx scripts/checkIntegers.ts"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
