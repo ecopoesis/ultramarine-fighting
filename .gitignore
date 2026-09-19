@@ -10,3 +10,6 @@ dist/
 # LLM tournament runs (large, per-machine)
 tournament/runs/
 tournament/*.out
+
+# Affinity Designer editor lock files (transient, recreated whenever a doc is open)
+*.af~lock~
