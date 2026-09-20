@@ -321,7 +321,7 @@ export class Tournament {
     for (const g of all) {
       if (!g.result) { L.push(`- ${g.id}: ${g.status}${g.error ? ` — ${g.error}` : ''}`); continue; }
       const res = g.result;
-      const cost = res.seats.reduce((s, x) => s + x.costUsd, 0);
+      const cost = res.seats.reduce((s, x) => s + x.costUsd, 0); // NB unreliable — see claude.ts
       L.push(`- **${g.id}** (${res.seats.length}p, seed ${res.seed}, health ${(res.health * 100).toFixed(0)}%, ${res.actions} actions, ${res.seats.reduce((s, x) => s + x.calls, 0)} model calls, list-cost $${cost.toFixed(0)}): ${res.rows.map((r, i) => `${i + 1}. ${r.name}/${res.seats.find((s) => s.pid === r.playerId)!.agent} ${r.total}`).join('; ')}`);
     }
     return L.join('\n');

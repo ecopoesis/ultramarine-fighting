@@ -26,10 +26,10 @@ export interface AskResult {
   costUsd: number;
   ms: number;
   attempts: number;
-  // Token accounting, recorded per call because cost per call once jumped 18x
-  // between two runs with identical prompt content and there was no way to say why.
-  // cacheRead high and cacheCreate low means the prompt cache is working; the reverse
-  // means it is being rebuilt every call, which is the expensive failure mode.
+  // Token accounting, recorded per call. TRUST THIS OVER `costUsd`: the CLI's dollar
+  // figure once reported an 18x jump between two runs (opus7 $49 -> opus8 $804) that
+  // the account's actual usage did not show at all. Tokens are what was really
+  // consumed; the dollar number is a table the CLI ships and can change under you.
   usage?: { input: number; cacheCreate: number; cacheRead: number; output: number };
 }
 
