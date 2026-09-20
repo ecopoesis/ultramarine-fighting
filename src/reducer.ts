@@ -211,6 +211,6 @@ function seasonRollover(d: GameState): void {
     d.log.push('Final season over. Game over.');
     return;
   }
-  if (d.season < d.config.seasons - 1) { enterRestock(d); return; }
+  if (d.season < d.config.seasons - 1 && d.config.flags.restockDraft) { enterRestock(d); return; }
   finishSeasonRollover(d); // feeding the final season: no restock
 }

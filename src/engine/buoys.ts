@@ -101,6 +101,7 @@ function resolveDraw(
         // Eggers are therefore FINITE: stewardship is front-loaded, and the meeples
         // you leave behind dilute every later haul.
         d.bags[ground].push({ id: `vn-${t.id}`, ground, ...tileTemplate('VNOTCH') });
+        d.notches[ground] = (d.notches[ground] ?? 0) + 1; // the ground's breeding stock grows
         p.vTokens += 1;
         p.tracks.conservation += d.config.rep.vNotch;
       }

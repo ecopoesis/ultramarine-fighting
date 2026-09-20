@@ -79,6 +79,19 @@ export const defaultConfig: Config = {
   // recovery knob; a 0 is a blank that wastes the claim). Piles start pre-seeded
   // with a few of each sellable template for early agency.
   restock: { dieFaces: [0, 1, 2, 3, 4, 5], preSeedPerBag: 2 },
+  // The lobster die, reimagined for breeding: mostly ones, a chance of nothing, a
+  // chance of two. Mean 5/6 a die, so a well-tended ground still needs several.
+  breeding: {
+    dieFaces: [0, 0, 1, 1, 1, 2],
+    diceByNotches: [
+      { atLeast: 15, dice: 5 },
+      { atLeast: 10, dice: 4 },
+      { atLeast: 6, dice: 3 },
+      { atLeast: 3, dice: 2 },
+      { atLeast: 1, dice: 1 },
+      { atLeast: 0, dice: 0 },
+    ],
+  },
 
   eggerWeightLb: 4, // a berried female is big; releasing her now costs you a real landing
   requirePrimeToHaul: true, // no drop-and-grab: a pot must ripen to PRIME before it can be hauled (worker-placement rhythm)
@@ -201,5 +214,5 @@ export const defaultConfig: Config = {
     ],
   },
 
-  flags: { weather: true, seeded: true, upgrades: true, eras: false, multiShip: false, inspections: false },
+  flags: { weather: true, seeded: true, upgrades: true, restockDraft: false, eras: false, multiShip: false, inspections: false },
 };

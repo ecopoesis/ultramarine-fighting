@@ -76,6 +76,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     markets,
     upgradeStock: {},
     stormed: [],
+    notches: { inshore: 0, mid: 0, offshore: 0, deep: 0 },
     seeded: {},
     nextSlot: 0,
     pendingNextOrder: [],

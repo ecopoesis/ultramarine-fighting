@@ -126,6 +126,9 @@ export interface GameState {
   // ENTERING one risks a hazard, gear left in one gets whittled overnight, but
   // FISHING one churns up bonus lobster — pure gamble. Shelters are never stormed.
   stormed: string[];
+  // Breeding-stock track per ground: how many berried females have been notched and
+  // released there. PUBLIC — it sits on the board, and it is what spawns each season.
+  notches: Record<Ground, number>;
   // Extraction piles: sold/fished lobsters, sorted by their home bag. Tiles removed
   // from the commons land here (never destroyed); the inter-season restock draft
   // returns some of them to the bags. Depletion = bag→pile drift, not tiles leaving
@@ -252,6 +255,12 @@ export interface Config {
   // the pole is worth fighting for. Piles are pre-seeded with `preSeedPerBag` of
   // each sellable template for early agency. No restock before the final season.
   restock: { dieFaces: number[]; preSeedPerBag: number };
+  // BREEDING STOCK (engine/breeding.ts) — the replacement for the restock draft.
+  // Notches on a ground's public track buy DICE, not a flat divisor: stewardship
+  // should feel like tending something alive rather than doing arithmetic, and a thin
+  // track can roll nothing at all. Bands widen, so the first notches on a ground are
+  // worth the most and no one ground runs away with the recovery.
+  breeding: { dieFaces: number[]; diceByNotches: { atLeast: number; dice: number }[] };
   // What a berried female is WORTH if you keep her illegally. At 0 she was worthless,
   // so notching was strictly dominant — measured, captains notched 41.8 of the 42
   // eggers in the ocean, every game. That made conservation a measure of how much you
@@ -353,5 +362,7 @@ export interface Config {
     healthBuckets?: { atLeast: number; vp: number }[];
   };
 
-  flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
+  // restockDraft: the old claim-and-contribute draft. Superseded by breeding stock;
+  // kept switchable so the two can be compared rather than one being lost.
+  flags: { weather: boolean; seeded: boolean; upgrades: boolean; restockDraft: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
 }

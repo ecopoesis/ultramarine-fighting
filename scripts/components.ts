@@ -61,6 +61,12 @@ boardRows.push({
   text: cfg.weather.track.map((t, i) => `S${i + 1}: ${t.inshore}/${t.mid}/${t.offshore}/${t.deep}`).join('  ·  '),
   note: 'Storms placed per tier (inshore / mid / offshore / deep) at each season change. Inshore never storms.',
 });
+boardRows.push({
+  qty: '—',
+  part: 'Breeding stock tracks (printed on board, one per ground)',
+  text: GROUNDS.join(' · '),
+  note: `Advance a ground's track one step every time a berried female is v-notched and released there. Public. At each season change the stock spawns from it. Longest track needed: ${GROUNDS.map((g) => Math.round((cfg.bags[g].EGGER ?? 0) * scale)).reduce((a, b) => Math.max(a, b), 0)} steps, the most eggers any one bag holds at ${MAX_PLAYERS} players.`,
+});
 boardRows.push({ qty: '—', part: 'Berth order track (printed on board)', text: `${MAX_PLAYERS} numbered slots. Slot 1 costs ${cfg.poleRepCost} reputation; the last slot gains +${cfg.lastSlotRep} reputation and +${cfg.lastSlotSweetenerFuel} fuel.` });
 boardRows.push({ qty: '—', part: 'Landmarks (printed, decorative)', text: (cfg.map.landmarks ?? []).map((l) => l.name).join(' · ') });
 
@@ -116,9 +122,13 @@ const refitRows: Row[] = cfg.upgrades.catalog.map((u) => {
 });
 
 // ---------- dice & cards ----------
-const faces = cfg.restock.dieFaces;
+const faces = cfg.flags.restockDraft ? cfg.restock.dieFaces : cfg.breeding.dieFaces;
 const diceRows: Row[] = [
-  { qty: '1', part: 'Lobster die', text: faces.map((f) => (f === 0 ? 'blank' : String(f))).join(' / '), note: 'Rolled on your claim in the restock draft: how many lobsters you may return from that bag\'s pile. A blank wastes the claim but still locks the bag.' },
+  { qty: String(Math.max(...cfg.breeding.diceByNotches.map((r) => r.dice))), part: 'Lobster dice',
+    text: faces.map((f) => (f === 0 ? 'blank' : String(f))).join(' / '),
+    note: cfg.flags.restockDraft
+      ? 'Rolled on your claim in the restock draft.'
+      : `Rolled at each season change (never into the final season): a ground rolls one per band of notches on its breeding-stock track and returns that many lobsters from its pile, lightest first. ${cfg.breeding.diceByNotches.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ notches = ${r.dice}`).join(', ')}. A die averages under one lobster, so even a well-tended ground can have a poor year.` },
   { qty: '1', part: 'Storm die (d6)', text: '1–6', note: 'Picks which ground in a tier the storm lands on. The rings are six spaces wide for exactly this reason.' },
   { qty: '1', part: 'Weather die (d10)', text: '1–10', note: `Entering a storm: a beating on ${cfg.weather.hazardInTen} or less (−${cfg.weather.hazardFuel} fuel). Each night, gear left in a storm parts on ${cfg.weather.whittleInTen} or less — lost for the season, unless a GPS plotter finds it.` },
 ];

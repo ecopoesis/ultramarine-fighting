@@ -5,6 +5,7 @@ import { placeStorms } from './weather';
 import { seedSpaces } from './seeded';
 import { buoyCap } from './upgrades';
 import { enterAuction, auctionMinBid } from './auction';
+import { breedingRollover } from './breeding';
 
 // The inter-season RESTOCK DRAFT as a real, action-driven phase (what a human UI
 // will drive too). Going around in berth order, each captain CLAIMS one remaining
@@ -105,6 +106,8 @@ function advanceContribute(d: GameState): void {
 // no-restock transition into the final season.
 export function finishSeasonRollover(d: GameState): void {
   const ids = Object.keys(d.players);
+  // The protected stock spawns — except into the final season, which gets no relief.
+  if (!d.config.flags.restockDraft && d.season < d.config.seasons - 1) breedingRollover(d);
   for (const id of ids) {
     const p = d.players[id];
     p.deployed = [];

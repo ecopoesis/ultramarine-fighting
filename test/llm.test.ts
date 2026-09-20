@@ -10,6 +10,7 @@ import { buildRulesPrompt } from '../src/llm/rules';
 import { BOTS } from '../src/bots';
 import { LlmCaptain } from '../src/llm/agent';
 import { enterAuction } from '../src/engine/auction';
+import { breedingRollover, diceFor } from '../src/engine/breeding';
 import { parseLimitWaitMs } from '../src/llm/claude';
 
 // The map is reshaped from time to time; tests derive node names from the config
@@ -125,8 +126,53 @@ describe('LLM tournament harness (pure parts)', () => {
       state = reduce(state, parsed.action);
     }
     expect(state.phase).toBe('GAME_OVER');
-    expect(restockSeen).toBe(true);
+    expect(restockSeen).toBe(cfg.flags.restockDraft); // the draft only runs when it is switched on
     expect(auctionSeen).toBe(true);   // the licence auction runs every season after the first
+  });
+});
+
+describe('breeding stock', () => {
+  it('notches advance the ground track, and the season change spawns from the pile lightest-first', () => {
+    const cfg = { ...defaultConfig, players: 3 };
+    let state = createInitialState(cfg, 11);
+    expect(state.notches.offshore).toBe(0);
+
+    // a clean haul that draws eggers must advance that ground's track
+    const before = state.notches.offshore;
+    const d = structuredClone(state);
+    d.notches.offshore += 4;
+    expect(diceFor(d, d.notches.offshore)).toBe(2);        // 3+ notches = 2 dice
+    expect(diceFor(d, 0)).toBe(0);                          // an untended ground spawns nothing
+    expect(diceFor(d, 15)).toBe(5);
+    expect(before).toBe(0);
+
+    // spawning returns the LIGHTEST lobsters and leaves the heavy ones on the pile
+    d.piles.offshore = [
+      { id: 'h1', kind: 'JUMBO', weightLb: 5, color: 'common', ground: 'offshore' },
+      { id: 'l1', kind: 'KEEPER', weightLb: 1, color: 'common', ground: 'offshore' },
+      { id: 'm1', kind: 'KEEPER', weightLb: 3, color: 'common', ground: 'offshore' },
+    ];
+    d.notches.offshore = 20;                                 // plenty of dice
+    const bagBefore = d.bags.offshore.length;
+    breedingRollover(d);
+    const moved = d.bags.offshore.length - bagBefore;
+    expect(moved).toBeGreaterThan(0);
+    const backIds = d.bags.offshore.slice(bagBefore).map((t) => t.id);
+    expect(backIds).toContain('l1');                         // the 1 lb went first
+    if (moved < 3) expect(backIds).not.toContain('h1');       // the jumbo stays taken
+  });
+
+  it('a full game spawns, and never into the final season', () => {
+    const cfg = { ...defaultConfig, players: 3 };
+    let state = createInitialState(cfg, 12);
+    let n = 0;
+    while (state.phase !== 'GAME_OVER' && n++ < 20000) {
+      const pid = activePlayerId(state);
+      state = reduce(state, BOTS.cardcounter(state, pid, legalActions(state, pid)));
+    }
+    const spawns = state.log.filter((l) => l.startsWith('--- Breeding stock spawns'));
+    expect(spawns.length).toBe(cfg.seasons - 2);            // not before the final season
+    expect(Object.values(state.notches).reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
   });
 });
 
