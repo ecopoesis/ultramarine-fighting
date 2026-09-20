@@ -91,10 +91,13 @@ export function buildRulesPrompt(cfg: Config, players: number): string {
 
   const actionCosts = Object.entries(cfg.actionCost).map(([k, v]) => `${k} ${v}`).join(', ');
   const draftSeasons = Array.from({ length: Math.max(0, cfg.seasons - 2) }, (_, i) => i + 1);
+  const deepId = Object.keys(cfg.map.nodes).find((n) => cfg.map.nodes[n].ground === 'deep');
+  const deepLabel = deepId ? (cfg.map.nodes[deepId].label ?? deepId) : 'the deep';
+  const deepRound = deepId ? dist[deepId] * 2 : 0;
 
   return `# LOBSTERS — the rules (${players}-player game)
 
-You are the captain of a lobster boat in Penobscot Bay, Maine. Over ${cfg.seasons} seasons you fish a shared ocean against ${players - 1} rival captains. The ocean is a commons: what anyone takes is gone for everyone until the inter-season restock. The winner is the captain with the highest final SCORE, which combines three tracks — MONEY, CONSERVATION and REPUTATION — with a weak-link multiplier that punishes neglecting any one of them.
+You are the captain of a lobster boat in Penobscot Bay, Maine. Over ${cfg.seasons} seasons you fish a shared ocean against ${players - 1} rival captains. The ocean is a commons: what anyone takes is gone for everyone until the inter-season restock. The winner is the captain with the highest final SCORE, which combines three tracks — MONEY, CONSERVATION and REPUTATION — with a weak-link PENALTY, read off a printed card, that punishes neglecting any one of them.
 
 ## 1. Structure and time
 - ${cfg.seasons} seasons. Days per season: ${days.map((d, i) => `S${i + 1}=${d}`).join(', ')} (${totalDays} days total). Later seasons are longer.
@@ -106,7 +109,7 @@ You are the captain of a lobster boat in Penobscot Bay, Maine. Over ${cfg.season
 A graph of nodes. STEAM moves you one edge per action (${cfg.map.fuelPerStep} fuel per step). You start at ${cfg.map.startPort}.
 ${nodeLines.join('\n')}
 
-Tiers: inshore (4 nodes, up-bay, never storms) → mid (6, the island belt) → offshore (6, outer water) → deep (1, "The Edge"). Round trip to the deep is long: plan fuel and days.
+Tiers: ${GROUNDS.map((g) => `${g} (${Object.values(cfg.map.nodes).filter((n) => n.ground === g).length})`).join(" → ")}. Inshore is up-bay and never storms; the deep is ${deepLabel}, the farthest water on the board — a round trip there is ${deepRound} lanes, so plan fuel and days before you commit to it. NOTE that depth and distance are not the same thing on this chart: some shallower grounds sit further from ${cfg.map.startPort} than others that are deeper.
 
 ## 3. Pots (buoys), soaking, hauling
 - You own ${cfg.buoysPerPlayer} pots. DROP places one on the fishing ground you are standing on (1 action). GEAR CONGESTION: a ground only has so much bottom — at this table size each fishing space holds **${Math.max(1, Math.round(cfg.maxPotsPerSpace * (players / cfg.referencePlayers)))} pots in total, counting every captain's**. Once a space is full nobody can set there until gear comes up, so a rich ground is a race for berths as well as for lobster, and a fleet cannot all pile onto the same ledge. Its position is PUBLIC, and rivals who pay attention see when you drop it; its soak stage is never displayed to them (they must infer it).
