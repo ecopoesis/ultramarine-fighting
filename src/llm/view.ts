@@ -43,12 +43,10 @@ function bagSummary(state: GameState, g: Ground): string {
   return `${g}: ${bag.length} tiles, ${keepers} keepers (${keeperLb} lb), density ${density} lb/tile — ${detail || 'EMPTY'}`;
 }
 
+// The pile is a trap on the board. You can see how full it is; you cannot see what is
+// in it, and at the season change you reach in blind.
 function pileSummary(state: GameState, g: Ground): string {
-  const pile = state.piles[g];
-  const lbs = pile.reduce((s, t) => s + t.weightLb, 0);
-  const counts: Record<string, number> = {};
-  for (const t of pile) counts[tileWord(t)] = (counts[tileWord(t)] ?? 0) + 1;
-  return `${g}: ${pile.length} (${lbs} lb) ${Object.entries(counts).sort().map(([k, n]) => `${n}×${k}`).join(' ')}`;
+  return `${g}: ${state.piles[g].length}`;
 }
 
 function describeAction(state: GameState, a: Action): string {
@@ -126,7 +124,7 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   // commons
   lines.push('BAGS (public):');
   for (const g of GROUNDS) lines.push(`  ${bagSummary(state, g)}`);
-  lines.push(`PILES (lobsters landed and sold — what the breeding stock can bring back): ${GROUNDS.map((g) => pileSummary(state, g)).join(' | ')}`);
+  lines.push(`TRAPS (how many landed lobsters sit in each ground's trap — what its breeding stock can bring back; you cannot see WHICH): ${GROUNDS.map((g) => pileSummary(state, g)).join(' | ')}`);
   if (!cfg.flags.restockDraft) {
     lines.push(`BREEDING STOCK (public; berried females notched and released on each ground — at each season change except the last, a ground rolls this many dice and returns that many lobsters from its pile, LIGHTEST first):`);
     lines.push(`  ${GROUNDS.map((g) => `${g} ${state.notches[g] ?? 0} notched = ${diceFor(state, state.notches[g] ?? 0)}d`).join(' | ')}`);

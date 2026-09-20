@@ -91,7 +91,7 @@ for (const g of GROUNDS) {
   tileRows.push({ qty: String(bagTotal), part: `${g[0].toUpperCase()}${g.slice(1)} bag`, text: parts.join(' · ') });
 }
 const preSeed = GROUNDS.reduce((n, g) => n + Object.keys(cfg.bags[g]).filter((k) => sellable.has(`${g}:${k}`)).length * cfg.restock.preSeedPerBag, 0);
-tileRows.push({ qty: String(preSeed), part: 'Extraction pile starters', text: `${cfg.restock.preSeedPerBag} of every sellable tile per ground, set out beside the board at setup so the first restock draft has something to return.` });
+tileRows.push({ qty: String(preSeed), part: 'Trap starters', text: `${cfg.restock.preSeedPerBag} of every sellable tile per ground, dropped into that ground's trap at setup so the first spawn has something to give back.` });
 
 const eggerTotal = GROUNDS.reduce((n, g) => n + Math.round((cfg.bags[g].EGGER ?? 0) * scale), 0);
 
@@ -106,6 +106,7 @@ const woodRows: Row[] = [
   { qty: String(stormMax), part: 'Storm tokens', text: '⛈', note: 'Placed at each season change per the weather track. The most ever on the board at once is the full-blow count.' },
   { qty: `${MAX_PLAYERS} × ${potsEach}`, part: 'Pots (buoys), player-coloured', text: `${cfg.buoysPerPlayer} to a captain, plus one spare for the cargo hold refit.` },
   { qty: `${MAX_PLAYERS}`, part: 'Boats, player-coloured', text: 'One per captain.' },
+  { qty: String(4), part: 'Lobster traps (one per ground)', text: 'A trap you can reach into.', note: 'Every lobster landed and sold goes into its home ground\'s trap rather than out of the game. At a season change the ground\'s breeding stock spawns and you draw that many back out BLIND — shake and take. You can see how full a trap is; you cannot see what is in it.' },
   { qty: '60+', part: 'V-notch tokens', text: `Worth ${cfg.scoring.vNotchTokenValue} victory points each at the end, or spend one on a lean haul to draw ${cfg.vToken.insuranceDraws} extra tile and keep the best keeper.` },
 ];
 

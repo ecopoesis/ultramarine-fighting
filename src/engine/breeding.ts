@@ -1,5 +1,5 @@
 import type { GameState, Ground, Tile } from '../types';
-import { randInt } from '../rng';
+import { randInt, takeRandom } from '../rng';
 
 // BREEDING STOCK — what replaces the restock draft.
 //
@@ -31,24 +31,29 @@ const rollOne = (d: GameState): number => {
   return faces[randInt(d, faces.length)];
 };
 
-// Return `n` lobsters from a ground's pile to its bag, LIGHTEST FIRST. The heavy ones
-// you sold pile up and never come back, so a ground can refill in count while its
-// keeper density keeps falling — size truncation, which is what selective harvest
-// does to a real fishery.
+// Return `n` lobsters from a ground's pile to its bag, drawn AT RANDOM.
+//
+// The pile is a lobster trap on the board — a 3D one you can reach into — so the
+// physical object does the work: shake it and take what comes out. An earlier version
+// returned the lightest first, to model the size truncation that selective harvest
+// causes in a real fishery. It was a nice story and a bad rule: sorting a heap of
+// tiles by weight at every season change is exactly the table-side misery this game
+// has been stripping out, and it bought a subtle effect at a real cost in tedium.
+//
+// Drawing blind also quietly fixes a hole in the sorted version. A greedy captain who
+// lands undersized shorts puts 0 lb tiles in the trap, and lightest-first handed those
+// back BEFORE any real lobster — one dirty player could poison a ground's recovery for
+// everyone at no cost to themselves. Drawn at random they are just part of the mix.
 function returnFromPile(d: GameState, g: Ground, n: number): number {
   const pile = d.piles[g];
-  if (n <= 0 || pile.length === 0) return 0;
-  const order = pile
-    .map((t, i) => ({ t, i }))
-    .sort((a, b) => a.t.weightLb - b.t.weightLb || a.i - b.i)
-    .slice(0, Math.min(n, pile.length));
-  const taken: Tile[] = [];
-  for (const { t } of order) {
-    const idx = pile.findIndex((x) => x.id === t.id);
-    if (idx >= 0) taken.push(pile.splice(idx, 1)[0]);
+  let back = 0;
+  for (let i = 0; i < n; i++) {
+    const t: Tile | undefined = takeRandom(d, pile);
+    if (!t) break;                       // the trap is empty: nothing left to come back
+    d.bags[g].push(t);
+    back++;
   }
-  for (const t of taken) d.bags[g].push(t);
-  return taken.length;
+  return back;
 }
 
 // The season's breeding. Called at each season change except the one into the final
