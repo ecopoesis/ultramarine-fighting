@@ -41,7 +41,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
   for (const g of grounds) {
     const spec: Record<string, number> = {};
     for (const [name, count] of Object.entries(config.bags[g])) spec[name] = Math.round(count * scale);
-    bags[g] = buildBag(spec, g);
+    bags[g] = buildBag(spec, g, config.eggerWeightLb);
     bagStart[g] = bags[g].length;
 
     const seed: Tile[] = [];

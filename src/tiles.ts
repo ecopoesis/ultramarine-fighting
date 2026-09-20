@@ -13,7 +13,7 @@ export function tileTemplate(name: string): Omit<Tile, 'id' | 'ground'> {
     case 'RARE_4lb': return { kind: 'KEEPER', weightLb: 4, color: 'rare' };
     case 'SHORT': return { kind: 'SHORT', weightLb: 0, color: 'common' };   // undersized: illegal
     case 'JUMBO': return { kind: 'JUMBO', weightLb: 5, color: 'common' };   // oversized: illegal but heavy
-    case 'EGGER': return { kind: 'EGGER', weightLb: 0, color: 'common' };   // berried female: v-notch
+    case 'EGGER': return { kind: 'EGGER', weightLb: 0, color: 'common' };   // berried female — weight comes from config.eggerWeightLb, see buildBag
     case 'VNOTCH': return { kind: 'VNOTCHED', weightLb: 0, color: 'common' }; // already notched & released: a dead draw
     default: throw new Error(`Unknown tile template: ${name}`);
   }
@@ -22,13 +22,13 @@ export function tileTemplate(name: string): Omit<Tile, 'id' | 'ground'> {
 // IDs are derived from the ground so they're deterministic per game (no persistent
 // module state leaking across createInitialState calls). Every tile carries its
 // home `ground` (the bag marker) so a sold tile routes back to the right pile.
-export function buildBag(spec: Record<string, number>, ground: Ground): Tile[] {
+export function buildBag(spec: Record<string, number>, ground: Ground, eggerWeightLb = 0): Tile[] {
   const bag: Tile[] = [];
   let i = 0;
   for (const [name, count] of Object.entries(spec)) {
     const blueprint = tileTemplate(name);
     for (let c = 0; c < count; c++) {
-      bag.push({ id: `${ground}-${i++}`, ground, ...blueprint });
+      bag.push({ id: `${ground}-${i++}`, ground, ...blueprint, ...(blueprint.kind === 'EGGER' ? { weightLb: eggerWeightLb } : {}) });
     }
   }
   return bag;

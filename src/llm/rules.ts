@@ -38,7 +38,7 @@ function bagLine(cfg: Config, g: Ground, scale: number): string {
     const desc = t.kind === 'KEEPER' ? `${n}× ${t.weightLb}lb keeper${t.color === 'rare' ? ' (RARE)' : ''}`
       : t.kind === 'SHORT' ? `${n}× SHORT (undersized, worth 0)`
       : t.kind === 'JUMBO' ? `${n}× JUMBO (oversized, ${t.weightLb}lb if kept illegally)`
-      : `${n}× EGGER (berried female, worth 0)`;
+      : `${n}× EGGER (berried female, ${cfg.eggerWeightLb} lb)`;
     parts.push(desc);
   }
   return `- ${g}: ${total} tiles — ${parts.join(', ')}`;
@@ -117,9 +117,9 @@ Tiers: ${GROUNDS.map((g) => `${g} (${Object.values(cfg.map.nodes).filter((n) => 
 ${curveLines.join('\n')}
 - A pot can only be hauled (or stolen) once it has reached PRIME. Draw rules by stage (tiles drawn from that ground's bag; keep limit applies to keepers):
 ${drawLines.join('\n')}
-- Tile kinds: KEEPER (legal, weight 1–4 lb, some RARE — sell for a bonus at island ports). SHORT (undersized, illegal, worth 0). JUMBO (oversized, illegal, but weighs ${tileTemplate('JUMBO').weightLb} lb if you keep it). EGGER (berried female, illegal, worth 0). V-NOTCHED (a breeder somebody already notched and released — see below).
+- Tile kinds: KEEPER (legal, weight 1–4 lb, some RARE — sell for a bonus at island ports). SHORT (undersized, illegal, worth 0). JUMBO (oversized, illegal, but weighs ${tileTemplate('JUMBO').weightLb} lb if you keep it). EGGER (berried female, illegal, but ${cfg.eggerWeightLb} lb of meat if you keep her — see below). V-NOTCHED (a breeder somebody already notched and released — see below).
 - When you haul you choose a policy for the drawn tiles:
-  - clean: keep legal keepers (up to the keep limit, heaviest first), throw shorts and jumbos back, V-NOTCH every egger.
+  - clean: keep legal keepers (up to the keep limit, heaviest first), throw shorts and jumbos back, V-NOTCH every egger — which means giving up ${cfg.eggerWeightLb} lb of landable meat each time.
 - V-NOTCHING, and why eggers are FINITE: when you notch an egger you TAKE her out of the bag (she is your proof: +1 conservation and +1 v-token) and drop a V-NOTCHED lobster in her place. The bag is the same size, but that lobster is now a protected breeder: whoever draws her later must release her and scores NOTHING. So each egger in the ocean pays exactly once, to whoever notches her first, and every notch leaves behind a tile that dilutes all future hauls — including your own. Protecting the breeding stock genuinely costs you catch.
   - highgrade: like clean, but KEEP jumbos (${cfg.rep.illegalKeep} reputation each). Shorts still go back, eggers still v-notched.
   - greedy: keep every illegal tile drawn, eggers included (${cfg.rep.illegalKeep} reputation per illegal tile; eggers kept this way earn nothing and are not v-notched).

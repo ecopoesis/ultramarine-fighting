@@ -252,6 +252,12 @@ export interface Config {
   // the pole is worth fighting for. Piles are pre-seeded with `preSeedPerBag` of
   // each sellable template for early agency. No restock before the final season.
   restock: { dieFaces: number[]; preSeedPerBag: number };
+  // What a berried female is WORTH if you keep her illegally. At 0 she was worthless,
+  // so notching was strictly dominant — measured, captains notched 41.8 of the 42
+  // eggers in the ocean, every game. That made conservation a measure of how much you
+  // HAULED rather than of any restraint, and left the v-notch with no decision in it.
+  // Giving her meat puts a price on throwing her back.
+  eggerWeightLb: number;
   requirePrimeToHaul: boolean; // a pot can't be hauled until it ripens to PRIME — forces the place→soak→retrieve loop (else bots drop-and-grab at SET)
   // Ship upgrades (engine-building layer) — active only when flags.upgrades is on.
   // A scarce, per-port, face-up race: money buys capability, not just VP.

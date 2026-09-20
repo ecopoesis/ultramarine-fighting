@@ -79,7 +79,7 @@ for (const g of GROUNDS) {
     const face = t.kind === 'KEEPER' ? `${t.weightLb} lb${t.color === 'rare' ? ' RARE' : ''}`
       : t.kind === 'SHORT' ? 'SHORT — under the measure'
       : t.kind === 'JUMBO' ? `JUMBO ${t.weightLb} lb — over the measure`
-      : 'EGGER — berried female';
+      : `EGGER — berried female, ${cfg.eggerWeightLb} lb if kept illegally`;
     parts.push(`${n}× ${face}`);
   }
   tileRows.push({ qty: String(bagTotal), part: `${g[0].toUpperCase()}${g.slice(1)} bag`, text: parts.join(' · ') });
