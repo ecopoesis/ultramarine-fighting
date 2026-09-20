@@ -35,8 +35,42 @@ export const NODE_XY: Record<string, { x: number; y: number }> = {
 
   // the deep edge (row 4, bottom) — richest, farthest — with the outer shelter
   DEEP_EDGE: { x: 495, y: 508 },
-  MATINICUS: { x: 668, y: 500 },
 };
+
+
+// --- v4: the REAL Penobscot Bay. Laid out geographically, north at the top and west
+// at the left, so the board reads like a chart rather than a ladder of depth rows.
+// Note this means DEPTH NO LONGER RUNS DOWN THE SCREEN: Seal Cove is a mid ground
+// but sits far east, and the Gulf of Maine is closer to Rockland than Frenchboro is.
+NODE_XY.PENOBSCOT = { x: 400, y: 45 };
+NODE_XY.EGGEMOGGIN = { x: 640, y: 70 };
+NODE_XY.ROCKLAND = { x: 175, y: 95 };
+NODE_XY.RESOLUTION = { x: 490, y: 105 };
+NODE_XY.SEAL_COVE = { x: 790, y: 110 };
+NODE_XY.STONINGTON = { x: 660, y: 140 };
+NODE_XY.OWLS_HEAD = { x: 225, y: 165 };
+NODE_XY.SEAL_BAY = { x: 545, y: 190 };
+NODE_XY.MUSCLE_RIDGE = { x: 140, y: 225 };
+NODE_XY.VINALHAVEN = { x: 420, y: 225 };
+NODE_XY.SWANS_ISLAND = { x: 750, y: 235 };
+NODE_XY.HURRICANE = { x: 325, y: 240 };
+NODE_XY.ISLE_AU_HAUT = { x: 620, y: 275 };
+NODE_XY.FRENCHBORO = { x: 848, y: 275 };
+NODE_XY.METINIC = { x: 145, y: 315 };
+NODE_XY.SEAL_ISLAND = { x: 455, y: 325 };
+NODE_XY.MATINICUS = { x: 300, y: 340 };
+NODE_XY.MT_DESERT = { x: 862, y: 370 };
+NODE_XY.TOOTHACKER = { x: 185, y: 415 };
+NODE_XY.SKATE_BANK = { x: 330, y: 440 };
+NODE_XY.MONHEGAN = { x: 105, y: 485 };
+NODE_XY.GULF_OF_MAINE = { x: 500, y: 490 };
+
+// Guides drawn behind the chart. The ring map used one per depth tier; a real chart
+// has no such rows, so this is just an orientation cue.
+export const ROW_GUIDES: [string, number][] = [
+  ['UP THE BAY', 30],
+  ['THE OPEN GULF', 530],
+];
 
 export const TIER_COLOR: Record<string, string> = {
   inshore: '#3f9d54',

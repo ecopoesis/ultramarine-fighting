@@ -1,6 +1,6 @@
 import type { GameState } from './engine';
 import { stageFor } from './engine';
-import { NODE_XY, TIER_COLOR, VIEWBOX } from './layout';
+import { NODE_XY, TIER_COLOR, VIEWBOX, ROW_GUIDES } from './layout';
 import { nodeLabel } from './labels';
 
 const seatColor = (pid: string, colors: string[]) => colors[(Number(pid.slice(1)) - 1) % colors.length];
@@ -39,10 +39,9 @@ export function MapView(props: {
   const boatsAt: Record<string, string[]> = {};
   for (const p of Object.values(state.players)) (boatsAt[p.node] ??= []).push(p.id);
 
-  // depth-axis guide: a faint band + label per tier row (top = home, bottom = deep)
-  const rows: [string, number][] = [
-    ['HOME', 44], ['INSHORE', 140], ['MID · ISLANDS', 258], ['OFFSHORE', 392], ['DEEP', 508],
-  ];
+  // Orientation guides, defined by the map's own layout — the ring bay used one band
+  // per depth tier, the real bay is a chart and has none.
+  const rows = ROW_GUIDES;
 
   return (
     <svg className="map" viewBox={`0 0 ${VIEWBOX.w} ${VIEWBOX.h}`} preserveAspectRatio="xMidYMid meet">

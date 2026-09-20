@@ -1,4 +1,5 @@
 import type { Config } from './types';
+import { bayV4 } from './maps';
 
 // THE TUNING SURFACE. Every number that balances the game lives here.
 // Change these to rebalance; never hardcode numbers in /engine.
@@ -28,98 +29,7 @@ export const defaultConfig: Config = {
   // depth gradient reached by steaming out through the island belt. Tier sizes:
   // inshore 4 (safe, never storms) · mid 6 · offshore 6 · deep 1 — the 6-node
   // rings map cleanly onto a d6 for storm placement.
-  map: {
-    nodes: {
-      // --- market ports (dock: refuel/berth AND sell) ---
-      ROCKLAND:   { type: 'port', label: 'Rockland', port: {
-        fuelCostPerUnit: 1, market: { base: 5, dropPerLbs: 2, floor: 2, rareBonus: 0, coopRep: 3, coopMinLb: 5 } } }, // THE CO-OP: pays least per lb, but landing a real day's catch here (5lb+) earns standing   // SW mainland: cheap fuel but its price now CRASHES when everyone dumps inshore catch here — pushes selling (and fishing) outward
-      VINALHAVEN: { type: 'port', label: 'Vinalhaven', port: {
-        fuelCostPerUnit: 2, market: { base: 7, dropPerLbs: 1, floor: 3, rareBonus: 1 } } },     // island: high price, floods fast, dear fuel, the offshore springboard
-      STONINGTON: { type: 'port', label: 'Stonington', port: {
-        fuelCostPerUnit: 2, market: { base: 6, dropPerLbs: 3, floor: 3, rareBonus: 1 } } },   // eastern premium, near the mid grounds
-
-      // --- shelters (refuge + emergency fuel, NO market) — stage the outer run ---
-      MONHEGAN:   { type: 'port', label: 'Monhegan', port: { fuelCostPerUnit: 4, shelter: true } },  // SW lighthouse, by the outer-west water
-      MATINICUS:  { type: 'port', label: 'Matinicus', port: { fuelCostPerUnit: 4, shelter: true } },  // outermost, a stone's throw from the deep edge
-
-      // --- fishing zones (share their ground TYPE's bag) ---
-      // inshore ring (4) — up-bay, safe, off Rockland
-      INSHORE_W:  { type: 'ground', ground: 'inshore', label: 'Muscle Ridge' },
-      INSHORE_N:  { type: 'ground', ground: 'inshore', label: 'Upper Bay' },
-      INSHORE_E:  { type: 'ground', ground: 'inshore', label: 'Owls Head' },
-      INSHORE_S:  { type: 'ground', ground: 'inshore', label: 'Mussel Shoals' },
-      // mid ring (6) — the island belt
-      MID_W:      { type: 'ground', ground: 'mid', label: 'West Bay' },
-      MID_NW:     { type: 'ground', ground: 'mid', label: 'Hurricane Sound' },
-      MID_N:      { type: 'ground', ground: 'mid', label: 'Fox Islands' },
-      MID_C:      { type: 'ground', ground: 'mid', label: 'Seal Bay' },
-      MID_E:      { type: 'ground', ground: 'mid', label: 'Eggemoggin Reach' },
-      MID_SE:     { type: 'ground', ground: 'mid', label: 'Isle au Haut' },
-      // offshore ring (6) — the outer water
-      OFF_W:      { type: 'ground', ground: 'offshore', label: 'Outer West' },
-      OFF_NW:     { type: 'ground', ground: 'offshore', label: 'Two Bush' },
-      OFF_N:      { type: 'ground', ground: 'offshore', label: 'Large Green' },
-      OFF_C:      { type: 'ground', ground: 'offshore', label: 'Seal Ledge' },
-      OFF_E:      { type: 'ground', ground: 'offshore', label: 'Outer East' },
-      OFF_SE:     { type: 'ground', ground: 'offshore', label: 'Saddleback' },
-      // the deep edge (1) — richest, farthest, fouls fast
-      DEEP_EDGE:  { type: 'ground', ground: 'deep', label: 'The Edge' },
-    },
-    edges: [
-      // inshore ring (W–N–E–S) off Rockland
-      ['ROCKLAND', 'INSHORE_W'],
-      ['ROCKLAND', 'INSHORE_N'],
-      ['INSHORE_W', 'INSHORE_N'],
-      ['INSHORE_N', 'INSHORE_E'],
-      ['INSHORE_E', 'INSHORE_S'],
-      ['INSHORE_S', 'INSHORE_W'],
-      // inshore → mid radials
-      ['INSHORE_W', 'MID_W'],
-      ['INSHORE_N', 'MID_N'],
-      ['INSHORE_E', 'MID_E'],
-      ['INSHORE_S', 'MID_SE'],
-      // mid ring (6-cycle) + its ports
-      ['MID_W', 'MID_NW'],
-      ['MID_NW', 'MID_N'],
-      ['MID_N', 'MID_C'],
-      ['MID_C', 'MID_E'],
-      ['MID_E', 'MID_SE'],
-      ['MID_SE', 'MID_W'],
-      ['VINALHAVEN', 'MID_C'],
-      ['STONINGTON', 'MID_E'],
-      ['STONINGTON', 'MID_SE'],
-      // mid → offshore radials (+ the island morning run)
-      ['MID_W', 'OFF_W'],
-      ['MID_N', 'OFF_N'],
-      ['MID_C', 'OFF_C'],
-      ['MID_E', 'OFF_E'],
-      ['VINALHAVEN', 'OFF_SE'],   // the morning run — 1 step off the island
-      // offshore ring (6-cycle) + its shelter
-      ['OFF_W', 'OFF_NW'],
-      ['OFF_NW', 'OFF_N'],
-      ['OFF_N', 'OFF_C'],
-      ['OFF_C', 'OFF_E'],
-      ['OFF_E', 'OFF_SE'],
-      ['OFF_SE', 'OFF_W'],
-      ['MONHEGAN', 'OFF_W'],
-      ['MONHEGAN', 'OFF_NW'],
-      // the deep edge (only through the offshore water) + outer shelter
-      ['OFF_C', 'DEEP_EDGE'],
-      ['OFF_SE', 'DEEP_EDGE'],
-      ['MATINICUS', 'DEEP_EDGE'],
-      ['MATINICUS', 'OFF_SE'],
-    ],
-    fuelPerStep: 1,
-    startPort: 'ROCKLAND',
-    // decorative — flavor only, no gameplay (a future UI can scatter these)
-    landmarks: [
-      { name: 'Saddleback Ledge', near: 'OFF_SE' },
-      { name: 'Goose Rocks', near: 'MID_C' },
-      { name: 'Eagle Island', near: 'MID_E' },
-      { name: 'Heron Neck Light', near: 'VINALHAVEN' },
-    ],
-  },
-
+  map: bayV4, // the real Penobscot Bay; bayV3 (the abstract ring map) is kept in maps.ts
   // tile-template name -> count in the bag at season start
   bags: {
     // Near grounds are a THIN, RICH opening seam: few keepers, high density, strips

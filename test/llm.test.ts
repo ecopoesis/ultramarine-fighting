@@ -12,6 +12,11 @@ import { LlmCaptain } from '../src/llm/agent';
 import { enterAuction } from '../src/engine/auction';
 import { parseLimitWaitMs } from '../src/llm/claude';
 
+// The map is reshaped from time to time; tests derive node names from the config
+// rather than hardcoding them, so a reshape does not look like a test failure.
+const deepNode = (c: typeof defaultConfig) =>
+  Object.keys(c.map.nodes).find((n) => c.map.nodes[n].ground === 'deep')!;
+
 function rng(seed: number) {
   let s = seed | 0;
   return () => { s = (s + 0x6d2b79f5) | 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -33,7 +38,7 @@ describe('LLM tournament harness (pure parts)', () => {
     expect(r).toContain('4-player game');
     expect(r).toContain(`MONEY VP = money ÷ ${defaultConfig.scoring.moneyPerVP}`);
     expect(r).toContain(`REPUTATION VP = reputation × ${defaultConfig.scoring.repToVP}`);
-    expect(r).toContain('DEEP_EDGE');
+    expect(r).toContain(deepNode(defaultConfig));   // whatever the current map calls the deep
     expect(r).toContain(`${defaultConfig.tow.lostTurns} turns`);
   });
 
@@ -42,15 +47,18 @@ describe('LLM tournament harness (pure parts)', () => {
     let state = createInitialState(cfg, 42);
     const pid = activePlayerId(state);
     let legal = legalActions(state, pid);
-    expect(parseCommand(state, pid, 'STEAM INSHORE_W', legal)).toMatchObject({ ok: true, action: { type: 'STEAM', to: 'INSHORE_W' } });
-    expect(parseCommand(state, pid, 'GOTO DEEP_EDGE', legal)).toMatchObject({ ok: true, macro: 'GOTO', target: 'DEEP_EDGE' });
+    // derive the nodes from the map rather than naming them — the bay gets reshaped
+    const adjacent = cfg.map.edges.find(([a]) => a === cfg.map.startPort)![1];
+    const deep = deepNode(cfg);
+    expect(parseCommand(state, pid, `STEAM ${adjacent}`, legal)).toMatchObject({ ok: true, action: { type: 'STEAM', to: adjacent } });
+    expect(parseCommand(state, pid, `GOTO ${deep}`, legal)).toMatchObject({ ok: true, macro: 'GOTO', target: deep });
     expect(parseCommand(state, pid, 'DROP', legal).ok).toBe(false);          // at a port
     expect(parseCommand(state, pid, 'SELL', legal).ok).toBe(false);          // empty hold
     expect(parseCommand(state, pid, 'FLY AWAY', legal).ok).toBe(false);
     expect(parseCommand(state, pid, 'REFUEL 1', legal)).toMatchObject({ ok: true, action: { type: 'REFUEL', units: 1 } });
     expect(parseCommand(state, pid, 'berth', legal)).toMatchObject({ ok: true, action: { type: 'BERTH' } });
     // steam out and drop
-    state = reduce(state, { type: 'STEAM', playerId: pid, to: 'INSHORE_W' });
+    state = reduce(state, { type: 'STEAM', playerId: pid, to: adjacent });
     legal = legalActions(state, pid);
     const drop = parseCommand(state, pid, 'DROP', legal);
     expect(drop.ok).toBe(true);
