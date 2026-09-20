@@ -59,10 +59,10 @@ NODE_XY.FRENCHBORO = { x: 848, y: 275 };
 NODE_XY.METINIC = { x: 145, y: 315 };
 NODE_XY.SEAL_ISLAND = { x: 455, y: 325 };
 NODE_XY.MATINICUS = { x: 300, y: 340 };
-NODE_XY.MT_DESERT = { x: 862, y: 370 };
-NODE_XY.TOOTHACKER = { x: 185, y: 415 };
+NODE_XY.MT_DESERT = { x: 800, y: 430 };
+NODE_XY.TOOTHACKER = { x: 165, y: 405 };
 NODE_XY.SKATE_BANK = { x: 330, y: 440 };
-NODE_XY.MONHEGAN = { x: 105, y: 485 };
+NODE_XY.MONHEGAN = { x: 210, y: 500 };
 NODE_XY.GULF_OF_MAINE = { x: 500, y: 490 };
 
 // Guides drawn behind the chart. The ring map used one per depth tier; a real chart

@@ -130,8 +130,8 @@ export const bayV3: MapConfig = {
 // Three structural differences from v3 worth knowing when the numbers move:
 //  - MATINICUS is a fishing ground here, not a shelter. The refuges are the two
 //    lights, Monhegan and Mount Desert.
-//  - Neither light sits next to the deep, where v3's Matinicus was one step from
-//    it. Forward-basing on the deep run is harder.
+//  - BOTH lights stand beside the deep, where v3 had only Matinicus. The deep run
+//    can be staged from the west (Monhegan) or the east (Mount Desert).
 //  - The Gulf of Maine is five steps from Rockland, as in v3 — but only because the
 //    Seal Island link to it was cut; the raw geography put it at four.
 // ---------------------------------------------------------------------------
@@ -203,6 +203,13 @@ export const bayV4: MapConfig = {
     ['ISLE_AU_HAUT', 'SWANS_ISLAND'], ['ISLE_AU_HAUT', 'GULF_OF_MAINE'],
     ['SWANS_ISLAND', 'FRENCHBORO'], ['SWANS_ISLAND', 'MT_DESERT'],
     ['FRENCHBORO', 'MT_DESERT'],
+    // Both lights stand watch over the Gulf. Without these the refuges were dead
+    // content: measured across a full game they were used ONCE, against 4-11 nights
+    // a game on the ring map where Matinicus sat beside the deep. Deep and storm
+    // fishing were unaffected either way (deep hauls 13.4% vs a v3 range of
+    // 11.4-14.4%), so this is not about pulling boats out to the edge — it is about
+    // giving them somewhere to ride out the blow once they are there.
+    ['MONHEGAN', 'GULF_OF_MAINE'], ['MT_DESERT', 'GULF_OF_MAINE'],
   ],
   fuelPerStep: 1,
   startPort: 'ROCKLAND',
