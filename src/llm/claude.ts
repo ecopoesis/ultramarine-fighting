@@ -26,6 +26,11 @@ export interface AskResult {
   costUsd: number;
   ms: number;
   attempts: number;
+  // Token accounting, recorded per call because cost per call once jumped 18x
+  // between two runs with identical prompt content and there was no way to say why.
+  // cacheRead high and cacheCreate low means the prompt cache is working; the reverse
+  // means it is being rebuilt every call, which is the expensive failure mode.
+  usage?: { input: number; cacheCreate: number; cacheRead: number; output: number };
 }
 
 const DEFAULT_BIN = process.env.LOBSTERS_CLAUDE_BIN ?? 'claude';
@@ -121,6 +126,7 @@ export async function ask(message: string, opts: AskOptions): Promise<AskResult>
 
     costUsd += Number(parsed?.total_cost_usd ?? 0);
     if (parsed && !parsed.is_error && typeof parsed.result === 'string') {
+      const u = (parsed.usage ?? {}) as Record<string, number>;
       return {
         text: parsed.result,
         structured: parsed.structured_output,
@@ -128,6 +134,12 @@ export async function ask(message: string, opts: AskOptions): Promise<AskResult>
         costUsd,
         ms: Date.now() - t0,
         attempts: attempt + 1,
+        usage: {
+          input: u.input_tokens ?? 0,
+          cacheCreate: u.cache_creation_input_tokens ?? 0,
+          cacheRead: u.cache_read_input_tokens ?? 0,
+          output: u.output_tokens ?? 0,
+        },
       };
     }
     lastErr = parsed ? `cli error: ${String(parsed.result ?? JSON.stringify(parsed)).slice(0, 500)}` : `cli exit ${out.code}: ${(out.stderr || out.stdout).slice(0, 500)}`;

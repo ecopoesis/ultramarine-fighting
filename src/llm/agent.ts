@@ -49,6 +49,7 @@ const JOURNAL_SCHEMA = { type: 'object', properties: { journal: { type: 'string'
 
 export interface DecisionTrace {
   pid: string; season: number; day: number; hour: number; asked: boolean; prompt?: string; reply?: { plan: string[]; note: string }; command?: string; action: Action; error?: string; ms?: number;
+  cost?: number; usage?: { input: number; cacheCreate: number; cacheRead: number; output: number };
 }
 
 export class LlmCaptain {
@@ -77,6 +78,8 @@ export class LlmCaptain {
     this.systemPrompt = parts.join('\n\n');
   }
 
+  lastCall?: { cost: number; usage?: { input: number; cacheCreate: number; cacheRead: number; output: number } };
+
   private async askPlan(prompt: string): Promise<{ plan: string[]; note: string }> {
     const res = await ask(prompt, {
       model: this.spec.model, effort: this.spec.effort, cwd: this.spec.cwd,
@@ -85,6 +88,7 @@ export class LlmCaptain {
     });
     this.rt.sessionId = res.sessionId;
     this.rt.calls++; this.rt.costUsd += res.costUsd; this.rt.ms += res.ms;
+    this.lastCall = { cost: res.costUsd, usage: res.usage };
     const s = (res.structured ?? safeJson(res.text)) as { plan?: unknown; note?: unknown } | undefined;
     const plan = Array.isArray(s?.plan) ? s!.plan.filter((x) => typeof x === 'string').map((x) => String(x)) : [];
     const note = typeof s?.note === 'string' ? s!.note : '';
@@ -151,6 +155,7 @@ export class LlmCaptain {
         const t0 = Date.now();
         const reply = await this.askPlan(prompt);
         trace.reply = reply; trace.ms = Date.now() - t0;
+        trace.cost = this.lastCall?.cost; trace.usage = this.lastCall?.usage;
         this.rt.lastLogIndex = state.log.length;
         this.rt.lastDayKey = dayKey;
         this.rt.plan = reply.plan.slice(0, 24); // room for a multi-day trip
