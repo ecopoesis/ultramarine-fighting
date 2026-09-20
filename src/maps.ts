@@ -132,7 +132,8 @@ export const bayV3: MapConfig = {
 //    lights, Monhegan and Mount Desert.
 //  - Neither light sits next to the deep, where v3's Matinicus was one step from
 //    it. Forward-basing on the deep run is harder.
-//  - The Gulf of Maine is FOUR steps from Rockland, not five.
+//  - The Gulf of Maine is five steps from Rockland, as in v3 — but only because the
+//    Seal Island link to it was cut; the raw geography put it at four.
 // ---------------------------------------------------------------------------
 export const bayV4: MapConfig = {
   nodes: {
@@ -190,7 +191,15 @@ export const bayV4: MapConfig = {
     // the outer water
     ['TOOTHACKER', 'SKATE_BANK'], ['TOOTHACKER', 'MONHEGAN'],
     ['SKATE_BANK', 'SEAL_ISLAND'], ['SKATE_BANK', 'GULF_OF_MAINE'], ['SKATE_BANK', 'MONHEGAN'],
-    ['SEAL_ISLAND', 'ISLE_AU_HAUT'], ['SEAL_ISLAND', 'GULF_OF_MAINE'],
+    ['SEAL_ISLAND', 'ISLE_AU_HAUT'],
+    // NB no Seal Island -> Gulf of Maine. With it, the deep sat FOUR steps from
+    // Rockland and was closer than two shallower grounds; the only ways out to the
+    // Gulf are now Skate Bank and Isle au Haut, which puts it back at five and makes
+    // it the farthest water on the board again.
+    // (Vinalhaven -> Seal Island was also considered and NOT removed: Owl's Head ->
+    // Hurricane Sound -> Seal Island is exactly as short, so cutting it moves no
+    // distance at all — it would only cost Vinalhaven its morning run to the outer
+    // water, which v3 had on purpose.)
     ['ISLE_AU_HAUT', 'SWANS_ISLAND'], ['ISLE_AU_HAUT', 'GULF_OF_MAINE'],
     ['SWANS_ISLAND', 'FRENCHBORO'], ['SWANS_ISLAND', 'MT_DESERT'],
     ['FRENCHBORO', 'MT_DESERT'],
