@@ -15,10 +15,6 @@ export function activePlayerId(state: GameState): string {
     const a = state.auction!;
     return a.revealed ? a.optionOrder[a.optionTurn] : a.bidOrder[a.bidTurn];
   }
-  if (state.phase === 'RESTOCK') {
-    const r = state.restock!;
-    return r.step === 'claim' ? r.claimOrder[r.claimTurn] : r.contribOrder![r.contribTurn!];
-  }
   return state.turnOrder[state.activePlayerIndex];
 }
 

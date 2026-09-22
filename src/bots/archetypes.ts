@@ -50,7 +50,6 @@ export const HIGHLINER: Archetype = {
 
 export function makePolicy(arch: Archetype): Policy {
   return (state: GameState, pid: string, legal: Action[]): Action => {
-    if (state.phase === 'RESTOCK') return legal[0]; // legalActions supplies a sensible default claim/pass
     const cfg = state.config;
     const p = state.players[pid];
     const atPort = isPort(state, p.node);
@@ -63,7 +62,7 @@ export function makePolicy(arch: Archetype): Policy {
     //    only while we can still absorb the reputation hit (ration theft).
     if (arch.steals && p.tracks.reputation > arch.repFloor) {
       const steals = ofType(legal, 'STEAL');
-      if (steals.length) return { ...steals[0], policy: arch.stealPolicy, useToken: true };
+      if (steals.length) return { ...steals[0], policy: arch.stealPolicy };
     }
 
     // 2) HAUL our own buoys worth pulling now. A measured high-grader keeps
@@ -76,7 +75,7 @@ export function makePolicy(arch: Archetype): Policy {
         .map((h) => ({ h, keep: buoys.find((b) => b.buoyId === h.buoyId)?.keep ?? 0 }))
         .filter((x) => last || x.keep >= arch.minKeep)
         .sort((a, b) => b.keep - a.keep);
-      if (ranked.length) return { ...ranked[0].h, policy: effHaul, useToken: true };
+      if (ranked.length) return { ...ranked[0].h, policy: effHaul };
     }
 
     const target = chooseTarget(state, pid, arch, buoys, reach, last);

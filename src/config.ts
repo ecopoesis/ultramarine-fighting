@@ -75,10 +75,7 @@ export const defaultConfig: Config = {
   // are the economy dials; pair with restock.dieFaces to hold commons health.
   seeded: { perSeason: 1, weightLb: 2, haulCap: 99 },
 
-  // Inter-season restock draft (the custom lobster d6 — its faces are the main
-  // recovery knob; a 0 is a blank that wastes the claim). Piles start pre-seeded
-  // with a few of each sellable template for early agency.
-  restock: { dieFaces: [0, 1, 2, 3, 4, 5], preSeedPerBag: 2 },
+  trapStarters: 2, // of each sellable tile, in each ground's trap at setup
   // The lobster die, reimagined for breeding: mostly ones, a chance of nothing, a
   // chance of two. Mean 5/6 a die, so a well-tended ground still needs several.
   breeding: {
@@ -170,11 +167,8 @@ export const defaultConfig: Config = {
   holdDecayLbPerDay: 1,
   reportBountyDivisor: 2, // the reporter takes half the confiscated value, rounded down
 
-  vToken: { insuranceDraws: 1 }, // spend a token on a lean haul → draw 1 extra, keep best keeper (dial #4)
-
   scoring: {
     moneyPerVP: 5,
-    vNotchTokenValue: 2,  // scaled to MONEY: an egger notched is worth 4 VP total (token + track), so a conservation run lands in the same band as a money run
     conservationBagHealthVP: 10, // shared end-game health bonus; floors conservation so specialists aren't zeroed
     repToVP: 2, // halved because the track itself is doubled — the VP are identical, the fractions are gone
     // sumWeakLink: the PEN-AND-PAPER combine (geometricMean is a cube root, unscoreable
@@ -214,5 +208,5 @@ export const defaultConfig: Config = {
     ],
   },
 
-  flags: { weather: true, seeded: true, upgrades: true, restockDraft: false, eras: false, multiShip: false, inspections: false },
+  flags: { weather: true, seeded: true, upgrades: true, eras: false, multiShip: false, inspections: false },
 };

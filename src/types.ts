@@ -8,7 +8,7 @@ export type TileKind = 'KEEPER' | 'SHORT' | 'JUMBO' | 'EGGER' | 'VNOTCHED';
 export type Color = 'common' | 'rare';
 export type Ground = 'inshore' | 'mid' | 'offshore' | 'deep';
 export type Stage = 'SET' | 'SOAKING' | 'PRIME' | 'OVERRIPE' | 'FOULED';
-export type Phase = 'PLAYING' | 'RESTOCK' | 'AUCTION' | 'GAME_OVER';
+export type Phase = 'PLAYING' | 'AUCTION' | 'GAME_OVER';
 
 export interface Tile {
   id: string;
@@ -48,7 +48,6 @@ export interface PlayerState {
 
   madeHarbour?: boolean;  // ended the day at a dock under their own power (not towed in). Only these captains earn the last-slot courtesy — otherwise "never go home" farms the standing the tow is meant to cost.
   berthNode?: string;   // the port a captain berthed in — where they start tomorrow (daily home-port choice)
-  vTokens: number;
   towCooldown?: number; // turns still to skip after an end-of-day tow (the rescue costs you the next morning)
   // Installed ship upgrades, one per slot (the physical ship: bow/amidships/stern
   // tiles you swap or insert). stern = engine, midPrimary = radar (replaces the
@@ -85,28 +84,12 @@ export interface TheftRecord {
   value: number; // proxy value of stolen catch, for the report bounty
 }
 
-// The inter-season restock draft, live only while phase === 'RESTOCK'. Captains
-// CLAIM bags in berth order; after each claim, players to the claimer's left may
-// CONTRIBUTE v-notch tokens (each token = one extra lobster returned). See
-// engine/restock.ts for the state machine.
-export interface RestockState {
-  claimOrder: string[];   // berth order — who claims, in turn
-  claimTurn: number;      // index into claimOrder of the current claimer
-  claimed: Ground[];      // bags already restocked this draft
-  roll: number;           // current claimer's lobster-die roll (how many they return)
-  step: 'claim' | 'contribute';
-  contribGround?: Ground; // the bag just claimed, now open for v-notch contributions
-  contribOrder?: string[]; // players eligible to contribute, from the claimer's left
-  contribTurn?: number;   // index into contribOrder
-}
-
 import type { AuctionState } from './engine/auction';
 
 export interface GameState {
   config: Config;
   rngSeed: number;
   phase: Phase;
-  restock?: RestockState; // present only during the RESTOCK phase
   auction?: AuctionState; // present only during the AUCTION phase (the licence sale)
   season: number;         // 1-based; game ends after config.seasons
   day: number;            // 1-based day WITHIN the current season
@@ -247,14 +230,9 @@ export interface Config {
   // Seeded lobsters: generic keepers dropped on every fishing space each season that
   // accumulate on unfished spaces (the whole-map lure). Active only when flags.seeded is on.
   seeded: { perSeason: number; weightLb: number; haulCap: number };
-  // Inter-season restock DRAFT: in berth order, each captain claims one remaining
-  // bag, rolls the custom lobster die, and returns that many lobsters from the
-  // bag's pile. `dieFaces` are the SIX faces of a physical d6 — the values (and
-  // blanks: a 0-face wastes the claim yet still locks the bag) are the tuning
-  // knob. Only ~4 bags, so with more players than bags some don't get to restock —
-  // the pole is worth fighting for. Piles are pre-seeded with `preSeedPerBag` of
-  // each sellable template for early agency. No restock before the final season.
-  restock: { dieFaces: number[]; preSeedPerBag: number };
+  // How many of each sellable tile starts in a ground's TRAP, so the first spawn has
+  // something to give back.
+  trapStarters: number;
   // BREEDING STOCK (engine/breeding.ts) — the replacement for the restock draft.
   // Notches on a ground's public track buy DICE, not a flat divisor: stewardship
   // should feel like tending something alive rather than doing arithmetic, and a thin
@@ -336,14 +314,8 @@ export interface Config {
   holdDecayLbPerDay: number;
   reportBountyDivisor: number; // the reporter takes the confiscated catch's value divided by this (whole money)
 
-  // v-token draw insurance (§7.4): on a lean haul (no keeper drawn) a player may
-  // spend one v-token to draw `insuranceDraws` extra tiles and keep the best
-  // keeper among them. Strength dial #4 — higher = more reliable rescue.
-  vToken: { insuranceDraws: number };
-
   scoring: {
     moneyPerVP: number;
-    vNotchTokenValue: number;
     conservationBagHealthVP: number;
     repToVP: number;
     combineMode: 'sum' | 'weakLinkMultiplier' | 'geometricMean' | 'weakestLink' | 'sumWeakLink' | 'sumMinusPenalty';
@@ -362,7 +334,5 @@ export interface Config {
     healthBuckets?: { atLeast: number; vp: number }[];
   };
 
-  // restockDraft: the old claim-and-contribute draft. Superseded by breeding stock;
-  // kept switchable so the two can be compared rather than one being lost.
-  flags: { weather: boolean; seeded: boolean; upgrades: boolean; restockDraft: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
+  flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
 }

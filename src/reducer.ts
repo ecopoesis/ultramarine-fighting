@@ -6,7 +6,7 @@ import { dropBuoy, haulBuoy, stealBuoy } from './engine/buoys';
 import { sell, reportTheft } from './engine/market';
 import { berth, bribe } from './engine/turnorder';
 import { advanceSoak } from './engine/soak';
-import { enterRestock, applyRestockAction, finishSeasonRollover } from './engine/restock';
+import { finishSeasonRollover } from './engine/season';
 import { applyAuctionAction } from './engine/auction';
 import { fuelPriceAt, isPort, nearestPort } from './engine/ports';
 import { stormWhittle } from './engine/weather';
@@ -19,8 +19,7 @@ export function reduce(state: GameState, action: Action): GameState {
   if (state.phase === 'GAME_OVER') return state;
   const d: GameState = structuredClone(state);
 
-  // The inter-season restock draft and licence auction are action-driven phases.
-  if (d.phase === 'RESTOCK') { applyRestockAction(d, action); return d; }
+  // The licence auction is its own action-driven phase.
   if (d.phase === 'AUCTION') { applyAuctionAction(d, action); return d; }
 
   const p = d.players[action.playerId];
@@ -41,8 +40,8 @@ function applyAction(d: GameState, a: Action): boolean {
   switch (a.type) {
     case 'STEAM': steam(d, a.playerId, a.to); return false;
     case 'DROP': dropBuoy(d, a.playerId); return false;
-    case 'HAUL': haulBuoy(d, a.playerId, a.buoyId, a.policy ?? 'clean', a.useToken ?? false); return false;
-    case 'STEAL': stealBuoy(d, a.playerId, a.ownerId, a.buoyId, a.policy ?? 'clean', a.useToken ?? false); return false;
+    case 'HAUL': haulBuoy(d, a.playerId, a.buoyId, a.policy ?? 'clean'); return false;
+    case 'STEAL': stealBuoy(d, a.playerId, a.ownerId, a.buoyId, a.policy ?? 'clean'); return false;
     case 'SELL': sell(d, a.playerId); return false;
     case 'REFUEL': {
       const p = d.players[a.playerId];
@@ -57,9 +56,6 @@ function applyAction(d: GameState, a: Action): boolean {
     case 'BRIBE': bribe(d, a.playerId); return true;
     case 'BUY_UPGRADE': buyUpgrade(d, a.playerId, a.upgradeId); return false;
     case 'PASS': return true;
-    case 'RESTOCK_CLAIM':
-    case 'RESTOCK_CONTRIBUTE':
-      throw new Error('restock actions are only legal during the RESTOCK phase');
     case 'LICENSE_BID':
     case 'LICENSE_BUY':
       throw new Error('licence actions are only legal during the AUCTION phase');
@@ -211,6 +207,5 @@ function seasonRollover(d: GameState): void {
     d.log.push('Final season over. Game over.');
     return;
   }
-  if (d.season < d.config.seasons - 1 && d.config.flags.restockDraft) { enterRestock(d); return; }
-  finishSeasonRollover(d); // feeding the final season: no restock
+  finishSeasonRollover(d);
 }

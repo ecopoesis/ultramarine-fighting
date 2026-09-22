@@ -30,7 +30,7 @@ export function score(state: GameState): ScoreBreakdown[] {
     const healthVP = s.healthBuckets
       ? (s.healthBuckets.find((b) => health * 100 >= b.atLeast)?.vp ?? 0)
       : s.conservationBagHealthVP * health;
-    const conservationVP = p.vTokens * s.vNotchTokenValue + p.tracks.conservation + healthVP;
+    const conservationVP = p.tracks.conservation + healthVP;
     const reputationVP = p.tracks.reputation * s.repToVP;
 
     const total = combine(s.combineMode, [moneyVP, conservationVP, reputationVP], s.weakLink, s.weakLinkPenalty);

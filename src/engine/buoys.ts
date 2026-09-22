@@ -58,7 +58,7 @@ export function dropBuoy(d: GameState, playerId: string): void {
 export type HaulPolicy = 'clean' | 'greedy' | 'highgrade';
 
 function resolveDraw(
-  d: GameState, playerId: string, ground: Ground, stage: Stage, policy: HaulPolicy, useToken: boolean,
+  d: GameState, playerId: string, ground: Ground, stage: Stage, policy: HaulPolicy,
   stormy = false,
 ): void {
   const p = d.players[playerId];
@@ -102,7 +102,6 @@ function resolveDraw(
         // you leave behind dilute every later haul.
         d.bags[ground].push({ id: `vn-${t.id}`, ground, ...tileTemplate('VNOTCH') });
         d.notches[ground] = (d.notches[ground] ?? 0) + 1; // the ground's breeding stock grows
-        p.vTokens += 1;
         p.tracks.conservation += d.config.rep.vNotch;
       }
     } else if (isIllegal(t)) {
@@ -117,29 +116,10 @@ function resolveDraw(
     }
   }
 
-  // v-token draw insurance: a lean haul (drew no keeper) can be rescued by
-  // spending one token to draw extra tiles and keep the best keeper found.
-  // The extra draws are random, so it's insurance with a little regret — the
-  // token (worth end-VP) is spent whether or not a keeper turns up.
-  if (useToken && kept === 0 && p.vTokens > 0 && d.config.vToken.insuranceDraws > 0) {
-    p.vTokens -= 1;
-    const extra: Tile[] = [];
-    for (let i = 0; i < d.config.vToken.insuranceDraws; i++) {
-      const t = takeRandom(d, d.bags[ground]);
-      if (t) extra.push(t);
-    }
-    const extraKeepers = extra.filter(isKeeper).sort((a, b) => b.weightLb - a.weightLb);
-    for (const t of extraKeepers) {
-      if (kept < keepN) { p.hold.push(t); kept++; } else d.bags[ground].push(t);
-    }
-    for (const t of extra) if (!isKeeper(t)) d.bags[ground].push(t); // non-keepers go back
-    d.log.push(`${p.name} spends a v-token (insurance): rescued ${kept} keeper(s)`);
-  }
-
-  d.log.push(`${p.name} hauls (${ground}/${stage}): kept ${kept}, vTokens ${p.vTokens}`);
+  d.log.push(`${p.name} hauls (${ground}/${stage}): kept ${kept}`);
 }
 
-export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean', useToken = false): void {
+export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean'): void {
   const p = d.players[playerId];
   const idx = p.deployed.findIndex((b) => b.buoyId === buoyId);
   if (idx < 0) throw new Error('Not your buoy / not deployed');
@@ -153,14 +133,14 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
     d.log.push(`${p.name} hauls without a licence (${d.config.unlicensed.repPerHaul} reputation)`);
   }
   pullSeeded(d, playerId, buoy.node); // the space's seeded pile comes up first, then the bag
-  resolveDraw(d, playerId, rec.ground, stage, policy, useToken, d.stormed.includes(buoy.node));
+  resolveDraw(d, playerId, rec.ground, stage, policy, d.stormed.includes(buoy.node));
   // recover the gear
   p.deployed.splice(idx, 1);
   delete p.soak[buoyId];
   p.buoysAvailable += 1;
 }
 
-export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId: string, policy: HaulPolicy = 'clean', useToken = false): void {
+export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId: string, policy: HaulPolicy = 'clean'): void {
   const thief = d.players[thiefId];
   const owner = d.players[ownerId];
   const idx = owner.deployed.findIndex((b) => b.buoyId === buoyId);
@@ -173,7 +153,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
 
   const holdBefore = thief.hold.length;
   pullSeeded(d, thiefId, buoy.node); // the thief also grabs the space's seeded pile
-  resolveDraw(d, thiefId, rec.ground, stage, policy, useToken, d.stormed.includes(buoy.node));
+  resolveDraw(d, thiefId, rec.ground, stage, policy, d.stormed.includes(buoy.node));
   const stolen = thief.hold.slice(holdBefore);
   const value = stolen.reduce((s, t) => s + t.weightLb, 0) * refPrice(d);
 

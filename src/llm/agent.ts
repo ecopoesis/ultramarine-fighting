@@ -132,7 +132,7 @@ export class LlmCaptain {
     // out, drop, let it soak overnight, haul, run in and sell) in one decision. Only
     // the restock draft, something happening TO the captain, or an impossible step
     // clears it; otherwise they keep sailing their own orders.
-    if (state.phase === 'RESTOCK' || state.phase === 'AUCTION') this.rt.plan = [];
+    if (state.phase !== 'PLAYING') this.rt.plan = [];
     else if (this.rt.plan.length && interrupt) { reason = `Plan interrupted: ${interrupt}.`; this.rt.plan = []; }
 
     // Circuit breaker: a captain that keeps producing unusable plans is muted for

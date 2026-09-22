@@ -118,7 +118,6 @@ function ActivePanel({ state, pid }: { state: GameState; pid: string }) {
         <span className="stat big">💰 {Math.round(p.money)}</span>
         <span className="stat big">⭐ rep {p.tracks.reputation.toFixed(1)}</span>
         <span className="stat big">🌿 {p.tracks.conservation.toFixed(0)}</span>
-        <span className="stat big">🔖 v-notch {p.vTokens}</span>
       </div>
       <ResourceMeters state={state} p={p} />
       {state.config.flags.upgrades && (
@@ -152,7 +151,6 @@ function ActionButtons({ state, pid, apply }: {
   state: GameState; pid: string; apply: (a: Action) => void;
 }) {
   const [policy, setPolicy] = useState<HaulPolicy>('clean');
-  const [useToken, setUseToken] = useState(false);
   const legal = legalActions(state, pid).filter((a) => a.type !== 'STEAM'); // steam is via the map
   const groups: Record<string, Action[]> = { gear: [], port: [], end: [] };
   for (const a of legal) {
@@ -161,7 +159,7 @@ function ActionButtons({ state, pid, apply }: {
   }
   const hasHaulish = legal.some((a) => a.type === 'HAUL' || a.type === 'STEAL');
   const withMods = (a: Action): Action =>
-    (a.type === 'HAUL' || a.type === 'STEAL') ? { ...a, policy, useToken } : a;
+    (a.type === 'HAUL' || a.type === 'STEAL') ? { ...a, policy } : a;
 
   return (
     <div className="actions">
@@ -174,7 +172,6 @@ function ActionButtons({ state, pid, apply }: {
               <option value="greedy">greedy (keep all illegal)</option>
             </select>
           </label>
-          <label className="chk"><input type="checkbox" checked={useToken} onChange={(e) => setUseToken(e.target.checked)} /> spend v-notch on a lean haul</label>
         </div>
       )}
       {(['gear', 'port', 'end'] as const).map((g) => groups[g].length > 0 && (
@@ -187,48 +184,6 @@ function ActionButtons({ state, pid, apply }: {
         </div>
       ))}
       <p className="muted small">Tip: click a highlighted node on the map to steam there.</p>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------- Restock draft panel
-function RestockPanel({ state, pid, apply }: { state: GameState; pid: string; apply: (a: Action) => void }) {
-  const r = state.restock!;
-  const [spend, setSpend] = useState(0);
-  if (r.step === 'claim') {
-    const claims = legalActions(state, pid); // one RESTOCK_CLAIM per remaining bag
-    return (
-      <div className="restock">
-        <h3>Restock draft — your claim</h3>
-        <p>You rolled <b>{r.roll}</b>. Claim a bag to return that many lobsters from its pile.</p>
-        <div className="btn-row">
-          {claims.map((a, i) => a.type === 'RESTOCK_CLAIM' && (
-            <button key={i} className="accent" onClick={() => apply(a)}>
-              Claim {a.ground} (+{a.tileIds.length}, pile {state.piles[a.ground].length})
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  // contribute
-  const g = r.contribGround!;
-  const p = state.players[pid];
-  const maxSpend = Math.min(p.vTokens, state.piles[g].length);
-  const heaviest = [...state.piles[g]].sort((a, b) => b.weightLb - a.weightLb);
-  return (
-    <div className="restock">
-      <h3>Restock draft — contribute to {g}?</h3>
-      <p>You hold <b>{p.vTokens}</b> v-notch. Each spent adds one lobster back to {g} (pile {state.piles[g].length}).</p>
-      <div className="row">
-        <input type="range" min={0} max={maxSpend} value={spend} onChange={(e) => setSpend(+e.target.value)} />
-        <b>{spend}</b>
-      </div>
-      <div className="btn-row">
-        <button className="accent" onClick={() => apply({ type: 'RESTOCK_CONTRIBUTE', playerId: pid, tileIds: heaviest.slice(0, spend).map((t) => t.id) })}>
-          {spend > 0 ? `Contribute ${spend}` : 'Contribute nothing'}
-        </button>
-      </div>
     </div>
   );
 }
@@ -383,7 +338,6 @@ export function App() {
         <span className="title">🦞 Lobsters</span>
         <SeasonDay state={game} />
         <span className="badge">Hour {game.hour}/{game.config.hoursPerDay}</span>
-        {game.phase === 'RESTOCK' && <span className="badge warn">RESTOCK DRAFT</span>}
         {game.phase === 'AUCTION' && <span className="badge warn">LICENCE AUCTION</span>}
         {game.stormed.length > 0 && <span className="badge storm">⛈ {game.stormed.length} stormed</span>}
         <span className="badge">health {(avgBagHealth(game) * 100).toFixed(0)}%</span>
@@ -419,9 +373,7 @@ export function App() {
               <h3><span className="swatch" style={{ background: seatColor(activePid) }} /> {game.players[activePid].name} — your turn
                 {game.phase === 'PLAYING' && <span className="muted small"> ({game.players[activePid].actionsLeft} action{game.players[activePid].actionsLeft === 1 ? '' : 's'} left)</span>}
               </h3>
-              {game.phase === 'RESTOCK'
-                ? <RestockPanel state={game} pid={activePid} apply={apply} />
-                : game.phase === 'AUCTION'
+              {game.phase === 'AUCTION'
                 ? <AuctionPanel state={game} pid={activePid} apply={apply} />
                 : <><ActivePanel state={game} pid={activePid} /><ActionButtons state={game} pid={activePid} apply={apply} /></>}
             </div>

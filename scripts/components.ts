@@ -53,7 +53,7 @@ boardRows.push({
   qty: '—',
   part: 'Season track (printed on board)',
   text: (cfg.daysSchedule ?? []).map((d, i) => `Season ${i + 1}: ${d} days`).join('  ·  '),
-  note: `Licence due each season: ${cfg.licensePerSeason.map((f, i) => `S${i + 1} ${f === 0 ? 'free with the boat' : f}`).join(' · ')}`,
+  note: `Licence reserve each season: ${cfg.licensePerSeason.map((f, i) => `S${i + 1} ${f === 0 ? 'free with the boat' : f}`).join(' · ')}`,
 });
 boardRows.push({
   qty: '—',
@@ -90,8 +90,8 @@ for (const g of GROUNDS) {
   }
   tileRows.push({ qty: String(bagTotal), part: `${g[0].toUpperCase()}${g.slice(1)} bag`, text: parts.join(' · ') });
 }
-const preSeed = GROUNDS.reduce((n, g) => n + Object.keys(cfg.bags[g]).filter((k) => sellable.has(`${g}:${k}`)).length * cfg.restock.preSeedPerBag, 0);
-tileRows.push({ qty: String(preSeed), part: 'Trap starters', text: `${cfg.restock.preSeedPerBag} of every sellable tile per ground, dropped into that ground's trap at setup so the first spawn has something to give back.` });
+const preSeed = GROUNDS.reduce((n, g) => n + Object.keys(cfg.bags[g]).filter((k) => sellable.has(`${g}:${k}`)).length * cfg.trapStarters, 0);
+tileRows.push({ qty: String(preSeed), part: 'Trap starters', text: `${cfg.trapStarters} of every sellable tile per ground, dropped into that ground's trap at setup so the first spawn has something to give back.` });
 
 const eggerTotal = GROUNDS.reduce((n, g) => n + Math.round((cfg.bags[g].EGGER ?? 0) * scale), 0);
 
@@ -107,7 +107,6 @@ const woodRows: Row[] = [
   { qty: `${MAX_PLAYERS} × ${potsEach}`, part: 'Pots (buoys), player-coloured', text: `${cfg.buoysPerPlayer} to a captain, plus one spare for the cargo hold refit.` },
   { qty: `${MAX_PLAYERS}`, part: 'Boats, player-coloured', text: 'One per captain.' },
   { qty: String(4), part: 'Lobster traps (one per ground)', text: 'A trap you can reach into.', note: 'Every lobster landed and sold goes into its home ground\'s trap rather than out of the game. At a season change the ground\'s breeding stock spawns and you draw that many back out BLIND — shake and take. You can see how full a trap is; you cannot see what is in it.' },
-  { qty: '60+', part: 'V-notch tokens', text: `Worth ${cfg.scoring.vNotchTokenValue} victory points each at the end, or spend one on a lean haul to draw ${cfg.vToken.insuranceDraws} extra tile and keep the best keeper.` },
 ];
 
 // ---------- refit tiles ----------
@@ -123,13 +122,11 @@ const refitRows: Row[] = cfg.upgrades.catalog.map((u) => {
 });
 
 // ---------- dice & cards ----------
-const faces = cfg.flags.restockDraft ? cfg.restock.dieFaces : cfg.breeding.dieFaces;
+const faces = cfg.breeding.dieFaces;
 const diceRows: Row[] = [
   { qty: String(Math.max(...cfg.breeding.diceByNotches.map((r) => r.dice))), part: 'Lobster dice',
     text: faces.map((f) => (f === 0 ? 'blank' : String(f))).join(' / '),
-    note: cfg.flags.restockDraft
-      ? 'Rolled on your claim in the restock draft.'
-      : `Rolled at each season change (never into the final season): a ground rolls one per band of notches on its breeding-stock track and returns that many lobsters from its pile, lightest first. ${cfg.breeding.diceByNotches.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ notches = ${r.dice}`).join(', ')}. A die averages under one lobster, so even a well-tended ground can have a poor year.` },
+    note: `Rolled at each season change (never into the final season): a ground rolls one per band of notches on its breeding-stock track and returns that many lobsters from its pile, lightest first. ${cfg.breeding.diceByNotches.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ notches = ${r.dice}`).join(', ')}. A die averages under one lobster, so even a well-tended ground can have a poor year.` },
   { qty: '1', part: 'Storm die (d6)', text: '1–6', note: 'Picks which ground in a tier the storm lands on. The rings are six spaces wide for exactly this reason.' },
   { qty: '1', part: 'Weather die (d10)', text: '1–10', note: `Entering a storm: a beating on ${cfg.weather.hazardInTen} or less (−${cfg.weather.hazardFuel} fuel). Each night, gear left in a storm parts on ${cfg.weather.whittleInTen} or less — lost for the season, unless a GPS plotter finds it.` },
 ];
@@ -141,7 +138,7 @@ const cardRows: Row[] = [
     qty: '1',
     part: 'Scoring card',
     text: `Add your three tracks. Find your LOWEST. Subtract.\n${wl.map((r) => `  lowest ${r.atLeast === -Infinity ? 'below ' + wl[wl.length - 2].atLeast : r.atLeast + ' or more'} → −${r.penalty}`).join('\n')}`,
-    note: `Money ÷ ${cfg.scoring.moneyPerVP} · reputation × ${cfg.scoring.repToVP} · conservation = v-notch tokens (×${cfg.scoring.vNotchTokenValue}) + notches made + the shared commons bonus.`,
+    note: `Money ÷ ${cfg.scoring.moneyPerVP} · reputation × ${cfg.scoring.repToVP} · conservation = ${cfg.rep.vNotch} per berried female notched + the shared commons bonus.`,
   },
   { qty: '1', part: 'Commons health card', text: hb.map((b) => `${b.atLeast}% of the bags remaining → ${b.vp} VP`).join('\n'), note: 'One end-of-game read, shared by everyone at the table. A stripped ocean costs the steward too.' },
   { qty: '1', part: 'Soak card', text: GROUNDS.map((g) => `${g}: ${cfg.soakCurves[g].map((s, i) => `${i}n ${s}`).join(' → ')}`).join('\n'), note: 'Nights soaked, left to right. A pot cannot be hauled until it reaches PRIME.' },

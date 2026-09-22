@@ -96,13 +96,13 @@ describe('LLM tournament harness (pure parts)', () => {
     expect(c.rt.plan).toEqual(['DROP']);
   });
 
-  it('a whole bot game can be driven through the command parser (HAUL/SELL/CLAIM round-trip)', () => {
+  it('a whole bot game can be driven through the command parser (HAUL/SELL/BID round-trip)', () => {
     // Drive a game with the card-counter, but re-encode every chosen action as a
     // command string and parse it back: the parser must reproduce a legal action.
     const cfg = { ...defaultConfig, players: 3 };
     let state = createInitialState(cfg, 7);
     const bot = BOTS.cardcounter;
-    let n = 0; let restockSeen = false; let auctionSeen = false;
+    let n = 0; let auctionSeen = false;
     while (state.phase !== 'GAME_OVER' && n++ < 5000) {
       const pid = activePlayerId(state);
       const legal = legalActions(state, pid);
@@ -110,12 +110,10 @@ describe('LLM tournament harness (pure parts)', () => {
       let cmd: string;
       switch (a.type) {
         case 'STEAM': cmd = `STEAM ${a.to}`; break;
-        case 'HAUL': cmd = `HAUL ${a.buoyId} ${a.policy ?? 'clean'}${a.useToken ? ' token' : ''}`; break;
+        case 'HAUL': cmd = `HAUL ${a.buoyId} ${a.policy ?? 'clean'}`; break;
         case 'STEAL': cmd = `STEAL ${a.buoyId} ${a.policy ?? 'clean'}`; break;
         case 'REFUEL': cmd = `REFUEL ${a.units}`; break;
         case 'BUY_UPGRADE': cmd = `BUY ${a.upgradeId}`; break;
-        case 'RESTOCK_CLAIM': cmd = `CLAIM ${a.ground} heavy`; restockSeen = true; break;
-        case 'RESTOCK_CONTRIBUTE': cmd = `CONTRIBUTE ${a.tileIds.length}`; break;
         case 'LICENSE_BID': cmd = `BID ${a.amount}`; auctionSeen = true; break;
         case 'LICENSE_BUY': cmd = a.take ? 'TAKE' : 'LEAVE'; break;
         default: cmd = a.type;
@@ -126,7 +124,6 @@ describe('LLM tournament harness (pure parts)', () => {
       state = reduce(state, parsed.action);
     }
     expect(state.phase).toBe('GAME_OVER');
-    expect(restockSeen).toBe(cfg.flags.restockDraft); // the draft only runs when it is switched on
     expect(auctionSeen).toBe(true);   // the licence auction runs every season after the first
   });
 });
@@ -261,13 +258,14 @@ describe('v-notching is finite: the egger is taken, a v-notch meeple takes her p
       const egger = d.bags.inshore.splice(idx, 1)[0];
       // mimic resolveDraw's clean-policy egger branch
       d.bags.inshore.push({ id: `vn-${egger.id}`, ground: 'inshore', kind: 'VNOTCHED', weightLb: 0, color: 'common' });
-      d.players[pid].vTokens += 1;
+      d.notches.inshore = (d.notches.inshore ?? 0) + 1;
       d.players[pid].tracks.conservation += cfg.rep.vNotch;
     }
     expect(d.bags.inshore.length).toBe(before);                       // bag size conserved
     expect(d.bags.inshore.filter((t) => t.kind === 'EGGER').length).toBe(0);
     expect(d.bags.inshore.filter((t) => t.kind === 'VNOTCHED').length).toBe(startEggers);
-    expect(d.players[pid].vTokens).toBe(startEggers);                 // paid once each
+    expect(d.notches.inshore).toBe(startEggers);                      // the breeding track recorded each one
+    expect(d.players[pid].tracks.conservation).toBe(startEggers * cfg.rep.vNotch); // and each paid ONCE
     // and the conservation income is now capped by the world's egger supply
     const worldEggers = (['inshore', 'mid', 'offshore', 'deep'] as const)
       .reduce((n, g) => n + state.bags[g].filter((t) => t.kind === 'EGGER').length, 0);

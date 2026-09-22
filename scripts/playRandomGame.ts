@@ -26,8 +26,6 @@ function pickAction(state: GameState, legal: Action[]): Action {
       case 'BRIBE': return 0.2;
       case 'BUY_UPGRADE': return 0.5;
       case 'PASS': return 0.5;
-      case 'RESTOCK_CLAIM': return 1;      // restock phase: just take the default claim/pass
-      case 'RESTOCK_CONTRIBUTE': return 1;
     }
   };
   const total = legal.reduce((s, a) => s + weight(a), 0);

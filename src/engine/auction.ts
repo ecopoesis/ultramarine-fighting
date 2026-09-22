@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 import type { Action } from '../actions';
-import { openSeason } from './restock';
+import { openSeason } from './season';
 
 // THE LICENCE AUCTION — a sealed-bid, second-price auction for the season's fishing
 // licence, run at the start of every season after the first.

@@ -53,7 +53,7 @@ const nearBags = (base: Config, inshore: Record<string, number>, mid: Record<str
   ...base, bags: { ...base.bags, inshore, mid },
 });
 const die = (base: Config, dieFaces: number[]): Config => ({
-  ...base, restock: { ...base.restock, dieFaces },
+  ...base, 
 });
 const LOW = [0, 0, 1, 1, 2, 3]; // a stingier lobster die (more blanks)
 

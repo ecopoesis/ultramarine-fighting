@@ -1,4 +1,4 @@
-import type { GameState, Ground } from './types';
+import type { GameState } from './types';
 import { neighbors, distance } from './engine/movement';
 import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
 import { isRipe } from './engine/soak';
@@ -9,8 +9,8 @@ import { spaceHasRoom } from './engine/buoys';
 export type Action =
   | { type: 'STEAM'; playerId: string; to: string }
   | { type: 'DROP'; playerId: string }
-  | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy; useToken?: boolean }
-  | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy; useToken?: boolean }
+  | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy }
+  | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy }
   | { type: 'SELL'; playerId: string }
   | { type: 'REFUEL'; playerId: string; units: number }
   | { type: 'REPORT'; playerId: string }
@@ -18,9 +18,6 @@ export type Action =
   | { type: 'BRIBE'; playerId: string }
   | { type: 'BUY_UPGRADE'; playerId: string; upgradeId: string } // refit at a market port's chandlery
   | { type: 'PASS'; playerId: string }
-  // restock draft (phase === 'RESTOCK')
-  | { type: 'RESTOCK_CLAIM'; playerId: string; ground: Ground; tileIds: string[] }        // claim a bag, return these pile tiles
-  | { type: 'RESTOCK_CONTRIBUTE'; playerId: string; tileIds: string[] }                    // spend v-notch: return these (empty = pass)
   // licence auction (phase === 'AUCTION')
   | { type: 'LICENSE_BID'; playerId: string; amount: number }                              // sealed bid; below the reserve or above your money counts as no bid
   | { type: 'LICENSE_BUY'; playerId: string; take: boolean };                               // take it or leave it at the revealed price
@@ -43,7 +40,6 @@ export function legalActions(state: GameState, playerId: string): Action[] {
     if (!a.revealed) return [{ type: 'LICENSE_BID', playerId, amount: a.minBid }];
     return [{ type: 'LICENSE_BUY', playerId, take: true }, { type: 'LICENSE_BUY', playerId, take: false }];
   }
-  if (state.phase === 'RESTOCK') return legalRestock(state, playerId);
 
   const p = state.players[playerId];
   const out: Action[] = [{ type: 'PASS', playerId }];
@@ -117,20 +113,3 @@ export function legalActions(state: GameState, playerId: string): Action[] {
   return out;
 }
 
-// Legal moves for the active restocker. The full choice (WHICH lobsters) is
-// combinatorial, so instead of enumerating it we return sensible DEFAULTS: on a
-// claim turn, one CLAIM per remaining bag pre-filled with the heaviest keepers the
-// roll allows; on a contribute turn, a single "pass" (spend nothing). A generic
-// runner picking the first option restocks reasonably; smart bots build their own.
-function legalRestock(state: GameState, playerId: string): Action[] {
-  const r = state.restock!;
-  const grounds = Object.keys(state.bags) as Ground[];
-  if (r.step === 'contribute') return [{ type: 'RESTOCK_CONTRIBUTE', playerId, tileIds: [] }];
-  return grounds
-    .filter((g) => !r.claimed.includes(g))
-    .map((g) => {
-      const heaviest = [...state.piles[g]].sort((a, b) => b.weightLb - a.weightLb);
-      const tileIds = heaviest.slice(0, Math.min(r.roll, heaviest.length)).map((t) => t.id);
-      return { type: 'RESTOCK_CLAIM', playerId, ground: g, tileIds } as Action;
-    });
-}

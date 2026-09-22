@@ -21,9 +21,6 @@ export function actionLabel(state: GameState, a: Action): string {
     case 'BERTH': return 'Berth — end day here';
     case 'BRIBE': return 'Bribe for the pole';
     case 'PASS': return 'Pass / end turn';
-    case 'RESTOCK_CLAIM': return `Claim ${a.ground} (+${a.tileIds.length})`;
-    case 'RESTOCK_CONTRIBUTE':
-      return a.tileIds.length ? `Contribute ${a.tileIds.length} v-notch` : 'Contribute nothing';
     case 'LICENSE_BID': return `Bid ${a.amount}`;
     case 'LICENSE_BUY': return a.take ? 'Take the licence' : 'Fish unlicensed';
     case 'BUY_UPGRADE': {

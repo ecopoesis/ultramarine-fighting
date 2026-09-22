@@ -124,7 +124,6 @@ ${drawLines.join('\n')}
   - highgrade: like clean, but KEEP jumbos (${cfg.rep.illegalKeep} reputation each). Shorts still go back, eggers still v-notched.
   - greedy: keep every illegal tile drawn, eggers included (${cfg.rep.illegalKeep} reputation per illegal tile; eggers kept this way earn nothing and are not v-notched).
   - Keepers over the keep limit go back in the bag.
-- V-TOKEN INSURANCE: if a haul draws no keeper at all, you may spend one v-token to draw ${cfg.vToken.insuranceDraws} extra tile(s) and keep the best keeper among them (the token is spent either way). Say "token" on the HAUL command to enable this.
 - Hauling returns the pot to your hand. A hauled catch goes to your HOLD.
 - SEEDED LOBSTERS: at the start of every season one generic ${cfg.seeded.weightLb} lb keeper is placed on EVERY fishing node, and they accumulate on nodes nobody fishes. Whoever hauls (or steals) a pot on a node first collects that node's whole seeded pile, before the bag draw. Neglected corners become jackpots.
 
@@ -158,9 +157,9 @@ Season 1 is calm. From season 2 storms are placed at random on some nodes per ti
 - The GPS plotter refit makes you immune to the entry hazard AND halves the chance your gear is parted overnight.
 
 ## 9. Breeding stock (between seasons, except into the final season)
-${cfg.flags.restockDraft ? `After season${draftSeasons.length > 1 ? 's' : ''} ${draftSeasons.join(', ')} there is a RESTOCK DRAFT (none before the final season: the ocean gets no relief for the last year).` : `Every berried female you v-notch and release advances her ground's BREEDING STOCK track, which is public and printed on the board. After season${draftSeasons.length > 1 ? 's' : ''} ${draftSeasons.join(', ')} — not before the final season, the ocean gets no relief for the last year — each ground's protected stock SPAWNS: it rolls one lobster die per band of notches on its track and returns that many lobsters from its extraction pile to its bag.
-  Dice by notches: ${cfg.breeding.diceByNotches.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ → ${r.dice}d`).join(', ')}. The die faces are ${cfg.breeding.dieFaces.join('/')}, so a die averages under one lobster and a thin track can spawn nothing at all.
-  Lobsters come back AT RANDOM, drawn blind from that ground's trap — you can see how full a trap is, never what is in it. Nobody is asked to donate anything here — you already paid, by throwing back a ${cfg.eggerWeightLb} lb lobster you could have landed. The track is the public record of who protected which water, and the water you protected is the water that comes back.`} In berth order (the order you berthed on the last day), each captain in turn CLAIMS one bag that has not yet been claimed, rolls the lobster die (faces ${cfg.restock.dieFaces.join('/')}) and returns that many lobsters of their choice from that bag's PILE into the bag (a roll of 0 wastes the claim but still locks the bag). After each claim, going around from the claimer's left, every other captain may CONTRIBUTE v-tokens: each token spent returns one more lobster of their choice from the pile to that bag (the token is gone — you trade end-game VP for a healthier commons). With ${GROUNDS.length} bags and ${players} captains, ${players > GROUNDS.length ? 'the tail of the berth order never gets to claim' : 'every captain claims once'}.
+Every berried female you v-notch and release advances her ground's BREEDING STOCK track, which is public and printed on the board. After season${draftSeasons.length > 1 ? 's' : ''} ${draftSeasons.join(', ')} — not before the final season, the ocean gets no relief for the last year — each ground's protected stock SPAWNS: it rolls one lobster die per band of notches on its track and returns that many lobsters from its trap to its bag.
+Dice by notches: ${cfg.breeding.diceByNotches.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ → ${r.dice}d`).join(', ')}. The die faces are ${cfg.breeding.dieFaces.join('/')}, so a die averages under one lobster and a thin track can spawn nothing at all.
+Lobsters come back AT RANDOM, drawn blind from that ground's trap — you can see how full a trap is, never what is in it. Nobody is asked to donate anything: you already paid, by throwing back a ${cfg.eggerWeightLb} lb lobster you could have landed. The track is the public record of who protected which water, and the water you protected is the water that comes back.
 
 ## 10. Ship refits (upgrades)
 Market ports have a chandlery with ${cfg.upgrades.display} refits face-up (of ${cfg.upgrades.perPortStock} in stock, random; the next slides up when one is bought). BUY costs ${cfg.actionCost.BUY_UPGRADE} action + the price, at that port only, one refit per slot (3 slots: stern, midPrimary, midSecondary), never replaced. Catalog:
@@ -169,7 +168,7 @@ ${upgradeLines.join('\n')}
 ## 11. Scoring (end of season ${cfg.seasons})
 Three tracks, each in victory points (VP):
 - MONEY VP = money ÷ ${cfg.scoring.moneyPerVP}.
-- CONSERVATION VP = your v-tokens still held (×${cfg.scoring.vNotchTokenValue}) + your conservation track (+1 per egger v-notched over the game) + a shared commons-health bonus read from the average bag fullness at the end (${health}) — everyone gets the same bonus, so a stripped ocean hurts every steward.
+- CONSERVATION VP = your conservation track (+${cfg.rep.vNotch} per berried female v-notched and released) + a shared commons-health bonus read from the average bag fullness at the end (${health}) — everyone gets the same bonus, so a stripped ocean hurts every steward.
 - REPUTATION VP = reputation × ${cfg.scoring.repToVP}. You start at ${cfg.startReputation} reputation.
 - TOTAL = (money VP + conservation VP + reputation VP) MINUS a penalty read off a printed card using your LOWEST track: ${weakLink}. A balanced captain pays nothing; a dumped track is close to fatal. Highest total wins; ties share. Every number is a whole one.
 - Rough scale: a 20 VP track is 100 money, or 20 conservation, or 5 reputation points. Reputation is expensive to rebuild (only +1 per report, +0 otherwise), so treat it as a budget you spend, not a free resource.
@@ -180,8 +179,8 @@ Commands (one per string, uppercase keyword first):
 - STEAM <NODE> — move to an adjacent node (with a bigger engine, up to 2 nodes away).
 - GOTO <NODE> — macro: steam step by step toward NODE across as many turns as needed (spends 1 action per hop). Stops if fuel runs out or the day ends.
 - DROP — place a pot on this fishing ground.
-- HAUL <potId> [clean|highgrade|greedy] [token] — haul your ripe pot here (default clean, no token).
-- STEAL <potId> [clean|highgrade|greedy] [token] — steal a rival's ripe pot here.
+- HAUL <potId> [clean|highgrade|greedy] — haul your ripe pot here (default clean).
+- STEAL <potId> [clean|highgrade|greedy] — steal a rival's ripe pot here.
 - SELL — sell your whole hold at this market port.
 - REFUEL [units] — buy fuel here (default: fill the tank or spend what you can).
 - BUY <refitId> — install a face-up refit here.
@@ -190,7 +189,6 @@ Commands (one per string, uppercase keyword first):
 - BRIBE — pay to take the front slot (and berth).
 - PASS — end this turn (unspent actions are lost).
 - REPLAN — abandon the rest of your plan and be asked again with a fresh situation report.
-- During a restock draft: CLAIM <ground> [heavy|light] — claim that bag and return up to your roll of the heaviest (default) or lightest lobsters from its pile; CONTRIBUTE <n> [heavy|light] — spend n v-tokens on the open bag (0 to pass).
 Your plan is executed in order and CARRIES ACROSS TURNS AND DAYS — it runs until it is exhausted, a step becomes impossible (you are asked again, with the reason), something happens to you (theft, storm damage, tow), or you REPLAN. So you can commit to a whole multi-day trip in one decision: steam out, drop, BERTH for the night, haul the next morning once it has ripened, run in and SELL. That is the intended way to play the far grounds, where a round trip cannot fit in a day.
 
 A step that is legal but simply unaffordable this turn (you are out of action points) is NOT an error — it waits for your next turn automatically. Actions cost points as listed; a turn ends when your points are spent, on PASS/BERTH/BRIBE, or when nothing else in the plan is affordable.

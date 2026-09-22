@@ -150,23 +150,25 @@ describe('seeded lobsters are an open economy on top of the closed census', () =
   });
 });
 
-describe('v-token draw insurance keeps accounting honest', () => {
-  it('census stays conserved even when insurance is spent (all-steward table)', () => {
-    let insuranceFired = 0;
+describe('breeding stock keeps accounting honest', () => {
+  it('spawning moves tiles from trap to bag without minting or losing any', () => {
+    let spawned = 0;
     for (const seed of [7, 42, 101, 2024, 55555]) {
       let state = createInitialState(defaultConfig, seed);
       const startTotal = totalTilesInWorld(state);
       let guard = 0;
       while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
         const pid = activePlayerId(state);
-        // stewards v-notch eggers (earning tokens) then spend them on lean hauls
+        // stewards notch every egger they meet, so the breeding tracks fill
         state = reduce(state, BOTS.steward(state, pid, legalActions(state, pid)));
       }
-      insuranceFired += state.log.filter((l) => l.includes('v-token')).length;
-      // spending a token draws from + returns to the bag; nothing is minted or lost.
+      spawned += state.log.filter((l) => l.startsWith('--- Breeding stock spawns')).length;
+      // a spawn moves lobsters trap -> bag; both are inside the census, so it holds
       expect(totalTilesInWorld(state)).toBe(startTotal);
+      // and a notched egger becomes a meeple in place: the bag never changes size
+      expect(Object.values(state.notches).reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
     }
-    // guard against a vacuous test: the insurance path must actually execute
-    expect(insuranceFired).toBeGreaterThan(0);
+    // guard against a vacuous test: spawning must actually have run
+    expect(spawned).toBeGreaterThan(0);
   });
 });

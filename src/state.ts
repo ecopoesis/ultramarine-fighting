@@ -23,7 +23,6 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
       hold: [],
       soldToday: false,
       berthed: false,
-      vTokens: 0,
       licensed: true, // season 1's licence comes with the boat
       upgrades: {},
       tracks: { conservation: 0, reputation: config.startReputation },
@@ -49,7 +48,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     for (const name of Object.keys(config.bags[g])) {
       const bp = tileTemplate(name);
       if (bp.kind !== 'KEEPER' && bp.kind !== 'JUMBO') continue; // shorts/eggers never get sold
-      for (let c = 0; c < config.restock.preSeedPerBag; c++) seed.push({ id: `${g}-seed-${s++}`, ground: g, ...bp });
+      for (let c = 0; c < config.trapStarters; c++) seed.push({ id: `${g}-seed-${s++}`, ground: g, ...bp });
     }
     piles[g] = seed;
   }

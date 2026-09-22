@@ -42,9 +42,6 @@ export interface CardCounter {
   seedBias?: number;        // weight on a space's accumulated SEEDED pile when scoring it — >1 chases neglected jackpots (a would-be "sniper"), <1 ignores them (default 1 = price it in)
   guzzle?: boolean;         // the GAS-GUZZLER: fish one-way-reachable zones, never reserve return fuel, never refuel — deliberately run dry and lean on the tow. The tow must be priced to KILL this (else "run dry, take the cheap tow" beats honest fuel management).
   upgradeWishlist?: string[]; // refit priority (buys the first affordable one early, keeping a reserve); undefined = a generic order
-  // Restock draft:
-  restockReturn?: 'heavy' | 'light'; // which pile tiles to put back — heaviest keepers (rebuild) or lightest (stock it thin)
-  vnotchContribute?: number;         // how many v-notch tokens to SPEND per bag to add more lobsters (0 = hoard for VP)
   // Licence auction: what fraction of money on hand to put behind a bid, over the
   // reserve. Second-price, so bidding your true valuation is safe — you pay what your
   // closest rival thought it was worth, not what you did.
@@ -66,20 +63,19 @@ export const CARD_COUNTER: CardCounter = {
 // scripts/tuneArchetypes.ts + scripts/sweepArch.ts.
 const ARCH_BASE: CardCounter = {
   ...CARD_COUNTER, steals: true, stealPolicy: 'highgrade', repFloor: 5,
-  restockReturn: 'heavy', vnotchContribute: 1,
 };
 
 // stormBias is the weather personality: the gambler and hustler chase the storm
 // churn (>1), the patient steward/monk give storms a wide berth (<1), the rest
 // price the gamble honestly (1). It layers on top of farBias — where you fish AND
 // whether you bet on the blow are separate identities.
-export const CC_STEWARD: CardCounter = { ...ARCH_BASE, name: 'steward', vnotchContribute: 3, stormBias: 0.8 };    // clean, balanced — rebuilds the commons, gives storms a berth
-export const CC_GREEDY: CardCounter = { ...ARCH_BASE, name: 'greedy', haulPolicy: 'highgrade', minKeep: 1, vnotchContribute: 0 }; // selective high-grader: money leader, hoards v-notch for VP
+export const CC_STEWARD: CardCounter = { ...ARCH_BASE, name: 'steward', stormBias: 0.8 };    // clean, balanced — rebuilds the commons, gives storms a berth
+export const CC_GREEDY: CardCounter = { ...ARCH_BASE, name: 'greedy', haulPolicy: 'highgrade', minKeep: 1 }; // selective high-grader: money leader, hoards v-notch for VP
 export const CC_HIGHLINER: CardCounter = { ...ARCH_BASE, name: 'highliner', farBias: 1.4, stormBias: 1.4 };       // works the far edge for the heavy catch — and rides the churn out there (else it eats the storm tax without the reward)
-export const CC_GRINDER: CardCounter = { ...ARCH_BASE, name: 'grinder', farBias: 0.7, minKeep: 1, reachCostPerStep: 0.8, vnotchContribute: 2 }; // near-water workhorse: high volume, short runs, rebuilds its own grounds
+export const CC_GRINDER: CardCounter = { ...ARCH_BASE, name: 'grinder', farBias: 0.7, minKeep: 1, reachCostPerStep: 0.8 }; // near-water workhorse: high volume, short runs, rebuilds its own grounds
 export const CC_GAMBLER: CardCounter = { ...ARCH_BASE, name: 'gambler', farBias: 2.0, minKeep: 2, stormBias: 1.8 }; // deep-edge risk-taker: bets on the far gear AND the blow — but a COMPETENT one (base dropSlack/refuel: don't strand gear or over-fuel at dear far ports)
-export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 4, vnotchContribute: 0, stormBias: 1.3 }; // dirty money anywhere, rides the storm
-export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 2, vnotchContribute: 3, stormBias: 0.6 };  // patient: only prime hauls (keep 2) — max conservation, avoids the blow
+export const CC_HUSTLER: CardCounter = { ...ARCH_BASE, name: 'hustler', haulPolicy: 'highgrade', farBias: 1.3, minKeep: 1, repFloor: 4, stormBias: 1.3 }; // dirty money anywhere, rides the storm
+export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, minKeep: 2, stormBias: 0.6 };  // patient: only prime hauls (keep 2) — max conservation, avoids the blow
 export const CC_NOMAD: CardCounter = { ...ARCH_BASE, name: 'nomad', reachCostPerStep: 0.25, stormBias: 1.2 };     // ranges the whole map for the best EV anywhere — including the churn (else it wanders into storms untaxed-for-nothing)
 export const CC_GUZZLER: CardCounter = { ...ARCH_BASE, name: 'guzzler', guzzle: true, minKeep: 1, farBias: 1.3, refuelBelow: 0 }; // fishes hard & far, never reserves return fuel, never refuels — runs dry and takes the tow. A CANARY for the tow price: if it's viable, the tow is too cheap.
 
@@ -196,37 +192,8 @@ function chooseTarget(
   return home();
 }
 
-// Restock-draft decision: which bag to claim + which lobsters to return, or how
-// much v-notch to spend contributing. WHICH-bag = the fullest pile (most value to
-// rebuild); WHICH-lobsters = heaviest keepers (rebuild) or lightest ('light' style).
-function restockDecision(state: GameState, pid: string, cc: CardCounter): Action {
-  const r = state.restock!;
-  const grounds = Object.keys(state.bags) as Ground[];
-  const pileVal = (g: Ground) => state.piles[g].reduce((a, t) => a + t.weightLb, 0);
-
-  if (r.step === 'claim') {
-    const remaining = grounds.filter((g) => !r.claimed.includes(g));
-    const withStock = remaining.filter((g) => state.piles[g].length > 0);
-    const pool = withStock.length ? withStock : remaining;
-    // A real roll → claim the fullest pile (most to rebuild). A blank (0) still
-    // LOCKS a bag, so dump it on the least valuable one rather than a rich bag.
-    const ground = pool.slice().sort((a, b) => (r.roll === 0 ? pileVal(a) - pileVal(b) : pileVal(b) - pileVal(a)))[0];
-    const asc = cc.restockReturn === 'light';
-    const pile = [...state.piles[ground]].sort((a, b) => (asc ? a.weightLb - b.weightLb : b.weightLb - a.weightLb));
-    const tileIds = pile.slice(0, Math.min(r.roll, pile.length)).map((t) => t.id);
-    return { type: 'RESTOCK_CLAIM', playerId: pid, ground, tileIds };
-  }
-
-  const p = state.players[pid];
-  const g = r.contribGround!;
-  const spend = Math.min(cc.vnotchContribute ?? 0, p.vTokens, state.piles[g].length);
-  const pile = [...state.piles[g]].sort((a, b) => b.weightLb - a.weightLb); // add the best lobsters we can
-  return { type: 'RESTOCK_CONTRIBUTE', playerId: pid, tileIds: pile.slice(0, spend).map((t) => t.id) };
-}
-
 export function makeCardCounter(cc: CardCounter): Policy {
   return (state: GameState, pid: string, legal: Action[]): Action => {
-    if (state.phase === 'RESTOCK') return restockDecision(state, pid, cc);
     if (state.phase === 'AUCTION') {
       const a = state.auction!;
       const me = state.players[pid];
@@ -253,7 +220,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
     //    reputation hit — a chance we can't price, so we take it.
     if (cc.steals && p.tracks.reputation > repFloor) {
       const steals = ofType(legal, 'STEAL');
-      if (steals.length) return { ...steals[0], policy: cc.stealPolicy ?? 'greedy', useToken: true };
+      if (steals.length) return { ...steals[0], policy: cc.stealPolicy ?? 'greedy' };
     }
 
     // 2) HAUL ripe own buoys (best keep first). A measured high-grader keeps illegal
@@ -266,7 +233,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
         .map((h) => ({ h, keep: buoys.find((b) => b.buoyId === h.buoyId)?.keep ?? 0 }))
         .filter((x) => last || x.keep >= cc.minKeep)
         .sort((a, b) => b.keep - a.keep);
-      if (ranked.length) return { ...ranked[0].h, policy: effHaul, useToken: true };
+      if (ranked.length) return { ...ranked[0].h, policy: effHaul };
     }
 
     const target = chooseTarget(state, pid, cc, buoys, reach, last);

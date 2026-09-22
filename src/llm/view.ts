@@ -62,8 +62,6 @@ function describeAction(state: GameState, a: Action): string {
     case 'BRIBE': return 'BRIBE';
     case 'BUY_UPGRADE': return `BUY ${a.upgradeId}`;
     case 'PASS': return 'PASS';
-    case 'RESTOCK_CLAIM': return `CLAIM ${a.ground}`;
-    case 'RESTOCK_CONTRIBUTE': return 'CONTRIBUTE <n>';
     case 'LICENSE_BID': return `BID <amount> (reserve ${a.amount})`;
     case 'LICENSE_BUY': return a.take ? 'TAKE the licence' : 'LEAVE it';
   }
@@ -80,7 +78,6 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   const p = state.players[pid];
   const lines: string[] = [];
 
-  if (state.phase === 'RESTOCK') return renderRestockView(state, pid, legal, opts);
   if (state.phase === 'AUCTION') return renderAuctionView(state, pid, opts);
 
   const dis = daysThisSeason(state);
@@ -95,7 +92,7 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   const node = cfg.map.nodes[p.node];
   const where = node.type === 'port' ? `${p.node} (${node.port!.market ? 'market port' : 'shelter'})` : `${p.node} (${node.ground} ground${state.stormed.includes(p.node) ? ', STORMED' : ''})`;
   if (p.licensed === false) lines.push(`*** YOU ARE UNLICENSED THIS SEASON — everything you haul is poached: ${cfg.unlicensed.repPerHaul} reputation per haul, and the co-op will not take your catch. ***`);
-  lines.push(`YOU — ${p.name}: at ${where} | fuel ${p.fuel}/${fuelCap(state, p)} | money ${p.money.toFixed(1)} | reputation ${p.tracks.reputation} | conservation ${p.tracks.conservation} | v-tokens ${p.vTokens} | pots in hand ${p.buoysAvailable}/${buoyCap(state, p)} | sold today: ${p.soldToday ? 'yes' : 'no'}`);
+  lines.push(`YOU — ${p.name}: at ${where} | fuel ${p.fuel}/${fuelCap(state, p)} | money ${p.money.toFixed(1)} | reputation ${p.tracks.reputation} | conservation ${p.tracks.conservation} | pots in hand ${p.buoysAvailable}/${buoyCap(state, p)} | sold today: ${p.soldToday ? 'yes' : 'no'}`);
   lines.push(`Your hold: ${holdSummary(p.hold)}`);
   const ups = Object.values(p.upgrades).filter(Boolean) as string[];
   lines.push(`Your refits: ${ups.length ? ups.map((u) => upgradeDef(state, u)?.label ?? u).join(', ') : 'none'}${stepsPerSteam(state, p) > 1 ? ` (STEAM reaches ${stepsPerSteam(state, p)} nodes)` : ''}`);
@@ -117,7 +114,7 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
     const r = state.players[id];
     const rp = r.deployed.map((b) => b.node);
     const rups = Object.values(r.upgrades).filter(Boolean) as string[];
-    lines.push(`RIVAL ${r.name}: at ${r.node}${r.berthed ? ' (berthed)' : ''} | fuel ${r.fuel} | money ${r.money.toFixed(1)} | rep ${r.tracks.reputation} | cons ${r.tracks.conservation} | v-tokens ${r.vTokens} | hold ${r.hold.length} tiles (${r.hold.reduce((s, t) => s + t.weightLb, 0)} lb) | pots at: ${rp.length ? rp.join(', ') : 'none'} | refits: ${rups.length ? rups.join(', ') : 'none'}`);
+    lines.push(`RIVAL ${r.name}: at ${r.node}${r.berthed ? ' (berthed)' : ''} | fuel ${r.fuel} | money ${r.money.toFixed(1)} | rep ${r.tracks.reputation} | cons ${r.tracks.conservation} | hold ${r.hold.length} tiles (${r.hold.reduce((s, t) => s + t.weightLb, 0)} lb) | pots at: ${rp.length ? rp.join(', ') : 'none'} | refits: ${rups.length ? rups.join(', ') : 'none'}`);
   }
   lines.push('');
 
@@ -125,10 +122,8 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   lines.push('BAGS (public):');
   for (const g of GROUNDS) lines.push(`  ${bagSummary(state, g)}`);
   lines.push(`TRAPS (how many landed lobsters sit in each ground's trap — what its breeding stock can bring back; you cannot see WHICH): ${GROUNDS.map((g) => pileSummary(state, g)).join(' | ')}`);
-  if (!cfg.flags.restockDraft) {
-    lines.push(`BREEDING STOCK (public; berried females notched and released on each ground — at each season change except the last, a ground rolls this many dice and returns that many lobsters from its pile, LIGHTEST first):`);
-    lines.push(`  ${GROUNDS.map((g) => `${g} ${state.notches[g] ?? 0} notched = ${diceFor(state, state.notches[g] ?? 0)}d`).join(' | ')}`);
-  }
+  lines.push('BREEDING STOCK (public; berried females notched and released on each ground — at each season change except the last, a ground rolls this many dice and draws that many lobsters blind from its trap):');
+  lines.push(`  ${GROUNDS.map((g) => `${g} ${state.notches[g] ?? 0} notched = ${diceFor(state, state.notches[g] ?? 0)}d`).join(' | ')}`);
   const occupied = Object.keys(cfg.map.nodes)
     .filter((n) => cfg.map.nodes[n].type === 'ground' && potsOnNode(state, n) > 0)
     .map((n) => `${n} ${potsOnNode(state, n)}/${potCapacity(state)}`);
@@ -190,33 +185,6 @@ function renderAuctionView(state: GameState, pid: string, opts: ViewOptions): st
   return L.join('\n');
 }
 
-function renderRestockView(state: GameState, pid: string, legal: Action[], opts: ViewOptions): string {
-  const r = state.restock!;
-  const p = state.players[pid];
-  const lines: string[] = [];
-  lines.push(`=== RESTOCK DRAFT after Season ${state.season} — YOUR DECISION (${p.name})`);
-  lines.push(`Claim order: ${r.claimOrder.map((id) => state.players[id].name).join(' → ')}. Bags already claimed: ${r.claimed.length ? r.claimed.join(', ') : 'none'}.`);
-  lines.push('BAGS now:');
-  for (const g of GROUNDS) lines.push(`  ${bagSummary(state, g)}`);
-  lines.push('PILES (what can be returned):');
-  for (const g of GROUNDS) lines.push(`  ${pileSummary(state, g)}`);
-  lines.push(`You hold ${p.vTokens} v-token(s); money ${p.money.toFixed(1)}, reputation ${p.tracks.reputation}, conservation ${p.tracks.conservation}.`);
-  if (r.step === 'claim') {
-    lines.push(`It is your CLAIM. You rolled ${r.roll}: claim one unclaimed bag and return up to ${r.roll} lobsters from its pile.`);
-    lines.push(`Commands: CLAIM <ground> [heavy|light]  (grounds available: ${GROUNDS.filter((g) => !r.claimed.includes(g)).join(', ')})`);
-  } else {
-    lines.push(`${state.players[r.claimOrder[r.claimTurn]].name} just claimed the ${r.contribGround} bag. You may CONTRIBUTE v-tokens (each returns one more lobster from the ${r.contribGround} pile, which has ${state.piles[r.contribGround!].length} lobsters).`);
-    lines.push(`Commands: CONTRIBUTE <n> [heavy|light]  (n from 0 to ${Math.min(p.vTokens, state.piles[r.contribGround!].length)})`);
-  }
-  if (opts.events.length) {
-    lines.push('SINCE YOUR LAST DECISION:');
-    for (const e of opts.events) lines.push(`  - ${e}`);
-  }
-  if (opts.reason) lines.push(`NOTE: ${opts.reason}`);
-  lines.push('Reply with JSON: {"plan": ["..."], "note": "..."}');
-  return lines.join('\n');
-}
-
 // ---- command parsing ----
 
 export type Parsed =
@@ -225,12 +193,7 @@ export type Parsed =
   | { ok: false; error: string };
 
 const POLICIES: HaulPolicy[] = ['clean', 'highgrade', 'greedy'];
-const isModifier = (tok?: string) => !!tok && (POLICIES.includes(tok.toLowerCase() as HaulPolicy) || tok.toLowerCase() === 'token');
-
-function pickTiles(state: GameState, g: Ground, n: number, order: 'heavy' | 'light'): string[] {
-  const pile = [...state.piles[g]].sort((a, b) => (order === 'light' ? a.weightLb - b.weightLb : b.weightLb - a.weightLb));
-  return pile.slice(0, Math.max(0, Math.min(n, pile.length))).map((t) => t.id);
-}
+const isModifier = (tok?: string) => !!tok && POLICIES.includes(tok.toLowerCase() as HaulPolicy);
 
 // Resolve one command string against the legal action set. GOTO resolves to its
 // first STEAM hop (the caller keeps the macro alive across turns).
@@ -256,29 +219,6 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
     if (kw === 'LEAVE' || kw === 'PASS' || kw === 'DECLINE') return { ok: true, action: { type: 'LICENSE_BUY', playerId: pid, take: false } };
     return { ok: false, error: `the licence price is ${a.price} — reply TAKE or LEAVE, not "${raw}"` };
   }
-  if (state.phase === 'RESTOCK') {
-    const r = state.restock!;
-    if (kw === 'CLAIM') {
-      if (r.step !== 'claim') return { ok: false, error: 'not your claim turn (it is a CONTRIBUTE decision)' };
-      const g = (args[0] ?? '').toLowerCase() as Ground;
-      if (!GROUNDS.includes(g)) return { ok: false, error: `CLAIM needs a ground: ${GROUNDS.join('|')}` };
-      if (r.claimed.includes(g)) return { ok: false, error: `${g} bag already claimed` };
-      const order = (args[1] ?? 'heavy').toLowerCase() === 'light' ? 'light' : 'heavy';
-      return { ok: true, action: { type: 'RESTOCK_CLAIM', playerId: pid, ground: g, tileIds: pickTiles(state, g, r.roll, order) } };
-    }
-    if (kw === 'CONTRIBUTE') {
-      if (r.step !== 'contribute') return { ok: false, error: 'not a contribute step (it is your CLAIM)' };
-      const n = Math.max(0, Math.floor(Number(args[0] ?? 0)) || 0);
-      const p = state.players[pid];
-      const spend = Math.min(n, p.vTokens, state.piles[r.contribGround!].length);
-      const order = (args[1] ?? 'heavy').toLowerCase() === 'light' ? 'light' : 'heavy';
-      return { ok: true, action: { type: 'RESTOCK_CONTRIBUTE', playerId: pid, tileIds: pickTiles(state, r.contribGround!, spend, order) } };
-    }
-    // Anything else during the draft → a sensible default so the draft can't stall.
-    if (r.step === 'claim') return { ok: false, error: `during the restock draft use CLAIM <ground> (got "${raw}")` };
-    return { ok: false, error: `during the restock draft use CONTRIBUTE <n> (got "${raw}")` };
-  }
-
   switch (kw) {
     case 'STEAM': {
       const to = (args[0] ?? '').toUpperCase();
@@ -309,13 +249,13 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
       const id = isModifier(args[0]) ? undefined : args[0];
       const a = id ? find('HAUL', (h) => h.buoyId === id) : find('HAUL');
       if (!a) return { ok: false, error: `cannot HAUL ${id ?? ''} (not your ripe pot here, or no action points)` };
-      return { ok: true, action: { ...a, policy: policyOf(args), useToken: tokenOf(args) } };
+      return { ok: true, action: { ...a, policy: policyOf(args) } };
     }
     case 'STEAL': {
       const id = isModifier(args[0]) ? undefined : args[0];
       const a = id ? find('STEAL', (s) => s.buoyId === id) : find('STEAL');
       if (!a) return { ok: false, error: `cannot STEAL ${id ?? ''} (no ripe rival pot of that id here, or fewer than 2 action points)` };
-      return { ok: true, action: { ...a, policy: policyOf(args), useToken: tokenOf(args) } };
+      return { ok: true, action: { ...a, policy: policyOf(args) } };
     }
     case 'SELL': {
       const a = find('SELL');
