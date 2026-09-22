@@ -40,6 +40,21 @@ export interface CaptainRuntime {
 const freshRuntime = (): CaptainRuntime => ({ plan: [], lastLogIndex: 0, lastDayKey: '', calls: 0, costUsd: 0, ms: 0, invalid: 0, badStreak: 0 });
 const BAD_STREAK_LIMIT = 6;
 
+// Redact a rival's PRIVATE haul detail — the SOAK STAGE — from one event-feed line.
+// Drops stay visible: at a table everyone watches a pot go in; how ripe it came up
+// when hauled is what stays hidden, and knowing it would let a captain read the
+// soak clock on water they never fished.
+//
+// The pattern has to track engine/buoys.ts's haul line exactly. It fell out of sync
+// once, when the line stopped carrying a token count, and a non-matching redactor
+// fails OPEN: every rival's stage leaked and nothing announced it. test/llm.test.ts
+// now pins this against a log line taken from a real game rather than a literal.
+export function redactRival(entry: string, me: string): string {
+  if (entry.startsWith(`${me} `)) return entry;
+  const m = entry.match(/^(.+?) hauls \((\w+)\/(\w+)\): kept (\d+)$/);
+  return m ? `${m[1]} hauls a pot (${m[2]}): kept ${m[4]}` : entry;
+}
+
 const PLAN_SCHEMA = {
   type: 'object',
   properties: { plan: { type: 'array', items: { type: 'string' } }, note: { type: 'string' } },
@@ -99,16 +114,8 @@ export class LlmCaptain {
   // that should interrupt a running plan.
   private eventsSince(state: GameState): { events: string[]; interrupt?: string } {
     const me = this.captainName;
-    // Redact rivals' PRIVATE haul details (stage, token count). Drops stay visible:
-    // at a table everyone sees a pot go in; how ripe it is is what stays hidden.
-    const all = state.log.slice(this.rt.lastLogIndex).map((e) => {
-      if (e.startsWith(`${me} `)) return e;
-      const m = e.match(/^(.+?) hauls \((\w+)\/\w+\): kept (\d+), vTokens \d+$/);
-      if (m) return `${m[1]} hauls a pot (${m[2]}): kept ${m[3]}`;
-      const ins = e.match(/^(.+?) spends a v-token \(insurance\): rescued (\d+) keeper\(s\)$/);
-      if (ins) return `${ins[1]} spends a v-token on a lean haul`;
-      return e;
-    });
+
+    const all = state.log.slice(this.rt.lastLogIndex).map((e) => redactRival(e, me));
     let interrupt: string | undefined;
     for (const e of all) {
       if (e.includes(`from ${me}`) && e.includes('STEALS')) interrupt = 'a rival stole one of your pots';

@@ -11,7 +11,7 @@ import type { Config } from '../src/types';
 //   npx tsx scripts/llmTournament.ts run    [--run-id ID] [--rounds 5] [--final 5] [--effort medium]
 //                                           [--models fable=claude-fable-5-1,opus=claude-opus-5]
 //                                           [--archetypes a,b,c] [--mean 4] [--sd 1] [--seed 7] [--concurrency 8] [--no-final]
-//   npx tsx scripts/llmTournament.ts smoke  [--model claude-haiku-4-5-20251001] [--players 2] [--seasons 2]   (tiny game: plumbing check; 3+ seasons exercises the restock draft)
+//   npx tsx scripts/llmTournament.ts smoke  [--model claude-haiku-4-5-20251001] [--players 2] [--seasons 2]   (tiny game: plumbing check; 3+ seasons exercises the breeding-stock rollover)
 //   npx tsx scripts/llmTournament.ts status --run-id ID
 //   npx tsx scripts/llmTournament.ts report --run-id ID        (writes runs/ID/report.md)
 //

@@ -8,7 +8,7 @@ import { tableSizes } from '../src/llm/tournament';
 import { parseCommand, renderView } from '../src/llm/view';
 import { buildRulesPrompt } from '../src/llm/rules';
 import { BOTS } from '../src/bots';
-import { LlmCaptain } from '../src/llm/agent';
+import { LlmCaptain, redactRival } from '../src/llm/agent';
 import { enterAuction } from '../src/engine/auction';
 import { breedingRollover, diceFor } from '../src/engine/breeding';
 import { parseLimitWaitMs } from '../src/llm/claude';
@@ -270,5 +270,40 @@ describe('v-notching is finite: the egger is taken, a v-notch meeple takes her p
     const worldEggers = (['inshore', 'mid', 'offshore', 'deep'] as const)
       .reduce((n, g) => n + state.bags[g].filter((t) => t.kind === 'EGGER').length, 0);
     expect(worldEggers).toBeLessThan(60); // was effectively unbounded before this change
+  });
+});
+
+describe('the event feed never leaks a rival\'s soak', () => {
+  it('redacts the stage off a haul line taken from a real game', () => {
+    // Play a real game and harvest the engine's ACTUAL haul lines, rather than
+    // asserting against a literal that would keep passing after the engine's
+    // wording changed. That drift is the bug this test exists to catch: the
+    // redactor fails OPEN, so a stale pattern leaks silently.
+    let state = createInitialState(defaultConfig, 4242);
+    const hauls: string[] = [];
+    let guard = 0;
+    while (state.phase !== 'GAME_OVER' && guard++ < 200000) {
+      const pid = activePlayerId(state);
+      const before = state.log.length;
+      state = reduce(state, BOTS.gambler(state, pid, legalActions(state, pid)));
+      for (const line of state.log.slice(before)) if (/ hauls \(/.test(line)) hauls.push(line);
+    }
+    expect(hauls.length).toBeGreaterThan(5);   // guard against a vacuous test
+
+    const me = Object.values(state.players)[0].name;
+    const rivalHauls = hauls.filter((h) => !h.startsWith(`${me} `));
+    expect(rivalHauls.length).toBeGreaterThan(0);
+
+    for (const line of rivalHauls) {
+      const out = redactRival(line, me);
+      expect(out).not.toBe(line);              // the pattern still MATCHES the engine
+      const stage = line.match(/ hauls \(\w+\/(\w+)\)/)![1];
+      expect(out).not.toContain(`/${stage}`);  // and the stage is gone
+      expect(out).toContain('hauls a pot');
+    }
+
+    // my own hauls pass through untouched — I am allowed to know my own soak
+    const mine = hauls.filter((h) => h.startsWith(`${me} `));
+    for (const line of mine) expect(redactRival(line, me)).toBe(line);
   });
 });
