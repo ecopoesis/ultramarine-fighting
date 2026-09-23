@@ -355,3 +355,277 @@ Combine via `config.scoring.combineMode`:
 7. Thin hot-seat UI last — by now a test script already "plays" full games, so the UI is just a renderer + button dispatcher.
 
 > Everything deferred (weather, eras, multi-ship, inspections) should slot in as a new `/engine` module + a `config.flags` toggle + a config block, with zero edits to existing modules. If adding one of them later forces edits elsewhere, the decoupling failed and that's worth fixing then.
+
+---
+
+## 14. Alignment & heat — the light/dark redesign (PROPOSED, behind `flags.alignment`)
+
+**Status: design only. Nothing below is built.** Every number named here is a
+config key to be tuned in the arena; the values in brackets are starting guesses,
+not decisions.
+
+### 14.1 Why
+
+Under the weak-link card, every dark act subtracts from a scored track. Keeping an
+egger costs reputation and forgoes conservation; poaching costs reputation on every
+haul; stealing costs reputation. The dark side is not a strategy, it is a tax, and
+competent captains never pay it. opus11/opus12 showed it plainly: offered a clean
+keep-or-notch choice per haul (`d8612d3`), Opus 5.5 captains wrote `notch-eggers`
+139 times and never kept one. Conservation was everyone's weak link, so notching
+always won.
+
+It was also a scarcity trap: 42 eggers × 2 = 84 conservation for a 5-player table,
+while clearing the −10 penalty needs 12 eggers each. At most three captains could
+ever get there, so conservation measured who drew eggers, not who held back.
+
+### 14.2 The shape
+
+- **Money is the only score.** Most money wins. The weak-link card, the
+  conservation track and reputation-as-VP retire under this flag.
+- **ALIGNMENT is a switchboard, not a score.** One track per captain from dark
+  to light. Where your marker sits changes what you can do: the prices you get, the
+  water and harbours open to you, the gear you can buy, the licence you must hold.
+- **HEAT is the wanted level: 0–5 stars, GTA-style.** Separate from alignment.
+  Alignment is who you are and moves slowly; heat is what you did lately, jumps
+  on each crime and cools when you lie low. The warden reads heat.
+- **Design target: dark is more profitable on average, but only if you keep rolling
+  hard sixes.** Higher mean money, much wider spread. A dark seat should win about
+  as often as a light seat, but its wins are bigger and its losses worse.
+- **About a third of the table should end up dark,** steered by scarcity rather
+  than by rule (14.8).
+
+### 14.3 The alignment track
+
+A printed track, whole steps, everyone starts at the centre. Five bands, each a row
+on one printed band card:
+
+| band | range [guess] | reading |
+|---|---|---|
+| Paragon | +7 … +10 | the harbour's pride. Must hold a licence. A crime here is a scandal. |
+| Honest | +3 … +6 | must hold a licence. |
+| Neutral | −2 … +2 | the narrow path that can go either way. |
+| Shady | −6 … −3 | the co-op is closed to you; the market buys under the table. |
+| Outlaw | −10 … −7 | shut out of closed grounds and refuges; the worst prices. |
+
+**What moves the marker** (whole steps, `alignment.step.*`):
+
+| light (+) | dark (−) |
+|---|---|
+| notch an egger [+1] | keep and sell an egger [−1] |
+| buy the season's licence [+1] | fish a season without one (poaching) [−1 per haul?] |
+| land at the co-op [+1] | keep a short or jumbo [−1] |
+| report a theft against you [+1] | steal a rival's pot [−2] |
+| | bribe the warden or the harbourmaster [−1] |
+| | fail a heat check [−2] |
+
+Everyone starts at 0, Neutral. Crossing is allowed in both directions and is meant to happen. A light captain can
+skip the licence and go dark; a dark captain can go straight by notching, buying a
+licence and landing at the co-op. Neutral is a real place to live, bouncing between
+the two, but it gets neither side's perks.
+
+### 14.4 Heat — the warden's check at every sale
+
+- **Stars gained per crime depend on your alignment band** (`heat.starsPerCrime`,
+  one row of the band card) [Outlaw 1, Shady 1, Neutral 2, Honest 3, Paragon 5].
+  A committed outlaw can poach several eggers before the warden takes an interest;
+  everyone expects it of them. A Paragon who cheats goes straight to five stars, and
+  a Paragon who fails a check drops straight to Shady (`heat.paragonFallTo`). A good
+  name is a long way to fall.
+- **A heat check at every SELL, for anyone with stars.** Roll one heat die per star.
+  **No stars, no roll**: a clean captain sells in peace and pays nothing. It's the
+  push-your-luck at the heart of the dark side: each crime adds a die to your next
+  landing.
+- **The heat die is not a d6:** faces 0, 1, 1, 1, 2, 2 (`heat.dieFaces`), a custom
+  die like the breeding-stock die. It averages just over 1 and tops out at 2, so the
+  total climbs steadily with the dice rolled and never spikes off a single die.
+- **Add the dice up and read the total off a printed row** (`heat.byTotal`):
+  - **Under the fail line: you're paid, minus the warden's take.** The total sets how
+    much less you get paid [guess: 2 money per point rolled], a whole-number
+    lookup. One star is a small cost of doing business: 0, 2 or 4 money, and it can
+    never bust.
+  - **All zeros: nerves of steel.** If every die comes up 0, you lose a star. You
+    held your nerve at the counter and suspicion fades. It's common on one die (1 in
+    6), rare on two (1 in 36), and next to impossible any hotter, so a hot captain
+    cools mainly by lying low.
+  - **At or over the fail line** (`heat.failAt` [5]): **drop your catch and run.**
+    No payday. The hold is forfeit, you undock at once, and **that port is closed to
+    you for the rest of the day.** If you can't reach another port before nightfall,
+    you take the existing tow penalty (`tow`: the fee plus lost turns next morning).
+    You also lose alignment (`alignment.step.caught`).
+- **The odds with a fail line of 5** (worked out for these faces; the shape is the
+  point, the line is a dial):
+
+  | stars (dice) | average total | chance to fail (5+) | all zeros: lose a star |
+  |---|---|---|---|
+  | 0 | no roll | never | — |
+  | 1 | 1.2 | never | 17% |
+  | 2 | 2.3 | never | 3% |
+  | 3 | 3.5 | 20% | 0.5% |
+  | 4 | 4.7 | 56% | ~0 |
+  | 5 | 5.8 | 81% | ~0 |
+
+  Two stars is free risk, three is a gamble, five is nearly a sure bust. Moving the
+  line to 4 would make two dice fail 11% of the time and three dice 51%. **The line
+  must stay at 3 or more**, because one die tops out at 2: a single star should only
+  ever cost small money, never the catch.
+- **Warden bribes:** before rolling, pay money to take dice away, one at a time
+  (`heat.bribePerDie`), **never below one die**, and **for this roll only**: your
+  stars stay. You can buy your way down to a safe roll, but never to a free one. Bribing costs alignment, so the way out digs you in
+  darker. (The harbourmaster bribe for berth order is a separate thing, 14.9.)
+  **Watch:** two dice can never reach the fail line, so a captain who can always
+  afford to bribe down to two never busts. The bribe price per die, set against a
+  typical hold's value, is the dial that keeps the dark side a gamble rather than a
+  toll. It may need to rise with each die bought (a printed row), so the last safe
+  die is the dearest.
+- **Stars stay after the check**, pass or fail. Only nerves of steel and staying away
+  take them off.
+- **Cooling: −1 star for each day you don't sell** (`heat.coolPerDayUnsold`). The
+  warden watches the counter, so staying away from it is how you lie low. That costs
+  a day's landing and lets your hold age overnight, so cooling off has a real price.
+- **Theft feeds heat.** STEAL adds stars from your band row, and a REPORT against
+  you adds [+1] more on top of the existing confiscation.
+- **No sit-out day.** A lost day is no fun; the teeth are the lost catch, the closed
+  port and the likely tow.
+- **A dropped catch rolls into the market.** It's landed at that port like any sale:
+  it leaves the ocean the same way and counts toward that market's price drop for
+  the day, but you get nothing for it. The rival who sells there after you pays for
+  your run too.
+
+### 14.5 The levers
+
+| lever | light side | dark side | config key |
+|---|---|---|---|
+| **Market price** | full price; the co-op and its bonus | under the table: the price drops by a whole amount per lb for each band darker [Shady −1, Outlaw −2] | `alignment.priceByBand` |
+| **Licence** | Honest and Paragon *must* buy one (the brake on the light side: the good pay their dues) | may skip it and poach | `alignment.mustLicenseFrom` |
+| **Eggers & illegal tiles** | notch, move light | keep and sell (the volume is the whole appeal), and feed the warden | `alignment.step.*` |
+| **Refuges** (outer shelters) | open | shut to Outlaw [and to any captain at 4+ stars?] | `alignment.refugeBarredFrom` |
+| **Closed grounds** (14.6) | fish them freely | +1 star per pot hauled there | `closure.*` |
+| **Refits** | the normal catalogue | plus a black-market stack (14.7) | `alignment.darkRefits` |
+| **Dividend** (14.6) | co-op members share it | none | `dividend.*` |
+
+The self-balance: **dark earns on volume, light earns on price.** The dark side lands
+more (kept eggers, jumbos and shorts, bonus draws, no licence fee) but gets less per
+lb the darker it goes, so there is a natural limit to how dark it pays to be.
+
+### 14.6 The commons: closures and the dividend
+
+*Ending the game when the ocean collapses is rejected.* It hands the win to whoever
+stripped it fastest (very real life, not fun in a game).
+
+- **Ground closures.** Each ground's bag health reads against printed bands on the
+  board (`closure.bands`). When a ground drops a band, it closes to Shady and Outlaw
+  captains [and at a lower band, to Neutral]. Light captains fish it freely. **Dark
+  captains still can, at a heavy price: +1 star for every pot they haul from a closed
+  ground** (`closure.starsPerHaul`), on top of any stars the catch itself earns. A
+  run on closed water is a hard-six gamble: three pots pulled there and your next
+  sale is a 20% bust before you've kept a single illegal tile. The more the dark side
+  overfishes, the dearer its water gets, so the dark profit engine throttles itself,
+  gradually rather than all at once, and aims the consequence at whoever caused it.
+- **The co-op dividend.** At each season end the co-op pays each member (licensed,
+  Neutral or lighter) a dividend read from the average ocean health band
+  (`dividend.byHealthBand`, a printed lookup). This gives the light side a
+  steady income that depends on keeping the water alive, beyond just not getting
+  caught.
+- The shared end-game health bonus retires with the conservation track. The
+  dividend replaces it.
+
+### 14.7 Dark refits — a black-market stack
+
+A separate, small face-down stack, not the port displays. Its size is the dark-slot
+count (14.8), so dark gear is as scarce as dark captains. Buying one moves you dark.
+Starting ideas:
+
+- **Cheap engine:** the big engine's reach at a lower price, but it pollutes: each
+  season it knocks the health track of the ground you ended on down one step.
+- **Illegal net:** one bonus draw per haul, or one redraw (put a tile back and draw
+  again, blind: the bag is still a literal bag). Using it is a crime (+stars), and
+  if you fail a heat check, the net is dropped along with the catch.
+
+### 14.8 Steering the table to about a third dark: licence scarcity
+
+The licence auction (`src/engine/auction.ts`) already runs every season from season
+2, sealed-bid and second-price, and sells TURN ORDER; the licence itself is not
+scarce today. Under this flag:
+
+- **Season 2 only**, the licences on offer are players minus dark slots, from a
+  printed table by player count (`alignment.darkSlotsByPlayers`)
+  [3p 1, 4p 1, 5p 2, 6p 2]. Licences go down the bid order; whoever is left
+  without one is poaching whether they meant to or not.
+- **Season 3 onward**, there are licences for everyone. The squeeze is a single
+  season that forces the issue, after which anyone can go straight.
+- **A free side effect:** the auction's losers tend to be the poorer captains, so
+  the high-variance path goes to the players who are behind. Dark is also a
+  comeback mechanic: the leader buys safety, and the underdog rolls the dice.
+- **Watch:** a captain forced dark who never wanted it may feel punished. The
+  measure is whether forced-dark seats still win their share. If not, it is a
+  punishment, not a path.
+- **Watch:** harbormaster has won 5 of the last 8 LLM games, and the auction sells
+  turn order. Making it also sell the right to fish legally raises the stakes on
+  that same auction; check it isn't double-dipping.
+
+### 14.9 The berth queue: get back early, or pay the harbourmaster
+
+Reputation stops existing under this flag, and the berth queue's give-and-take ran on
+it. It moves to money and alignment:
+
+- **Arrival order is the order.** The order you berth in is tomorrow's turn order,
+  as today, but the front slot costs nothing and the last slot earns nothing
+  (`poleRepCost` and `lastSlotRep` retire). Want a good berth? Come in early. The
+  price is the fishing you gave up by heading home, and that choice is yours.
+- **Only dark captains can bribe the harbourmaster** (Shady or darker,
+  `alignment.bribeFrom`). The existing `bribe()` stays: pay `bribeMoneyCost` and jump
+  to the front of tomorrow's order. Instead of costing reputation, it moves you one
+  step darker, so the shortcut reinforces the side you're already on. A light captain
+  who wants that edge has to go dark to get it.
+- This is the **harbourmaster** bribe, and it is separate from the **warden** bribe
+  in 14.4, which buys dice off a heat check. It adds **no heat**: it's corruption,
+  not poaching, and the step darker is its price.
+- **Watch:** with no charge on the front slot, a captain can give up a whole day's
+  fishing to sit at the front. That is meant to be the whole price; the arena should
+  confirm it isn't a dominant line. The old pole cost existed because the front slot
+  was worth more than it cost.
+
+### 14.10 Archetypes: a preferred side, and a path on the other one
+
+Every archetype gets **both a light and a dark playbook**, and starts the game with
+a **preference** for one of them. Pushed across (it loses the season-2 licence
+auction, a failed check drops it a band, the table's closures shut its water), it
+doesn't sulk in the middle: **it embraces its fortune and switches to the other
+playbook** in full. That makes the forced-dark captain of 14.8 a real contender
+rather than a victim, and gives the LLM game a measurable event: who crossed, why,
+and did the switch pay.
+
+- Preferences across the roster should come out at about a third dark, to match
+  14.8, so the licence squeeze pushes captains who were leaning that way anyway as
+  well as the unlucky.
+- A dark-preferring archetype (a poacher) finally has a way to win.
+- **The mapping:** steward light, harbormaster light, pragmatist light (the one most
+  likely to switch), highgrader dark, and a new poacher dark, with the highliner
+  (volume) the swing seat. It needs writing per archetype in
+  `src/llm/archetypes.ts`, and the bot arena needs matching light and dark bot
+  policies, plus a switching bot.
+- Bots can test whether each side can win; only LLM captains can test whether
+  switching is played well (the arena can't adapt, see CLAUDE.md).
+
+### 14.11 How it gets tested
+
+1. **Bot arena first (free).** Fixed-policy bots are exactly right for this question:
+   always-light against always-dark, and mixed tables at 2–6 players across seeds.
+   Pass marks: dark mean money above light; dark spread much wider; per-seat win
+   rate roughly equal; forced-dark seats win their share; closures kick in before
+   any ground empties; mean ocean health holds above today's (~50%).
+2. **Then one LLM game** (`scripts/llmTournament.ts`, ~185–200 calls): do the captains
+   pick sides, does about a third go dark, does anyone walk the neutral path, and
+   does a light captain ever risk the fall?
+3. **Probes to write alongside:** an alignment-and-heat ledger per captain (like
+   `replayEggers.ts`) showing every step, every star and every heat check.
+
+### 14.12 Components it adds
+
+One alignment track (21 spaces, a marker per captain), one heat track of 0–5 stars
+per captain, one band card (price, stars per crime, licence obligation and refuge
+access by band), closure markers per ground, a dividend lookup on the board, a
+small black-market refit stack, and a season-2 licence count printed by player
+count, plus a handful of heat dice (faces 0, 1, 1, 1, 2, 2) and a printed row that
+turns a heat total into the warden's take or a run for it. All of it stays
+whole-number lookups and adding up a few small dice.
