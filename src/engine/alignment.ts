@@ -109,7 +109,7 @@ export interface HeatCheck { rolled: boolean; dice: number; total: number; faile
 
 // Roll the check. Mutates only heat (nerves of steel), the bribe payment and the
 // alignment step for bribing; the caller settles the sale. No stars, no roll.
-export function heatCheck(d: GameState, p: PlayerState, bribeDice = 0): HeatCheck {
+export function heatCheck(d: GameState, p: PlayerState, bribeDice = 0, logPrefix = `${p.name}'s heat check`): HeatCheck {
   const none: HeatCheck = { rolled: false, dice: 0, total: 0, failed: false, take: 0, nerves: false };
   if (!alignmentOn(d) || p.tracks.heat <= 0) return none;
   const h = d.config.heat;
@@ -128,7 +128,7 @@ export function heatCheck(d: GameState, p: PlayerState, bribeDice = 0): HeatChec
   const total = rolls.reduce((a, b) => a + b, 0);
   const failed = total >= h.failAt;
   const nerves = !failed && rolls.every((r) => r === 0);
-  d.log.push(`${p.name}'s heat check: ${dice} ${dice === 1 ? 'die' : 'dice'} [${rolls.join(',')}] = ${total}${failed ? ' — BUSTED' : ''}`);
+  d.log.push(`${logPrefix}: ${dice} ${dice === 1 ? 'die' : 'dice'} [${rolls.join(',')}] = ${total}${failed ? ' — BUSTED' : ''}`);
   return { rolled: true, dice, total, failed, take: failed ? 0 : total * h.takePerPoint, nerves };
 }
 

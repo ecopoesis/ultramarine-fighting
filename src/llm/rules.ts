@@ -117,8 +117,8 @@ ${odds.join('\n')}
 ${cfg.flags.patrols ? `### Warden patrols
 Every morning ${cfg.patrol.base === 1 ? 'one card' : `${cfg.patrol.base} cards`}, plus one for every captain on the dark side (Shady or Outlaw) that morning, up to ${cfg.patrol.max}, come off the patrol deck (one card per ocean space), and a WARDEN BOAT goes on each drawn space. Their positions are public.
 - Wardens ignore captains with no stars.
-- A captain WITH stars who ENTERS a warden's space takes a heat check at sea, every time they enter, even the same boat twice in a day: one heat die per star, and no bribe out here. (A two-space steam only counts the space between if every route passes a warden.)
-- All blanks: nerves of steel, lose a star. A total of ${h.failAt} or more: BUSTED AT SEA. Your day is over, you are escorted home to ${cfg.map.startPort}, you step ${-st.caught} darker, and you launch LAST tomorrow (anyone stopped after you launches behind you). Your catch and pots stay yours.
+- A captain WITH stars who ENTERS a warden's space takes a heat check at sea, every time they enter, even the same boat twice in a day: one heat die per star. You can bribe the warden exactly as at the market, on your band's scale (\`STEAM <NODE> BRIBE <n>\`; the bribe is only spent if a warden actually stops you). (A two-space steam only counts the space between if every route passes a warden.)
+- All blanks: nerves of steel, lose a star. A total of ${h.failAt} or more: BUSTED AT SEA. The warden SEIZES THE CATCH in your hold, your day is over, you are escorted home to ${cfg.map.startPort}, you step ${-st.caught} darker, and you launch LAST tomorrow (anyone stopped after you launches behind you). Your pots stay in the water.
 - One or two stars can never bust, so the boats only really threaten a hot captain. They bend your route; steer around them.
 
 ` : ''}### Closed water
@@ -283,7 +283,7 @@ Three tracks, each in victory points (VP):
 ## 12. How you play (command contract)
 Each time it is your decision, you receive the current situation (public state, your private pot ripeness, events since your last decision, and the list of legal actions right now) and you reply with JSON: {"plan": ["<command>", ...], "note": "<brief reasoning, ≤60 words>"}.
 Commands (one per string, uppercase keyword first):
-- STEAM <NODE> — move to an adjacent node (with a bigger engine, up to 2 nodes away).
+- STEAM <NODE> [BRIBE <n>] — move to an adjacent node (with a bigger engine, up to 2 nodes away). BRIBE only matters if a warden boat stops you there.
 - GOTO <NODE> — macro: steam step by step toward NODE across as many turns as needed (spends 1 action per hop). Stops if fuel runs out or the day ends.
 - DROP — place a pot on this fishing ground.
 - HAUL <potId> [clean|highgrade|greedy] [keep-eggers|notch-eggers] — haul your ripe pot here (default clean; eggers follow the policy unless you say).

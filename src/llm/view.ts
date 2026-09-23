@@ -53,7 +53,12 @@ function pileSummary(state: GameState, g: Ground): string {
 
 function describeAction(state: GameState, a: Action): string {
   switch (a.type) {
-    case 'STEAM': return `STEAM ${a.to}${state.stormed.includes(a.to) ? ' (STORM)' : ''}${state.wardens?.includes(a.to) && state.players[a.playerId].tracks.heat > 0 ? ' (WARDEN)' : ''}`;
+    case 'STEAM': {
+      const me = state.players[a.playerId];
+      const warden = state.wardens?.includes(a.to) && me.tracks.heat > 0;
+      const offers = warden ? Array.from({ length: bribeableDice(state, me) }, (_, i) => `BRIBE ${i + 1} = ${bribeCost(state, me, i + 1)}`).join(', ') : '';
+      return `STEAM ${a.to}${state.stormed.includes(a.to) ? ' (STORM)' : ''}${warden ? ` (WARDEN: ${me.tracks.heat} ${me.tracks.heat === 1 ? 'die' : 'dice'}${offers ? `; ${offers}` : ''})` : ''}`;
+    }
     case 'DROP': return `DROP (${potCapacity(state) - potsOnNode(state, state.players[a.playerId].node)} of ${potCapacity(state)} berths left on this ground)`;
     case 'HAUL': return `HAUL ${a.buoyId}`;
     case 'STEAL': return `STEAL ${a.buoyId} (${state.players[a.ownerId].name}'s)`;
@@ -264,7 +269,11 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
       const to = (args[0] ?? '').toUpperCase();
       const a = find('STEAM', (s) => s.to === to);
       if (!a) return { ok: false, error: `cannot STEAM to ${to || '?'} from ${state.players[pid].node} right now (not adjacent, no fuel, or no action points)` };
-      return { ok: true, action: a };
+      // STEAM <NODE> BRIBE <n>: if a warden boat stops you there, buy n dice off its check.
+      const bi = args.findIndex((t) => t.toUpperCase() === 'BRIBE');
+      const n = bi >= 0 ? Number(args[bi + 1] ?? 1) : 0;
+      if (bi >= 0 && !Number.isFinite(n)) return { ok: false, error: 'STEAM <NODE> BRIBE needs a number of dice, e.g. STEAM SEAL_BAY BRIBE 2' };
+      return { ok: true, action: n > 0 ? { ...a, bribeDice: Math.floor(n) } : a };
     }
     case 'GOTO': case 'GO': case 'MOVE': {
       const target = (args[0] ?? '').toUpperCase();

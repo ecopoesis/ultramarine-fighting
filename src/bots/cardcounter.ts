@@ -21,6 +21,16 @@ import { isWarden } from '../engine/patrol';
 const wardenShy = (state: GameState, pid: string): boolean =>
   (state.wardens?.length ?? 0) > 0 && state.players[pid].tracks.heat >= 3;
 
+// If this steam lands on a warden while we're hot, bribe the check down toward a safe
+// roll on our band's scale (the bribe is only spent if the boat actually stops us).
+function withSeaBribe(state: GameState, pid: string, cc: CardCounter, a: Extract<Action, { type: 'STEAM' }>): Action {
+  if (!wardenShy(state, pid) || !isWarden(state, a.to)) return a;
+  const p = state.players[pid];
+  let buy = Math.min(bribeableDice(state, p), Math.max(0, p.tracks.heat - (cc.safeDice ?? 2)));
+  while (buy > 0 && bribeCost(state, p, buy) > p.money) buy--;
+  return buy > 0 ? { ...a, bribeDice: buy } : a;
+}
+
 // The next hop toward `target`, steering around warden boats when they matter: prefer a
 // step that gets as close (or goes one sideways) over one that lands on a warden.
 function steerToward(state: GameState, pid: string, target: string, reach: number): string | null {
@@ -348,7 +358,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
       if (!last && targetIsGround && targetOk && daylight) {
         const step = steerToward(state, pid, target, hopReach);
         const steam = step ? ofType(legal, 'STEAM').find((s) => s.to === step) : undefined;
-        if (steam) return steam;
+        if (steam) return withSeaBribe(state, pid, cc, steam);
       }
       // Done for the day — but don't pay the pole (slot-0) rep cost. If we'd be
       // first into the berths, idle instead: a rival can take the front slot, or
@@ -368,13 +378,13 @@ export function makeCardCounter(cc: CardCounter): Policy {
     const step = steerToward(state, pid, target, hopReach);
     if (step) {
       const steam = ofType(legal, 'STEAM').find((s) => s.to === step);
-      if (steam && (!targetIsGround || targetOk)) return steam;
+      if (steam && (!targetIsGround || targetOk)) return withSeaBribe(state, pid, cc, steam);
     }
     // Otherwise limp toward the nearest port.
     const homePort = nearestPort(state, p.node);
     const homeStep = homePort ? steerToward(state, pid, homePort, hopReach) : null;
     const homeSteam = homeStep ? ofType(legal, 'STEAM').find((s) => s.to === homeStep) : undefined;
-    if (homeSteam) return homeSteam;
+    if (homeSteam) return withSeaBribe(state, pid, cc, homeSteam);
 
     return pass;
   };

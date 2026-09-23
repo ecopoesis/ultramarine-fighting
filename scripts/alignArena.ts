@@ -61,7 +61,7 @@ function play(cfg: Config, seed: number, seats: string[]) {
   for (const l of s.log) {
     const m = l.match(/^(\S+)'s heat check: .*?(BUSTED)?$/);
     if (m) { checks[m[1]] = (checks[m[1]] ?? 0) + 1; if (m[2]) busts[m[1]] = (busts[m[1]] ?? 0) + 1; }
-    const w = l.match(/^A warden boat stops (\S+) at .*?(BUSTED at sea)?$/);
+    const w = l.match(/^A warden boat stops (\S+) at .*?(BUSTED)?$/);
     if (w) { stops[w[1]] = (stops[w[1]] ?? 0) + 1; if (w[2]) seaBusts[w[1]] = (seaBusts[w[1]] ?? 0) + 1; }
   }
   return { s, rows, ids, names, unlicS2, unlicSeasons, busts, checks, stops, seaBusts, health: avgBagHealth(s) };

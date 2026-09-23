@@ -123,7 +123,7 @@ export class LlmCaptain {
       else if (e.startsWith(`Storm parts ${me}`)) interrupt = 'the storm parted one of your pots';
       else if (e.startsWith(`${me} takes a beating`)) interrupt = 'you took a storm beating (lost fuel)';
       else if (e.startsWith(`${me} is towed`)) interrupt = 'you were towed in';
-      else if (e.startsWith(`${me} is escorted home`)) interrupt = `a warden patrol BUSTED you at sea: your day is over, you are back at the start port, and you launch last tomorrow`;
+      else if (e.startsWith(`${me} is escorted home`)) interrupt = `a warden patrol BUSTED you at sea: your catch was seized, your day is over, you are back at the start port, and you launch last tomorrow (your pots are still in the water)`;
       else if (e.startsWith(`${me} drops the catch`)) interrupt = 'the warden BUSTED you: catch dropped, no pay, and this port is closed to you for the rest of the day (you cannot sell, refuel or berth here)';
     }
     const events = all.length > 60 ? [`(… ${all.length - 60} earlier events omitted)`, ...all.slice(-60)] : all;

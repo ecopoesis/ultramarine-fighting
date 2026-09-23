@@ -41,7 +41,7 @@ export function reduce(state: GameState, action: Action): GameState {
 // returns true if this action ends the player's turn immediately
 function applyAction(d: GameState, a: Action): boolean {
   switch (a.type) {
-    case 'STEAM': steam(d, a.playerId, a.to); return false;
+    case 'STEAM': steam(d, a.playerId, a.to, a.bribeDice ?? 0); return false;
     case 'DROP': dropBuoy(d, a.playerId); return false;
     case 'HAUL': haulBuoy(d, a.playerId, a.buoyId, a.policy ?? 'clean', a.eggers); return false;
     case 'STEAL': stealBuoy(d, a.playerId, a.ownerId, a.buoyId, a.policy ?? 'clean', a.eggers); return false;

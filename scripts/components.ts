@@ -124,7 +124,7 @@ const woodRows: Row[] = [
     { qty: `${MAX_PLAYERS}`, part: 'Alignment markers, player-coloured', text: `One per captain on the alignment track (${cfg.alignment.min} … +${cfg.alignment.max}). Everyone starts at 0.` },
     { qty: `${MAX_PLAYERS}`, part: 'Heat markers (stars), player-coloured', text: `One per captain on their heat track, 0–${cfg.heat.max}★.` },
     ...(cfg.flags.patrols ? [
-      { qty: String(cfg.patrol.max), part: 'Warden boats', text: 'Placed each morning on the spaces drawn from the patrol deck.', note: `One, plus one per captain on the dark side that morning, up to ${cfg.patrol.max}. A captain with stars who enters a warden's space takes a heat check at sea (no bribe). Bust: day over, home to ${cfg.map.startPort}, launch last tomorrow.` },
+      { qty: String(cfg.patrol.max), part: 'Warden boats', text: 'Placed each morning on the spaces drawn from the patrol deck.', note: `One, plus one per captain on the dark side that morning, up to ${cfg.patrol.max}. A captain with stars who enters a warden's space takes a heat check at sea (bribe on the band card, as at the market). Bust: the catch in the hold is seized, day over, home to ${cfg.map.startPort}, launch last tomorrow. Pots stay in the water.` },
       { qty: String(grounds.length), part: 'Patrol deck', text: 'One card per ocean space.', note: 'Shuffle and draw each morning; every card drawn puts a warden boat on that space.' },
     ] : []),
   ] : []),

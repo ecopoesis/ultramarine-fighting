@@ -33,7 +33,7 @@ export function distance(state: GameState, from: string, to: string): number {
   return Infinity;
 }
 
-export function steam(d: GameState, playerId: string, to: string): void {
+export function steam(d: GameState, playerId: string, to: string, bribeDice = 0): void {
   const p = d.players[playerId];
   // A bigger engine moves several nodes per STEAM action; base ships hop one.
   const from = p.node;
@@ -59,8 +59,8 @@ export function steam(d: GameState, playerId: string, to: string): void {
   if (patrolsOn(d) && p.tracks.heat > 0) {
     if (hops === 2) {
       const middles = neighbors(d, from).filter((m) => neighbors(d, m).includes(to));
-      if (middles.length && middles.every((m) => isWarden(d, m)) && patrolCheck(d, p, middles[0])) return;
+      if (middles.length && middles.every((m) => isWarden(d, m)) && patrolCheck(d, p, middles[0], bribeDice)) return;
     }
-    patrolCheck(d, p, to);
+    patrolCheck(d, p, to, bribeDice);
   }
 }

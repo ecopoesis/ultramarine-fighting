@@ -63,6 +63,31 @@ describe('warden patrols', () => {
     expect(t.turnOrder.slice(-2)).toEqual(['p1', 'p2']);
   });
 
+  it('a bust at sea seizes the catch but leaves the pots; a bribe uses the band scale', () => {
+    let hit: GameState | undefined;
+    for (let seed = 0; seed < 500 && !hit; seed++) {
+      const t = createInitialState(on, seed);
+      const p = t.players.p1;
+      p.tracks.heat = 5;
+      p.deployed = [{ buoyId: 'bX', node: 'MUSCLE_RIDGE', ownerId: 'p1' }];
+      p.soak = { bX: { ground: 'inshore', daysSoaked: 1 } };
+      p.buoysAvailable = t.config.buoysPerPlayer - 1;
+      p.hold = [{ id: 'k1', kind: 'KEEPER', weightLb: 3, color: 'common', ground: 'inshore' }];
+      if (patrolCheck(t, p, t.wardens![0])) hit = t;
+    }
+    const p = hit!.players.p1;
+    expect(p.hold).toHaveLength(0);                                   // catch seized
+    expect(hit!.piles.inshore.some((t) => t.id === 'k1')).toBe(true); // into the ground's trap
+    expect(p.deployed).toHaveLength(1);                               // pots stay
+    // an Outlaw can bribe a warden down to their band's floor, and pays that band's row
+    const t = createInitialState(on, 7);
+    const o = t.players.p2;
+    o.tracks.heat = 5; o.tracks.alignment = on.alignment.min; o.money = 999;
+    const outlaw = on.alignment.bands[on.alignment.bands.length - 1];
+    patrolCheck(t, o, t.wardens![0], 99);
+    expect(999 - o.money).toBe(outlaw.bribeCosts.slice(0, 5 - outlaw.bribeFloor).reduce((a, b) => a + b, 0));
+  });
+
   it('a whole game with patrols finishes, and hot bots do meet the wardens', () => {
     let checks = 0;
     for (const seed of [21, 22, 23]) {

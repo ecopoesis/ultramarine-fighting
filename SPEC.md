@@ -616,13 +616,13 @@ The more crooked the harbour, the more boats are out.
 
 - Wardens ignore captains with no stars.
 - A captain with stars who ENTERS a warden's space takes a heat check at sea, every
-  time, even against the same boat twice in a day. One die per star; no bribe at sea.
+  time, even against the same boat twice in a day. One die per star. The warden can
+  be bribed on the same band scale as at the market (`STEAM <node> BRIBE <n>`).
   A two-space steam counts the space between only if every route passes a warden.
 - All blanks: nerves of steel, one star off. Bust: the day is over, the captain is
   escorted home to Rockland, steps darker as for any bust, and launches LAST
-  tomorrow. Anyone stopped after them launches behind them.
-- *Assumed, not yet decided by the designer:* a bust at sea keeps the catch and gear.
-  The price is the day and the turn order.
+  tomorrow. Anyone stopped after them launches behind them. The warden also SEIZES
+  THE CATCH in their hold (the designer's call); their pots stay in the water.
 - Smart captains steer around the boats, so this may rarely fire. It bends routes;
   it doesn't have to catch anyone.
 
