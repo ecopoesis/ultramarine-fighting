@@ -12,6 +12,7 @@ npm test            # vitest: depletion invariant, determinism, termination, web
 npm run play        # one game, seed 12345, prints score table + bag health
 npm run sim         # 200 games, win-by-seat + mean bag health
 npm run dev         # hot-seat web UI (Vite) at http://localhost:5173
+npm run arena:switchboard [seeds] [lineups] [key=value]  # light/dark/switch bots, 3-6 seats (SPEC §14)
 ```
 
 ## Hot-seat web UI (`web/`)

@@ -8,6 +8,7 @@
     "play": "tsx scripts/playRandomGame.ts",
     "sim": "tsx scripts/playRandomGame.ts 200",
     "arena": "tsx scripts/arena.ts",
+    "arena:switchboard": "tsx scripts/alignArena.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "typecheck:web": "tsc -p tsconfig.web.json --noEmit",

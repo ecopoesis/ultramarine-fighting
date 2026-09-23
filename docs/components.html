@@ -113,7 +113,7 @@
       Component manifest<br>
       Generated from <b>src/config.ts</b><br>
       Counts quoted at <b>6 players</b><br>
-      2026-09-22
+      2026-09-23
     </div>
   </header>
 
@@ -129,7 +129,7 @@
     <div class="scale"><dt>Fishing days</dt><dd>26</dd></div>
     <div class="scale"><dt>Spaces</dt><dd>22</dd></div>
     <div class="scale"><dt>Lobster tiles</dt><dd>226</dd></div>
-    <div class="scale"><dt>Pieces, about</dt><dd>486</dd></div>
+    <div class="scale"><dt>Pieces, about</dt><dd>507</dd></div>
   </dl>
 
 
@@ -224,8 +224,32 @@
             <span class="qty">—</span>
             <div class="detail">
               <h3>Berth order track (printed on board)</h3>
-              <pre class="printed">6 numbered slots. Slot 1 costs 1 reputation; the last slot gains +1 reputation and +2 fuel.</pre>
+              <pre class="printed">6 numbered slots, filled in arrival order — tomorrow's turn order. Free. Shady and Outlaw captains may bribe the harbourmaster (4 money, one step darker) to take slot 1.</pre>
               
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Ground health tracks (printed on board, one per ground)</h3>
+              <pre class="printed">Bag fullness in steps of 5%. Closure lines: below 35% — closed to neutral / shady / outlaw · below 60% — closed to shady / outlaw.</pre>
+              <p class="note">Closed water is still fishable: +1★ for every pot a closed-out captain hauls there.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Co-op dividend table (printed on board)</h3>
+              <pre class="printed">ocean 80%+ → 8 · ocean 60%+ → 6 · ocean 40%+ → 4 · ocean 20%+ → 2 · ocean 0%+ → 0</pre>
+              <p class="note">Paid at every season end to each licensed captain in a dividend band (Neutral or lighter).</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">—</span>
+            <div class="detail">
+              <h3>Season 2 licence count (printed on board)</h3>
+              <pre class="printed">3 players: 2 licences · 4 players: 3 licences · 5 players: 3 licences · 6 players: 4 licences</pre>
+              <p class="note">Season 2 only; from season 3 there is one for everyone.</p>
             </div>
           </li>
           <li class="part">
@@ -337,6 +361,22 @@
             </div>
           </li>
           <li class="part">
+            <span class="qty">6</span>
+            <div class="detail">
+              <h3>Alignment markers, player-coloured</h3>
+              <pre class="printed">One per captain on the alignment track (-10 … +10). Everyone starts at 0.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">6</span>
+            <div class="detail">
+              <h3>Heat markers (stars), player-coloured</h3>
+              <pre class="printed">One per captain on their heat track, 0–5★.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
             <span class="qty">4</span>
             <div class="detail">
               <h3>Lobster traps (one per ground)</h3>
@@ -437,12 +477,38 @@
         </ul>
       </section>
 
+      <section class="group" id="blackmarket">
+        <header class="group-head">
+          <h2>Black-market refits</h2>
+          <span class="tally">4 tiles</span>
+        </header>
+        <p class="blurb">A small face-up stack kept off the chandlery displays. Only as much dark gear as there are dark slots at the table.</p>
+        <ul class="parts">
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Illegal net — midSecondary (BLACK MARKET)</h3>
+              <pre class="printed">12 · draw and keep +2 per haul — every haul with it is a crime</pre>
+              <p class="note">One per dark slot at the table (3p 1, 4p 1, 5p 2, 6p 2). Shady and Outlaw only, at any market port. Buying it steps you 2 darker.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">2</span>
+            <div class="detail">
+              <h3>Cheap engine — stern (BLACK MARKET)</h3>
+              <pre class="printed">9 · STEAM moves up to 2 spaces · strips 1 more lobster off the ground per haul</pre>
+              <p class="note">One per dark slot at the table (3p 1, 4p 1, 5p 2, 6p 2). Shady and Outlaw only, at any market port. Buying it steps you 2 darker.</p>
+            </div>
+          </li>
+        </ul>
+      </section>
+
       <section class="group" id="dice">
         <header class="group-head">
           <h2>Dice</h2>
           
         </header>
-        <p class="blurb">Three, each doing one job.</p>
+        <p class="blurb">Each set doing one job.</p>
         <ul class="parts">
           <li class="part">
             <span class="qty">5</span>
@@ -458,6 +524,14 @@
               <h3>Storm die (d6)</h3>
               <pre class="printed">1–6</pre>
               <p class="note">Picks which ground in a tier the storm lands on. The rings are six spaces wide for exactly this reason.</p>
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">5</span>
+            <div class="detail">
+              <h3>Heat dice</h3>
+              <pre class="printed">blank / 1 / 1 / 1 / 2 / 2</pre>
+              <p class="note">The warden's check at every sale: roll one per heat star (no stars, no roll). Total 5+ = busted. One or two dice can never bust.</p>
             </div>
           </li>
           <li class="part">
@@ -482,26 +556,40 @@
             <span class="qty">1</span>
             <div class="detail">
               <h3>Scoring card</h3>
-              <pre class="printed">Add your three tracks. Find your LOWEST. Subtract.
-  lowest 40 or more → −0
-  lowest 30 or more → −10
-  lowest 20 or more → −30
-  lowest 12 or more → −60
-  lowest 6 or more → −100
-  lowest below 6 → −150</pre>
-              <p class="note">Money ÷ 5 · reputation × 2 · conservation = 2 per berried female notched + the shared commons bonus.</p>
+              <pre class="printed">Most money wins. Nothing else scores.</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">6</span>
+            <div class="detail">
+              <h3>Band cards</h3>
+              <pre class="printed">PARAGON  7…10: full price · 5★/crime · must license · co-op · dividend
+HONEST   3…6: full price · 3★/crime · must license · co-op · dividend
+NEUTRAL  -2…2: full price · 2★/crime · co-op · dividend
+SHADY    -6…-3: full price · 1★/crime · black market · harbour bribe
+OUTLAW   -10…-7: −1/lb · 1★/crime · no refuge · black market · harbour bribe</pre>
+              <p class="note">A Paragon who gets busted falls straight to -3.</p>
             </div>
           </li>
           <li class="part">
             <span class="qty">1</span>
             <div class="detail">
-              <h3>Commons health card</h3>
-              <pre class="printed">80% of the bags remaining → 12 VP
-60% of the bags remaining → 9 VP
-40% of the bags remaining → 6 VP
-20% of the bags remaining → 3 VP
-0% of the bags remaining → 0 VP</pre>
-              <p class="note">One end-of-game read, shared by everyone at the table. A stripped ocean costs the steward too.</p>
+              <h3>Alignment card</h3>
+              <pre class="printed">LIGHTER: notch an egger +1 · buy the licence +1 · land at the co-op +1 · report a theft +1
+DARKER: keep an illegal tile -1 · poach a haul -1 · steal -2 · bribe -1 · black-market refit -2 · busted -2</pre>
+              
+            </div>
+          </li>
+          <li class="part">
+            <span class="qty">1</span>
+            <div class="detail">
+              <h3>Heat card</h3>
+              <pre class="printed">A crime adds stars by your band (see the band card): each illegal tile kept, each theft, each haul with the illegal net. Closed water +1★ a pot. Reported +1★.
+SELL with stars: roll one heat die per star and add them. Under 5: the warden takes 2 a point. 5+: BUSTED — drop the catch, no pay, the port is shut to you today.
+All blanks: nerves of steel, −1★. A day you don't sell: −1★.
+Bribe dice off one roll (never below one): 4, 6, 8, 10 each, added up.</pre>
+              
             </div>
           </li>
           <li class="part">
@@ -536,27 +624,10 @@ FOULED: draw 1, keep 1</pre>
             </div>
           </li>
           <li class="part">
-            <span class="qty">1</span>
-            <div class="detail">
-              <h3>Reputation card</h3>
-              <pre class="printed">steal -2
-keep an illegal lobster -1
-reported -1
-bribe -2
-towed in -1
-haul without a licence -1
-take the pole −1
-report a theft +2
-land at the co-op +3
-take the last berth +1</pre>
-              <p class="note">Everyone starts at 16.</p>
-            </div>
-          </li>
-          <li class="part">
             <span class="qty">6</span>
             <div class="detail">
               <h3>Captain mats</h3>
-              <pre class="printed">Three refit slots (stern · mid primary · mid secondary), a fuel track to 10 (16 with bigger tanks), a hold, and the three score tracks.</pre>
+              <pre class="printed">Three refit slots (stern · mid primary · mid secondary), a fuel track to 10 (16 with bigger tanks), a hold, and an alignment track (-10 … +10, banded) and a heat track (0–5★).</pre>
               
             </div>
           </li>
@@ -564,7 +635,7 @@ take the last berth +1</pre>
             <span class="qty">1</span>
             <div class="detail">
               <h3>Tow card</h3>
-              <pre class="printed">Caught at sea at day's end: towed to the nearest port, −5 money, -1 reputation, fuel topped up to at least 2, and you lose your next 4 turns.</pre>
+              <pre class="printed">Caught at sea at day's end, or at a port shut to you: towed to the nearest port that will have you, −5 money, fuel topped up to at least 2, and you lose your next 4 turns.</pre>
               
             </div>
           </li>

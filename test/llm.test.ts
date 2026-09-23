@@ -34,13 +34,24 @@ describe('LLM tournament harness (pure parts)', () => {
     }
   });
 
-  it('rules prompt carries the live numbers', () => {
-    const r = buildRulesPrompt(defaultConfig, 4);
+  it('rules prompt carries the live numbers (classic three-track rules)', () => {
+    const classic = { ...defaultConfig, flags: { ...defaultConfig.flags, alignment: false } };
+    const r = buildRulesPrompt(classic, 4);
     expect(r).toContain('4-player game');
-    expect(r).toContain(`MONEY VP = money ÷ ${defaultConfig.scoring.moneyPerVP}`);
-    expect(r).toContain(`REPUTATION VP = reputation × ${defaultConfig.scoring.repToVP}`);
-    expect(r).toContain(deepNode(defaultConfig));   // whatever the current map calls the deep
-    expect(r).toContain(`${defaultConfig.tow.lostTurns} turns`);
+    expect(r).toContain(`MONEY VP = money ÷ ${classic.scoring.moneyPerVP}`);
+    expect(r).toContain(`REPUTATION VP = reputation × ${classic.scoring.repToVP}`);
+    expect(r).toContain(deepNode(classic));   // whatever the current map calls the deep
+    expect(r).toContain(`${classic.tow.lostTurns} turns`);
+  });
+
+  it('switchboard rules prompt carries the live numbers and none of the retired scoring', () => {
+    const on = { ...defaultConfig, flags: { ...defaultConfig.flags, alignment: true } };
+    const r = buildRulesPrompt(on, 6);
+    expect(r).toContain('Most money wins');
+    expect(r).toContain(`total ${on.heat.failAt} or more: BUSTED`);
+    expect(r).toContain(`only ${6 - on.alignment.darkSlotsByPlayers[6]} licences are sold`);
+    // A captain must never read a rule that no longer applies (hidden sections are cut, not commented).
+    expect(r).not.toMatch(/<!--|-->|weak-link|REPUTATION VP|CONSERVATION VP/);
   });
 
   it('parseCommand maps commands onto legal actions and rejects illegal ones', () => {

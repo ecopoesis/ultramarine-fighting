@@ -18,7 +18,8 @@ const game = process.argv[3] ?? 'r1g1';
 const dir = `tournament/runs/${run}/games`;
 const res = JSON.parse(readFileSync(`${dir}/${game}.result.json`, 'utf8'));
 const names: string[] = res.seats.map((s: { captainName: string }) => s.captainName);
-const cfg: Config = { ...defaultConfig, players: res.seats.length };
+// Every run recorded so far predates the switchboard; replay them under the rules they were played by.
+const cfg: Config = { ...defaultConfig, players: res.seats.length, flags: { ...defaultConfig.flags, alignment: false } };
 let state: GameState = createInitialState(cfg, res.seed, names);
 const lines = readFileSync(`${dir}/${game}.actions.jsonl`, 'utf8').split('\n').filter((l) => l.trim());
 

@@ -21,6 +21,12 @@ export function score(state: GameState): ScoreBreakdown[] {
   const rows: ScoreBreakdown[] = [];
 
   for (const p of Object.values(state.players)) {
+    // THE SWITCHBOARD (SPEC §14): money is the only score. Alignment and heat decided
+    // how you could earn it; they are worth nothing at the end.
+    if (state.config.flags.alignment) {
+      rows.push({ playerId: p.id, name: p.name, moneyVP: p.money, conservationVP: 0, reputationVP: 0, total: p.money });
+      continue;
+    }
     // A money TRACK on the board, marked every `moneyPerVP`: you stand on the last
     // mark you have passed, so this floors rather than dividing. Keeps every score a
     // whole number, which is the point of the whole scoring card.

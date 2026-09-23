@@ -1,6 +1,7 @@
 import type { GameState } from '../types';
 import type { Action } from '../actions';
 import { openSeason } from './season';
+import { alignmentOn, bandOf, stepAlignment, licencesOnSale } from './alignment';
 
 // THE LICENCE AUCTION — a sealed-bid, second-price auction for the season's fishing
 // licence, run at the start of every season after the first.
@@ -62,6 +63,14 @@ function ranked(d: GameState): string[] {
 
 function grant(d: GameState, id: string, price: number, forced: boolean): void {
   const p = d.players[id];
+  // THE SQUEEZE (switchboard, season 2): licences run out down the bid order, and
+  // whoever is left over is poaching this season whether they meant to or not.
+  const sold = Object.values(d.players).filter((x) => x.licensed === true && x.licensedSeason === d.season).length;
+  if (sold >= licencesOnSale(d)) {
+    p.licensed = false;
+    d.log.push(`No licence left for ${p.name} — the season ${d.season} licences are all sold. Fishing unlicensed this season`);
+    return;
+  }
   if (p.money < price) {
     p.licensed = false;
     d.log.push(`${p.name} cannot cover the ${price} licence — fishing unlicensed this season`);
@@ -69,7 +78,9 @@ function grant(d: GameState, id: string, price: number, forced: boolean): void {
   }
   p.money -= price;
   p.licensed = true;
+  p.licensedSeason = d.season;
   d.log.push(`${p.name} ${forced ? 'is committed to' : 'takes'} the season ${d.season} licence at ${price} (money ${p.money.toFixed(1)})`);
+  stepAlignment(d, p, d.config.alignment.step.licence, 'bought the licence');
 }
 
 // All bids are in: reveal, set the price, and commit the top two.
@@ -104,7 +115,9 @@ export function applyAuctionAction(d: GameState, action: Action): void {
   }
   if (action.type !== 'LICENSE_BUY') throw new Error('auction: expected a take-it-or-leave-it');
   const id = a.optionOrder[a.optionTurn];
-  if (action.take) grant(d, id, a.price, false);
+  // The good pay their dues: an Honest or Paragon captain may not pass on the licence.
+  const mustTake = alignmentOn(d) && bandOf(d, d.players[id]).mustLicense;
+  if (action.take || mustTake) grant(d, id, a.price, false);
   else {
     d.players[id].licensed = false;
     d.log.push(`${d.players[id].name} passes on the licence — fishing unlicensed this season`);

@@ -360,9 +360,9 @@ Combine via `config.scoring.combineMode`:
 
 ## 14. Alignment & heat — the light/dark redesign (PROPOSED, behind `flags.alignment`)
 
-**Status: design only. Nothing below is built.** Every number named here is a
-config key to be tuned in the arena; the values in brackets are starting guesses,
-not decisions.
+**Status: built, and on by default (`flags.alignment`).** The values in brackets
+below were the starting guesses; `src/config.ts` holds the arena-tuned numbers and
+is the only source of truth for them.
 
 ### 14.1 Why
 

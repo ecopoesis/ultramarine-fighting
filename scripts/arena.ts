@@ -8,7 +8,9 @@ import type { Config } from '../src/types';
 const FLEET = ['steward', 'greedy', 'highliner', 'grinder', 'gambler', 'hustler', 'monk', 'nomad'];
 
 function report(mode: Config['scoring']['combineMode'], seeds: number) {
-  const config: Config = { ...defaultConfig, scoring: { ...defaultConfig.scoring, combineMode: mode } };
+  // The classic three-track arena: its columns ARE the three tracks, so it plays the pre-switchboard
+  // rules. The light/dark game has its own arena (npm run arena:switchboard).
+  const config: Config = { ...defaultConfig, flags: { ...defaultConfig.flags, alignment: false }, scoring: { ...defaultConfig.scoring, combineMode: mode } };
   const { byArch, healthSum, games } = runTournament(config, seeds, FLEET);
 
   console.log(`\n=== combineMode: ${mode}  (${games} games, seats rotated) ===`);

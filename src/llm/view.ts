@@ -9,6 +9,8 @@ import { potCapacity, potsOnNode } from '../engine/buoys';
 import { diceFor } from '../engine/breeding';
 import { hopToward } from '../bots/helpers';
 import { daysThisSeason, activePlayerId } from '../selectors';
+import { alignmentOn, bandOf, groundClosedTo, groundHealthPct, portClosedTo, bribeCost, licencesOnSale } from '../engine/alignment';
+import { darkOffer } from '../engine/upgrades';
 
 // The captain's VIEW: a compact text rendering of everything a player is allowed
 // to know (public state + their own private soak), plus the command parser that
@@ -55,11 +57,17 @@ function describeAction(state: GameState, a: Action): string {
     case 'DROP': return `DROP (${potCapacity(state) - potsOnNode(state, state.players[a.playerId].node)} of ${potCapacity(state)} berths left on this ground)`;
     case 'HAUL': return `HAUL ${a.buoyId}`;
     case 'STEAL': return `STEAL ${a.buoyId} (${state.players[a.ownerId].name}'s)`;
-    case 'SELL': return 'SELL';
+    case 'SELL': {
+      const me = state.players[a.playerId];
+      if (!alignmentOn(state) || me.tracks.heat <= 0) return 'SELL';
+      const n = me.tracks.heat;
+      const offers = Array.from({ length: n - 1 }, (_, i) => `BRIBE ${i + 1} = ${bribeCost(state, n, i + 1)}`).join(', ');
+      return `SELL (heat check: ${n} ${n === 1 ? 'die' : 'dice'}${offers ? `; ${offers}` : ''})`;
+    }
     case 'REFUEL': return `REFUEL (up to ${a.units})`;
     case 'REPORT': return 'REPORT';
-    case 'BERTH': return `BERTH (slot ${state.nextSlot}${state.nextSlot === 0 ? ', pole: -rep' : ''})`;
-    case 'BRIBE': return 'BRIBE';
+    case 'BERTH': return `BERTH (slot ${state.nextSlot}${state.nextSlot === 0 && !alignmentOn(state) ? ', pole: -rep' : ''})`;
+    case 'BRIBE': return alignmentOn(state) ? `BRIBE the harbourmaster (${state.config.bribeMoneyCost} money, one step darker)` : 'BRIBE';
     case 'BUY_UPGRADE': return `BUY ${a.upgradeId}`;
     case 'PASS': return 'PASS';
     case 'LICENSE_BID': return `BID <amount> (reserve ${a.amount})`;
@@ -91,8 +99,20 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   // me
   const node = cfg.map.nodes[p.node];
   const where = node.type === 'port' ? `${p.node} (${node.port!.market ? 'market port' : 'shelter'})` : `${p.node} (${node.ground} ground${state.stormed.includes(p.node) ? ', STORMED' : ''})`;
-  if (p.licensed === false) lines.push(`*** YOU ARE UNLICENSED THIS SEASON — everything you haul is poached: ${cfg.unlicensed.repPerHaul} reputation per haul, and the co-op will not take your catch. ***`);
-  lines.push(`YOU — ${p.name}: at ${where} | fuel ${p.fuel}/${fuelCap(state, p)} | money ${p.money.toFixed(1)} | reputation ${p.tracks.reputation} | conservation ${p.tracks.conservation} | pots in hand ${p.buoysAvailable}/${buoyCap(state, p)} | sold today: ${p.soldToday ? 'yes' : 'no'}`);
+  const al = alignmentOn(state);
+  const bandWord = (x: typeof p) => `${bandOf(state, x).name.toUpperCase()} ${x.tracks.alignment >= 0 ? '+' : ''}${x.tracks.alignment}`;
+  const stars = (x: typeof p) => (x.tracks.heat > 0 ? '★'.repeat(x.tracks.heat) : 'no stars');
+  if (p.licensed === false) lines.push(al
+    ? `*** YOU ARE UNLICENSED THIS SEASON — every haul is poached (${-cfg.alignment.step.poachHaul} step darker each), no co-op step, no dividend. ***`
+    : `*** YOU ARE UNLICENSED THIS SEASON — everything you haul is poached: ${cfg.unlicensed.repPerHaul} reputation per haul, and the co-op will not take your catch. ***`);
+  lines.push(al
+    ? `YOU — ${p.name}: at ${where} | fuel ${p.fuel}/${fuelCap(state, p)} | money ${p.money.toFixed(1)} | alignment ${bandWord(p)} | heat ${stars(p)} | pots in hand ${p.buoysAvailable}/${buoyCap(state, p)} | sold today: ${p.soldToday ? 'yes' : 'no'}`
+    : `YOU — ${p.name}: at ${where} | fuel ${p.fuel}/${fuelCap(state, p)} | money ${p.money.toFixed(1)} | reputation ${p.tracks.reputation} | conservation ${p.tracks.conservation} | pots in hand ${p.buoysAvailable}/${buoyCap(state, p)} | sold today: ${p.soldToday ? 'yes' : 'no'}`);
+  if (al) {
+    const b = bandOf(state, p);
+    lines.push(`Your band switches: ${b.priceCut ? `markets pay you ${b.priceCut} less per lb` : 'full price'}; a crime costs you ${b.starsPerCrime}★; ${b.coop ? 'co-op open' : 'co-op CLOSED'}; ${b.dividend ? 'dividend if licensed' : 'no dividend'}; ${b.mustLicense ? 'you MUST buy the licence' : 'licence optional'}${b.refuge ? '' : '; the outer shelters turn you away'}${b.blackMarket ? '; black market open' : ''}${b.harbourBribe ? '; may bribe the harbourmaster' : ''}`);
+    if (p.barredPorts?.length) lines.push(`*** CLOSED TO YOU TODAY (you ran): ${p.barredPorts.join(', ')} — you cannot sell, refuel or berth there. ***`);
+  }
   lines.push(`Your hold: ${holdSummary(p.hold)}`);
   const ups = Object.values(p.upgrades).filter(Boolean) as string[];
   lines.push(`Your refits: ${ups.length ? ups.map((u) => upgradeDef(state, u)?.label ?? u).join(', ') : 'none'}${stepsPerSteam(state, p) > 1 ? ` (STEAM reaches ${stepsPerSteam(state, p)} nodes)` : ''}`);
@@ -114,7 +134,7 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
     const r = state.players[id];
     const rp = r.deployed.map((b) => b.node);
     const rups = Object.values(r.upgrades).filter(Boolean) as string[];
-    lines.push(`RIVAL ${r.name}: at ${r.node}${r.berthed ? ' (berthed)' : ''} | fuel ${r.fuel} | money ${r.money.toFixed(1)} | rep ${r.tracks.reputation} | cons ${r.tracks.conservation} | hold ${r.hold.length} tiles (${r.hold.reduce((s, t) => s + t.weightLb, 0)} lb) | pots at: ${rp.length ? rp.join(', ') : 'none'} | refits: ${rups.length ? rups.join(', ') : 'none'}`);
+    lines.push(`RIVAL ${r.name}: at ${r.node}${r.berthed ? ' (berthed)' : ''} | fuel ${r.fuel} | money ${r.money.toFixed(1)} | ${al ? `${bandWord(r)} | heat ${stars(r)}${r.licensed === false ? ' | UNLICENSED' : ''}` : `rep ${r.tracks.reputation} | cons ${r.tracks.conservation}`} | hold ${r.hold.length} tiles (${r.hold.reduce((s, t) => s + t.weightLb, 0)} lb) | pots at: ${rp.length ? rp.join(', ') : 'none'} | refits: ${rups.length ? rups.join(', ') : 'none'}`);
   }
   lines.push('');
 
@@ -127,6 +147,12 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   const occupied = Object.keys(cfg.map.nodes)
     .filter((n) => cfg.map.nodes[n].type === 'ground' && potsOnNode(state, n) > 0)
     .map((n) => `${n} ${potsOnNode(state, n)}/${potCapacity(state)}`);
+  if (al) {
+    const shut = GROUNDS.filter((g) => groundClosedTo(state, g, p));
+    lines.push(`GROUND HEALTH (bag vs start; closures): ${GROUNDS.map((g) => `${g} ${groundHealthPct(state, g)}%`).join(' | ')} — closed to YOU: ${shut.length ? `${shut.join(', ')} (+${cfg.closure.starsPerHaul}★ per pot hauled there)` : 'none'}`);
+    const refuges = Object.keys(cfg.map.nodes).filter((n) => cfg.map.nodes[n].port?.shelter && portClosedTo(state, p, n));
+    if (refuges.length) lines.push(`Refuges that turn you away: ${refuges.join(', ')}`);
+  }
   lines.push(`GEAR ON THE GROUND (every captain's pots; a ground takes ${potCapacity(state)} pots and no more): ${occupied.length ? occupied.join(', ') : 'the bay is clear'}`);
   const seeded = Object.entries(state.seeded).filter(([, n]) => n > 0).map(([n, c]) => `${n}:${c}`);
   lines.push(`SEEDED piles (generic ${cfg.seeded.weightLb} lb keepers on nodes): ${seeded.length ? seeded.join(' ') : 'none'}`);
@@ -139,6 +165,11 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   if (cfg.flags.upgrades) {
     const ch = Object.keys(state.markets).map((port) => `${port} [${upgradeDisplay(state, port).map((id) => `${id} ${upgradeDef(state, id)?.cost}`).join(', ') || 'sold out'}]`);
     lines.push(`CHANDLERY face-up: ${ch.join(' | ')}`);
+    if (al) {
+      const bm = [...new Set(state.darkStock ?? [])];
+      const open = darkOffer(state, p).length > 0 || (bandOf(state, p).blackMarket && bm.length > 0);
+      lines.push(`BLACK MARKET (Shady/Outlaw, any market port): ${bm.length ? bm.map((id) => `${id} ${upgradeDef(state, id)?.cost} (${(state.darkStock ?? []).filter((x) => x === id).length} left)`).join(', ') : 'sold out'}${open ? '' : ' — not open to your band'}`);
+    }
   }
   if (state.thefts.some((t) => t.victimId === pid)) lines.push(`You have an unreported theft against you (REPORT at a port for the bounty).`);
   lines.push('');
@@ -166,11 +197,17 @@ function renderAuctionView(state: GameState, pid: string, opts: ViewOptions): st
   L.push('Sealed bids. The price everyone pays is the SECOND-highest bid. The top two bidders are committed and must buy at that price; everyone else may take it or leave it.');
   L.push('The bid order is THIS SEASON\'S TURN ORDER — you are bidding for first pick of the water on opening day as much as for the licence.');
   L.push(`Reserve (minimum bid): ${a.minBid}. You have ${p.money.toFixed(1)} money.`);
-  L.push(`Without a licence you may still fish, but every haul is poaching: ${state.config.unlicensed.repPerHaul} reputation each, and the co-op will not take your catch.`);
+  if (alignmentOn(state)) {
+    const cfg = state.config;
+    const onSale = licencesOnSale(state);
+    L.push(`Without a licence you may still fish, but every haul is poaching (${-cfg.alignment.step.poachHaul} step darker each), with no co-op step and no dividend. Buying one steps you +${cfg.alignment.step.licence} lighter.`);
+    if (onSale !== Infinity) L.push(`*** THE SQUEEZE: only ${onSale} licences are for sale this season, going down the bid order. Whoever is left over fishes unlicensed. ***`);
+    if (bandOf(state, p).mustLicense) L.push(`You are ${bandOf(state, p).name.toUpperCase()}: you MUST buy the licence if you can afford it.`);
+  } else L.push(`Without a licence you may still fish, but every haul is poaching: ${state.config.unlicensed.repPerHaul} reputation each, and the co-op will not take your catch.`);
   L.push('');
   for (const id of Object.keys(state.players)) {
     const r = state.players[id];
-    L.push(`${id === pid ? 'YOU  ' : 'RIVAL'} ${r.name}: money ${r.money.toFixed(1)} | reputation ${r.tracks.reputation} | ${a.bids[id] !== undefined ? 'has bid (amount sealed)' : 'has not bid yet'}`);
+    L.push(`${id === pid ? 'YOU  ' : 'RIVAL'} ${r.name}: money ${r.money.toFixed(1)} | ${alignmentOn(state) ? `${bandOf(state, r).name.toUpperCase()} ${r.tracks.alignment} | heat ${r.tracks.heat}★` : `reputation ${r.tracks.reputation}`} | ${a.bids[id] !== undefined ? 'has bid (amount sealed)' : 'has not bid yet'}`);
   }
   L.push('');
   if (!a.revealed) {
@@ -261,7 +298,12 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
     }
     case 'SELL': {
       const a = find('SELL');
-      return a ? { ok: true, action: a } : { ok: false, error: 'cannot SELL (not a market port, already sold today, empty hold, or no action points)' };
+      if (!a) return { ok: false, error: 'cannot SELL (not a market port, already sold today, empty hold, a port closed to you, or no action points)' };
+      // SELL BRIBE <n>: buy n heat dice off the warden's check first (never below one die).
+      const bi = args.findIndex((t) => t.toUpperCase() === 'BRIBE');
+      const n = bi >= 0 ? Number(args[bi + 1] ?? 1) : 0;
+      if (bi >= 0 && !Number.isFinite(n)) return { ok: false, error: 'SELL BRIBE needs a number of dice, e.g. SELL BRIBE 2' };
+      return { ok: true, action: n > 0 ? { ...a, bribeDice: Math.floor(n) } : a };
     }
     case 'REFUEL': {
       const a = find('REFUEL');
@@ -286,7 +328,7 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
     }
     case 'BRIBE': {
       const a = find('BRIBE');
-      return a ? { ok: true, action: a } : { ok: false, error: 'cannot BRIBE (must be at a port with enough money)' };
+      return a ? { ok: true, action: a } : { ok: false, error: alignmentOn(state) ? 'cannot BRIBE the harbourmaster (Shady or Outlaw only, at a port, with the money)' : 'cannot BRIBE (must be at a port with enough money)' };
     }
     case 'PASS': case 'WAIT': case 'END':
       return { ok: true, action: { type: 'PASS', playerId: pid } };

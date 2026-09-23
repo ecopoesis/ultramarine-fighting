@@ -45,6 +45,7 @@ export interface PlayerState {
   soldToday: boolean;
   berthed: boolean;
   licensed?: boolean;     // paid this season's fishing licence — may set and haul gear. Unlicensed captains can only steal.
+  licensedSeason?: number; // the season whose licence they hold (the squeeze counts licences sold this season)
 
   madeHarbour?: boolean;  // ended the day at a dock under their own power (not towed in). Only these captains earn the last-slot courtesy — otherwise "never go home" farms the standing the tow is meant to cost.
   berthNode?: string;   // the port a captain berthed in — where they start tomorrow (daily home-port choice)
@@ -54,7 +55,13 @@ export interface PlayerState {
   // base amidships), midSecondary = the ONE second-middle you may add (crane / tank
   // / cargo). Max three upgrades. See engine/upgrades.ts for the derived effects.
   upgrades: Partial<Record<UpgradeSlot, string>>;
-  tracks: { conservation: number; reputation: number };
+  // alignment/heat are live only under flags.alignment (SPEC §14). ALIGNMENT is the
+  // switchboard, light (+) to dark (−), and scores nothing; HEAT is the 0–5 star
+  // wanted level the warden reads at every sale.
+  tracks: { conservation: number; reputation: number; alignment: number; heat: number };
+  // Ports shut to this captain for the rest of the day — you dropped your catch and
+  // ran from here. Cleared at the day rollover.
+  barredPorts?: string[];
 }
 
 export type UpgradeSlot = 'stern' | 'midPrimary' | 'midSecondary';
@@ -74,6 +81,10 @@ export interface UpgradeDef {
   whittleRecover?: boolean;
   whittleMult?: number;     // GPS: multiplies the chance a pot left in a storm is parted. Radar guarded against the ENTRY hazard (1 fuel) but not the WHITTLE (82 pots lost across 5 games) — it protected against the wrong half of the weather, and two captains called it worthless by name. A plotter that lets you find your gear in a blow is the half that matters.
   freeAction?: string;      // makes this ACTION type cost 0 (crane→HAUL, tender→SELL, pot rack→DROP, …)
+  // BLACK-MARKET refits (flags.alignment): a separate small stack, dark captains only.
+  dark?: boolean;
+  bonusDraws?: number;      // illegal net: extra tiles drawn per haul — and using it is a crime
+  pollutes?: number;        // cheap engine: each haul you make strips this many more tiles off that ground
   fuelBonus?: number;       // tank: + fuel-tank capacity
   buoyBonus?: number;       // cargo: + buoy capacity
 }
@@ -123,6 +134,9 @@ export interface GameState {
   // one out and the next slides up; empty = that chandlery is picked clean. Present
   // only when flags.upgrades is on.
   upgradeStock: Record<string, string[]>;
+  // The black-market refit stack (flags.alignment): not at any chandlery, sized to the
+  // dark slots, open to Shady and darker at any market port.
+  darkStock?: string[];
   nextSlot: number;
   pendingNextOrder: string[];
   thefts: TheftRecord[];
@@ -334,5 +348,62 @@ export interface Config {
     healthBuckets?: { atLeast: number; vp: number }[];
   };
 
-  flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean };
+  // ---- THE LIGHT/DARK SWITCHBOARD (SPEC §14), live only under flags.alignment ----
+  alignment: AlignmentConfig;
+  heat: HeatConfig;
+  closure: ClosureConfig;
+  dividend: { byHealth: { atLeast: number; money: number }[] };
+
+  flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean; alignment: boolean };
+}
+
+export type BandName = 'paragon' | 'honest' | 'neutral' | 'shady' | 'outlaw';
+
+// One row of the printed BAND CARD: everything your alignment switches on or off.
+export interface AlignmentBand {
+  name: BandName;
+  atLeast: number;        // the band starts at this alignment (rows high → low)
+  priceCut: number;       // whole money off every lb you sell: the market buys under the table
+  starsPerCrime: number;  // heat gained per crime — the lighter you are, the harder it lands
+  mustLicense: boolean;   // the good pay their dues: may not pass on the licence
+  coop: boolean;          // co-op landings (and its alignment step) are open to you
+  refuge: boolean;        // the outer shelters will take you in
+  harbourBribe: boolean;  // may bribe the harbourmaster for the front berth
+  dividend: boolean;      // shares the co-op's season dividend (if licensed)
+  blackMarket: boolean;   // may buy from the black-market refit stack
+}
+
+export interface AlignmentConfig {
+  min: number; max: number;          // the printed track's ends
+  bands: AlignmentBand[];            // high → low
+  step: {                            // whole steps along the track
+    notch: number; licence: number; coopLanding: number; report: number;
+    illegalKeep: number; poachHaul: number; steal: number; bribe: number; caught: number; darkRefit: number;
+  };
+  paragonFallTo: number;             // a Paragon who fails a heat check drops straight here
+  // Season-2 licences are players − this (index = player count). From season 3 on
+  // there is one for everyone: a single squeeze that forces the issue.
+  darkSlotsByPlayers: number[];
+  squeezeSeason: number;
+  // The black-market stack: one of each of these refits per dark slot, and no more.
+  darkRefits: string[];
+}
+
+export interface HeatConfig {
+  max: number;                // five stars
+  dieFaces: number[];         // the heat die: 0,1,1,1,2,2
+  failAt: number;             // a total at or over this: drop your catch and run. Keep it above the die's top face, so one star can never bust
+  takePerPoint: number;       // under the line: the warden's take, money per point rolled
+  bribePerDie: number[];      // cost of the 1st, 2nd, … die bought off one check (never below one die)
+  coolPerDayUnsold: number;   // stars shed for a day you stay away from the counter
+  poachHaulIsCrime: boolean;  // does an unlicensed haul add stars, or only alignment?
+  reportedStars: number;      // stars on a thief a victim reports (flat: the harbour now knows)
+  netIsCrime: boolean;        // is every haul with the illegal net a crime?
+}
+
+export interface ClosureConfig {
+  // Per-ground health (bag fullness, whole %) under which the ground closes to these
+  // bands. Rows high → low; the first row whose line the ground has fallen below applies.
+  levels: { belowPct: number; closedTo: BandName[] }[];
+  starsPerHaul: number;       // a closed-to-you ground is still fishable: +stars per pot hauled
 }

@@ -80,7 +80,8 @@ export class LlmCaptain {
     this.captainName = captainName;
     this.rt = rt ? { ...freshRuntime(), ...rt } : freshRuntime(); // a NEW game starts a new session + clean runtime
     const arch = archetypeById(this.spec.archetypeId);
-    const parts = [buildRulesPrompt(state.config, state.config.players), arch.prompt];
+    // Under the switchboard every archetype plays its two-sided playbook (a preferred side, and how to win on the other one).
+    const parts = [buildRulesPrompt(state.config, state.config.players), state.config.flags.alignment && arch.switchboard ? arch.switchboard : arch.prompt];
     parts.push(`# You\nYou are Captain ${captainName}, ${arch.name}. Rivals know you only by that name. Your tournament identity (private) is ${this.spec.name}.`);
     if (this.record.length) {
       const rec = this.record.map((r) => `- ${r.gameId}: ${r.players}-player table, finished ${r.rank}/${r.players} with ${r.total.toFixed(1)} VP`).join('\n');

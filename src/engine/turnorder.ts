@@ -1,5 +1,6 @@
 import type { GameState } from '../types';
 import { isPort } from './ports';
+import { alignmentOn, bandOf, stepAlignment } from './alignment';
 
 // Berth = done for the day, at whatever port you sailed to. The order players
 // berth IS tomorrow's turn order; the port you berth in is where you start
@@ -27,8 +28,12 @@ export function bribe(d: GameState, playerId: string): void {
   const p = d.players[playerId];
   if (!isPort(d, p.node)) throw new Error('Bribe at a port');
   if (p.money < d.config.bribeMoneyCost) throw new Error('Cannot afford bribe');
+  // Under the switchboard only the dark side knows whose palm to grease, and doing
+  // it walks you further in. No heat: it's corruption, not poaching.
+  if (alignmentOn(d) && !bandOf(d, p).harbourBribe) throw new Error('Only a shady captain can bribe the harbourmaster');
   p.money -= d.config.bribeMoneyCost;
   p.tracks.reputation += d.config.rep.bribe;
+  stepAlignment(d, p, d.config.alignment.step.bribe, 'bribed the harbourmaster');
   const existing = d.pendingNextOrder.indexOf(playerId);
   if (existing >= 0) d.pendingNextOrder.splice(existing, 1);
   d.pendingNextOrder.unshift(playerId);

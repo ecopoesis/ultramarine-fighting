@@ -2,16 +2,18 @@ import type { GameState, Ground } from '../types';
 import type { Action } from '../actions';
 import type { HaulPolicy } from '../engine/buoys';
 import { distance } from '../engine/movement';
-import { distanceToNearestPort, marketPorts, portOf } from '../engine/ports';
+import { distanceToNearestPort, marketPorts, portOf, fuelPriceAt } from '../engine/ports';
 import { weatherOn, isStormed } from '../engine/weather';
 import {
   Policy, stepToward, hopToward, myBuoys, isLastDayOfSeason, hoursLeftToday, groundNodesOfType,
   nearest, ofType, firstOfType, reachability, daysThisSeason,
   isPort, nearestPort, nearestMarketPort,
 } from './helpers';
-import { upgradesOn, upgradeDef, stepsPerSteam } from '../engine/upgrades';
+import { upgradesOn, upgradeDef, stepsPerSteam, fuelCap } from '../engine/upgrades';
 import { spaceHasRoom } from '../engine/buoys';
 import { auctionMinBid } from '../engine/auction';
+import { alignmentOn, portClosedTo, groundClosedTo, bribeCost } from '../engine/alignment';
+import { pricePerLb } from '../engine/market';
 
 const UPGRADE_RESERVE = 10; // money a bot keeps in hand rather than sinking into a refit
 
@@ -46,6 +48,20 @@ export interface CardCounter {
   // reserve. Second-price, so bidding your true valuation is safe — you pay what your
   // closest rival thought it was worth, not what you did.
   bidFraction?: number;
+  // THE SWITCHBOARD (flags.alignment). 'light' fishes clean and buys its licence;
+  // 'dark' keeps eggers and jumbos, poaches, and manages its heat; 'switch' plays light
+  // until it ends up without a licence, then embraces it and plays dark.
+  side?: 'light' | 'dark' | 'switch';
+  heatCeiling?: number;  // dark: stop committing crimes at this many stars
+  safeDice?: number;     // dark: bribe the check down to this many dice when it can
+  maxDiceToSell?: number; // dark: if even after bribing more dice than this remain, lie low instead of selling
+}
+
+// Which side is this bot playing right now?
+function sideOf(state: GameState, pid: string, cc: CardCounter): 'light' | 'dark' | undefined {
+  if (!alignmentOn(state) || !cc.side) return undefined;
+  if (cc.side === 'switch') return state.players[pid].licensed === false ? 'dark' : 'light';
+  return cc.side;
 }
 
 // The neutral fair optimizer / measuring stick. Clean, no theft — the baseline
@@ -79,9 +95,17 @@ export const CC_MONK: CardCounter = { ...ARCH_BASE, name: 'monk', farBias: 0.8, 
 export const CC_NOMAD: CardCounter = { ...ARCH_BASE, name: 'nomad', reachCostPerStep: 0.25, stormBias: 1.2 };     // ranges the whole map for the best EV anywhere — including the churn (else it wanders into storms untaxed-for-nothing)
 export const CC_GUZZLER: CardCounter = { ...ARCH_BASE, name: 'guzzler', guzzle: true, minKeep: 1, farBias: 1.3, refuelBelow: 0 }; // fishes hard & far, never reserves return fuel, never refuels — runs dry and takes the tow. A CANARY for the tow price: if it's viable, the tow is too cheap.
 
+// THE SWITCHBOARD bots (flags.alignment) — the arena's light/dark instruments. All
+// share the same fishing core, so any gap between them is the switchboard's doing.
+export const CC_LIGHT: CardCounter = { ...ARCH_BASE, name: 'light', side: 'light' };
+const DARK_WISH = ['net', 'smoker', 'engine', 'crane', 'potrack', 'tender', 'cargo', 'fuelline', 'tank', 'grapple', 'flares'];
+export const CC_DARK: CardCounter = { ...ARCH_BASE, name: 'dark', side: 'dark', heatCeiling: 3, safeDice: 2, maxDiceToSell: 3, upgradeWishlist: DARK_WISH };
+export const CC_SWITCH: CardCounter = { ...ARCH_BASE, name: 'switch', side: 'switch', heatCeiling: 3, safeDice: 2, maxDiceToSell: 3, upgradeWishlist: DARK_WISH };
+
 // The full roster (index builds BOTS from this; the arena seats N of them).
 export const ROSTER: CardCounter[] = [
   CC_STEWARD, CC_GREEDY, CC_HIGHLINER, CC_GRINDER, CC_GAMBLER, CC_HUSTLER, CC_MONK, CC_NOMAD, CC_GUZZLER,
+  CC_LIGHT, CC_DARK, CC_SWITCH,
 ];
 
 // Best market base around — a stable reference for valuing a landed pound (the
@@ -149,8 +173,11 @@ function chooseTarget(
   last: boolean,
 ): string {
   const p = state.players[pid];
-  const sellPort = nearestMarketPort(state, p.node) ?? nearestPort(state, p.node)!;
-  const anyPort = nearestPort(state, p.node)!;
+  // Only docks that will have us (a port we ran from today, or a refuge an outlaw has lost).
+  const open = (nodes: string[]) => nodes.filter((n) => !portClosedTo(state, p, n));
+  const sellPort = nearest(state, p.node, open(marketPorts(state))) ?? nearestMarketPort(state, p.node) ?? nearestPort(state, p.node)!;
+  const anyPort = nearest(state, p.node, open(Object.keys(state.config.map.nodes).filter((n) => isPort(state, n)))) ?? nearestPort(state, p.node)!;
+  const side = sideOf(state, pid, cc);
   const home = () => (p.hold.length > 0 ? sellPort : anyPort);
   // Guzzlers fish anything one-way REACHABLE (no return reserve); everyone else
   // sticks to round-trip-SAFE zones so they can make harbor.
@@ -183,6 +210,8 @@ function chooseTarget(
       for (const zone of groundNodesOfType(state, g)) {
         if (!okReach(zone) || buoys.some((b) => b.node === zone)) continue;
         if (!spaceHasRoom(state, zone)) continue; // that ground is already full of gear
+        // Closed water: the light side never needs it barred; a dark bot works it only while cool.
+        if (side === 'dark' && groundClosedTo(state, g, p) && p.tracks.heat + state.config.closure.starsPerHaul > (cc.heatCeiling ?? 3)) continue;
         const s = scoreZone(state, p.node, zone, g, cc);
         if (s > bestScore) { bestScore = s; best = zone; }
       }
@@ -199,11 +228,13 @@ export function makeCardCounter(cc: CardCounter): Policy {
       const me = state.players[pid];
       if (!a.revealed) {
         const reserve = auctionMinBid(state);
+        if (sideOf(state, pid, cc) === 'dark' && cc.side === 'dark') return { type: 'LICENSE_BID', playerId: pid, amount: 0 }; // a poacher keeps the fee
         // Bid the reserve plus a slice of what's in hand: the season's turn order is
         // worth more to a rich boat that can act on going first.
         const bid = Math.min(Math.floor(me.money), reserve + Math.floor(me.money * (cc.bidFraction ?? 0.08)));
         return { type: 'LICENSE_BID', playerId: pid, amount: me.money >= reserve ? Math.max(reserve, bid) : 0 };
       }
+      if (cc.side === 'dark' && alignmentOn(state)) return { type: 'LICENSE_BUY', playerId: pid, take: false };
       return { type: 'LICENSE_BUY', playerId: pid, take: me.money >= a.price };
     }
     const cfg = state.config;
@@ -215,10 +246,14 @@ export function makeCardCounter(cc: CardCounter): Policy {
     const buoys = myBuoys(state, pid);
     const pass = firstOfType(legal, 'PASS')!;
     const repFloor = cc.repFloor ?? -Infinity;
+    const side = sideOf(state, pid, cc);
+    // Under the switchboard, heat (not reputation) is what rations crime.
+    const hot = side === 'dark' && p.tracks.heat >= (cc.heatCeiling ?? 3);
+    const mayCrime = side ? side === 'dark' && !hot : p.tracks.reputation > repFloor;
 
     // 1) STEAL a rival buoy under us (a raider only), while we can still absorb the
     //    reputation hit — a chance we can't price, so we take it.
-    if (cc.steals && p.tracks.reputation > repFloor) {
+    if (cc.steals && mayCrime) {
       const steals = ofType(legal, 'STEAL');
       if (steals.length) return { ...steals[0], policy: cc.stealPolicy ?? 'greedy' };
     }
@@ -228,12 +263,15 @@ export function makeCardCounter(cc: CardCounter): Policy {
     const hauls = ofType(legal, 'HAUL');
     if (hauls.length) {
       const dirty = cc.haulPolicy === 'greedy' || cc.haulPolicy === 'highgrade';
-      const effHaul: HaulPolicy = dirty && p.tracks.reputation <= repFloor ? 'clean' : cc.haulPolicy;
+      let effHaul: HaulPolicy = dirty && p.tracks.reputation <= repFloor ? 'clean' : cc.haulPolicy;
+      let eggers: 'keep' | 'notch' | undefined;
+      if (side === 'light') effHaul = 'clean';
+      if (side === 'dark') { effHaul = mayCrime ? 'highgrade' : 'clean'; eggers = mayCrime ? 'keep' : 'notch'; }
       const ranked = hauls
         .map((h) => ({ h, keep: buoys.find((b) => b.buoyId === h.buoyId)?.keep ?? 0 }))
         .filter((x) => last || x.keep >= cc.minKeep)
         .sort((a, b) => b.keep - a.keep);
-      if (ranked.length) return { ...ranked[0].h, policy: effHaul };
+      if (ranked.length) return { ...ranked[0].h, policy: effHaul, ...(eggers ? { eggers } : {}) };
     }
 
     const target = chooseTarget(state, pid, cc, buoys, reach, last);
@@ -245,7 +283,23 @@ export function makeCardCounter(cc: CardCounter): Policy {
       const report = firstOfType(legal, 'REPORT');
       if (report) return report;
       const sell = firstOfType(legal, 'SELL');
-      if (sell && p.hold.length > 0) return sell;
+      if (sell && p.hold.length > 0) {
+        if (!side || p.tracks.heat <= 0) return sell;
+        // The warden's check: buy dice off down to a safe roll while the bribe is
+        // worth less than the hold; if the roll is still too hot, lie low instead
+        // (a day away from the counter cools a star) — unless the season is ending.
+        const holdValue = p.hold.reduce((v, t) => v + t.weightLb * pricePerLb(state, p.node, t.color === 'rare'), 0);
+        const safe = cc.safeDice ?? 2;
+        let buy = Math.max(0, p.tracks.heat - safe);
+        while (buy > 0 && (bribeCost(state, p.tracks.heat, buy) > p.money || bribeCost(state, p.tracks.heat, buy) > holdValue / 2)) buy--;
+        const dice = p.tracks.heat - buy;
+        if (dice > (cc.maxDiceToSell ?? 3) && !last) {
+          const berthAction = firstOfType(legal, 'BERTH');
+          if (berthAction) return berthAction;
+          return pass;
+        }
+        return { ...sell, bribeDice: buy };
+      }
       const refuel = firstOfType(legal, 'REFUEL');
       if (refuel && !last && !cc.guzzle && p.fuel <= cc.refuelBelow) return refuel;
 
@@ -256,11 +310,21 @@ export function makeCardCounter(cc: CardCounter): Policy {
         const wish = cc.upgradeWishlist ?? ['engine', 'crane', 'potrack', 'tender', 'cargo', 'radar', 'fuelline', 'tank', 'grapple', 'flares'];
         for (const id of wish) {
           const b = buys.find((x) => x.upgradeId === id);
-          if (b && p.money - (upgradeDef(state, id)?.cost ?? Infinity) >= UPGRADE_RESERVE) return b;
+          // Keep enough behind to fill the tank here after paying: a bot that refitted down
+          // to its last coin ran dry, could not buy fuel, and sat in port for whole seasons.
+          const tankMoney = fuelCap(state, p) * fuelPriceAt(state, p.node);
+          if (b && p.money - (upgradeDef(state, id)?.cost ?? Infinity) >= Math.max(UPGRADE_RESERVE, tankMoney)) return b;
         }
       }
 
-      if (!last && targetIsGround && targetOk) {
+      // Only put out if there's daylight for the whole round trip. Without this a bot
+      // in port late in the day steamed out, was turned back by the make-harbour rule
+      // the next hour, steamed out again, and so on until it was towed — then sat
+      // stranded and broke while its pots fouled (zero hauls in season 1, measured).
+      const hops = (n: number) => Math.ceil(n / Math.max(1, hopReach));
+      const tripActions = hops(distance(state, p.node, target)) + 1 + hops(distanceToNearestPort(state, target));
+      const daylight = Math.ceil(tripActions / cfg.actionsPerTurn) <= hoursLeftToday(state);
+      if (!last && targetIsGround && targetOk && daylight) {
         const step = hopToward(state, p.node, target, hopReach);
         const steam = step ? ofType(legal, 'STEAM').find((s) => s.to === step) : undefined;
         if (steam) return steam;
@@ -269,7 +333,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
       // first into the berths, idle instead: a rival can take the front slot, or
       // the end-of-day auto-berth seats us for free. Rep is too weak to spend here.
       const berthAction = firstOfType(legal, 'BERTH');
-      if (berthAction && state.nextSlot > 0) return berthAction;
+      if (berthAction && (state.nextSlot > 0 || alignmentOn(state))) return berthAction; // the switchboard's front berth is free
       return pass;
     }
 

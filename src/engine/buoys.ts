@@ -5,6 +5,8 @@ import { isKeeper, isIllegal, isEgger, isVnotched, tileTemplate } from '../tiles
 import { marketPorts, portOf } from './ports';
 import { weatherOn } from './weather';
 import { pullSeeded } from './seeded';
+import { alignmentOn, stepAlignment, commitCrimes, addStars, groundClosedTo } from './alignment';
+import { bonusDraws, pollute } from './upgrades';
 
 // A reference "book price" for valuing stolen catch (report bounty), independent
 // of which port the loot might eventually sell at: the best market base around.
@@ -67,15 +69,16 @@ export type EggerChoice = 'notch' | 'keep';
 function resolveDraw(
   d: GameState, playerId: string, ground: Ground, stage: Stage, policy: HaulPolicy,
   stormy = false, eggers?: EggerChoice,
-): void {
+): { illegalKept: number; notched: number } {
   const p = d.players[playerId];
   const rule = d.config.drawByStage[stage];
   // A stormed node churns up bonus lobster: extra draws and a raised keep limit.
   // This is the REWARD half of the gamble — priced against the entry hazard and
   // the overnight whittle to a near-wash, so the far grounds are a bet, not a wall.
   const bonus = stormy && weatherOn(d);
-  const drawN = rule.draw + (bonus ? d.config.weather.bonusDraws : 0);
-  const keepN = rule.keep + (bonus ? d.config.weather.bonusKeep : 0);
+  const net = bonusDraws(d, p); // the illegal net: more tiles up, and more kept
+  const drawN = rule.draw + (bonus ? d.config.weather.bonusDraws : 0) + net;
+  const keepN = rule.keep + (bonus ? d.config.weather.bonusKeep : 0) + net;
   const drawn: Tile[] = [];
   for (let i = 0; i < drawN; i++) {
     const t = takeRandom(d, d.bags[ground]);
@@ -84,6 +87,8 @@ function resolveDraw(
 
   const keepers = drawn.filter(isKeeper).sort((a, b) => b.weightLb - a.weightLb);
   let kept = 0;
+  let illegalKept = 0;
+  let notched = 0;
 
   for (const t of drawn) {
     if (isKeeper(t)) {
@@ -101,6 +106,7 @@ function resolveDraw(
       if ((eggers ?? (policy === 'greedy' ? 'keep' : 'notch')) === 'keep') {
         p.hold.push(t); // illegal keep of a berried female: no log line — the public rep track is the only tell
         p.tracks.reputation += d.config.rep.illegalKeep;
+        illegalKept++;
       } else {
         // V-NOTCH: you TAKE the egger (she leaves the world as your scoring proof)
         // and put a v-notch MEEPLE in her place in the bag. Bag size is unchanged —
@@ -110,6 +116,7 @@ function resolveDraw(
         d.bags[ground].push({ id: `vn-${t.id}`, ground, ...tileTemplate('VNOTCH') });
         d.notches[ground] = (d.notches[ground] ?? 0) + 1; // the ground's breeding stock grows
         p.tracks.conservation += d.config.rep.vNotch;
+        notched++;
       }
     } else if (isIllegal(t)) {
       // highgrade keeps only the heavy, valuable illegal (jumbos), not worthless shorts.
@@ -117,6 +124,7 @@ function resolveDraw(
       if (keepIt) {
         p.hold.push(t);
         p.tracks.reputation += d.config.rep.illegalKeep;
+        illegalKept++;
       } else {
         d.bags[ground].push(t); // legal throwback, free
       }
@@ -124,6 +132,22 @@ function resolveDraw(
   }
 
   d.log.push(`${p.name} hauls (${ground}/${stage}): kept ${kept}`);
+  return { illegalKept, notched };
+}
+
+// The switchboard's reading of one haul (flags.alignment): notches step you lighter,
+// every illegal tile kept steps you darker AND is a crime the warden hears about.
+// The log names steps and stars, never the tiles — the tracks are public, the hold
+// is not.
+function settleHaul(d: GameState, playerId: string, r: { illegalKept: number; notched: number }): void {
+  if (!alignmentOn(d)) return;
+  const p = d.players[playerId];
+  const st = d.config.alignment.step;
+  stepAlignment(d, p, r.notched * st.notch, `notched ${r.notched}`);
+  if (r.illegalKept > 0) {
+    stepAlignment(d, p, r.illegalKept * st.illegalKeep, 'kept illegal catch');
+    commitCrimes(d, p, r.illegalKept, 'illegal catch aboard');
+  }
 }
 
 export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean', eggers?: EggerChoice): void {
@@ -138,9 +162,15 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
   if (p.licensed === false) { // poaching: every trap you pull is illegal
     p.tracks.reputation += d.config.unlicensed.repPerHaul;
     d.log.push(`${p.name} hauls without a licence (${d.config.unlicensed.repPerHaul} reputation)`);
+    stepAlignment(d, p, d.config.alignment.step.poachHaul, 'poaching');
+    if (d.config.heat.poachHaulIsCrime) commitCrimes(d, p, 1, 'poaching');
   }
+  // Closed water is still fishable — at a price in stars per pot pulled.
+  if (groundClosedTo(d, rec.ground, p)) addStars(d, p, d.config.closure.starsPerHaul, `hauled closed ${rec.ground} water`);
   pullSeeded(d, playerId, buoy.node); // the space's seeded pile comes up first, then the bag
-  resolveDraw(d, playerId, rec.ground, stage, policy, d.stormed.includes(buoy.node), eggers);
+  settleHaul(d, playerId, resolveDraw(d, playerId, rec.ground, stage, policy, d.stormed.includes(buoy.node), eggers));
+  if (bonusDraws(d, p) > 0 && d.config.heat.netIsCrime) commitCrimes(d, p, 1, 'hauled with an illegal net');
+  pollute(d, p, rec.ground);
   // recover the gear
   p.deployed.splice(idx, 1);
   delete p.soak[buoyId];
@@ -160,7 +190,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
 
   const holdBefore = thief.hold.length;
   pullSeeded(d, thiefId, buoy.node); // the thief also grabs the space's seeded pile
-  resolveDraw(d, thiefId, rec.ground, stage, policy, d.stormed.includes(buoy.node), eggers);
+  settleHaul(d, thiefId, resolveDraw(d, thiefId, rec.ground, stage, policy, d.stormed.includes(buoy.node), eggers));
   const stolen = thief.hold.slice(holdBefore);
   const value = stolen.reduce((s, t) => s + t.weightLb, 0) * refPrice(d);
 
@@ -169,6 +199,8 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
   delete owner.soak[buoyId];
   owner.buoysAvailable += 1; // owner recovers the gear, loses the catch
   thief.tracks.reputation += d.config.rep.steal;
+  stepAlignment(d, thief, d.config.alignment.step.steal, 'theft');
+  commitCrimes(d, thief, 1, 'theft');
   d.thefts.push({ victimId: ownerId, thiefId, value });
   d.log.push(`${thief.name} STEALS buoy ${buoyId} from ${owner.name} (value ~${value})`);
 }

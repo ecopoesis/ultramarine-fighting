@@ -134,6 +134,9 @@ export const defaultConfig: Config = {
       { id: 'potrack', label: 'Pot rack', slot: 'midSecondary', cost: 14, freeAction: 'DROP' },     // DROP free
       { id: 'cargo', label: 'Cargo hold', slot: 'midSecondary', cost: 14, buoyBonus: 1 },           // + one buoy
       { id: 'tank', label: 'Bigger tanks', slot: 'midSecondary', cost: 10, fuelBonus: 6 },          // + fuel capacity
+      // BLACK MARKET (flags.alignment) — never at a chandlery; a small stack for Shady and darker.
+      { id: 'net', label: 'Illegal net', slot: 'midSecondary', cost: 12, dark: true, bonusDraws: 2 },     // +2 tiles drawn per haul; every haul with it is a crime
+      { id: 'smoker', label: 'Cheap engine', slot: 'stern', cost: 9, dark: true, stepsPerSteam: 2, pollutes: 1 }, // the big engine's reach for half the price — and every haul you make strips another tile off that ground
     ],
     perPortStock: 6, // each of the 3 market ports stocks this many refit tokens (drawn from the catalog)
     display: 3,      // face-up at once
@@ -208,5 +211,61 @@ export const defaultConfig: Config = {
     ],
   },
 
-  flags: { weather: true, seeded: true, upgrades: true, eras: false, multiShip: false, inspections: false },
+  // ---- THE LIGHT/DARK SWITCHBOARD (SPEC §14), live only under flags.alignment ----
+  // Money is the only score; ALIGNMENT switches what you can do, HEAT is what the
+  // warden reads at the counter. Every value here is an arena-tuned starting point.
+  alignment: {
+    min: -10, max: 10,
+    // THE BAND CARD, high → low. The lighter you are, the harder a crime lands and the
+    // more you must pay your dues; the darker, the worse the market pays and the more
+    // doors close — but the more of the catch you keep.
+    bands: [
+      { name: 'paragon', atLeast: 7, priceCut: 0, starsPerCrime: 5, mustLicense: true, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false },
+      { name: 'honest', atLeast: 3, priceCut: 0, starsPerCrime: 3, mustLicense: true, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false },
+      { name: 'neutral', atLeast: -2, priceCut: 0, starsPerCrime: 2, mustLicense: false, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false },
+      { name: 'shady', atLeast: -6, priceCut: 0, starsPerCrime: 1, mustLicense: false, coop: false, refuge: true, harbourBribe: true, dividend: false, blackMarket: true },
+      { name: 'outlaw', atLeast: -Infinity, priceCut: 1, starsPerCrime: 1, mustLicense: false, coop: false, refuge: false, harbourBribe: true, dividend: false, blackMarket: true },
+    ],
+    step: {
+      notch: 1, licence: 1, coopLanding: 1, report: 1,
+      illegalKeep: -1, poachHaul: -1, steal: -2, bribe: -1, caught: -2, darkRefit: -2,
+    },
+    paragonFallTo: -3, // top of Shady: a good name is a long way to fall
+    darkSlotsByPlayers: [0, 0, 1, 1, 1, 2, 2], // index = player count; about a third, rounded to nearest
+    squeezeSeason: 2,
+    darkRefits: ['net', 'smoker'],
+  },
+  heat: {
+    max: 5,
+    dieFaces: [0, 1, 1, 1, 2, 2], // averages just over 1, tops out at 2: the total climbs, never spikes
+    failAt: 5,                    // 1–2 dice never bust; 3 dice 20%, 4 dice 56%, 5 dice 81%
+    takePerPoint: 2,              // under the line, the warden's take: money per point rolled
+    bribePerDie: [4, 6, 8, 10],   // 1st die bought off a check, 2nd, … — the last safe die is the dearest
+    coolPerDayUnsold: 1,          // stay away from the counter for a day: one star cools
+    poachHaulIsCrime: false,      // an unlicensed haul costs alignment; the warden cares what's in the hold
+    reportedStars: 1,
+    netIsCrime: true,             // the net is the crime: every haul with it adds stars
+  },
+  closure: {
+    // Per-ground health (bag fullness, %). Below the line the ground closes to these
+    // bands — still fishable, at +starsPerHaul a pot.
+    levels: [
+      { belowPct: 35, closedTo: ['neutral', 'shady', 'outlaw'] },
+      { belowPct: 60, closedTo: ['shady', 'outlaw'] },
+    ],
+    starsPerHaul: 1,
+  },
+  // The co-op's season-end dividend to licensed members Neutral or lighter, read off the
+  // ocean's health (whole %). The light side's steady income depends on live water.
+  dividend: {
+    byHealth: [
+      { atLeast: 80, money: 8 },
+      { atLeast: 60, money: 6 },
+      { atLeast: 40, money: 4 },
+      { atLeast: 20, money: 2 },
+      { atLeast: 0, money: 0 },
+    ],
+  },
+
+  flags: { weather: true, seeded: true, upgrades: true, eras: false, multiShip: false, inspections: false, alignment: true },
 };

@@ -8,10 +8,12 @@ import { berth, bribe } from './engine/turnorder';
 import { advanceSoak } from './engine/soak';
 import { finishSeasonRollover } from './engine/season';
 import { applyAuctionAction } from './engine/auction';
-import { fuelPriceAt, isPort, nearestPort } from './engine/ports';
+import { fuelPriceAt, isPort, nearestPort, allPorts } from './engine/ports';
+import { distance } from './engine/movement';
 import { stormWhittle } from './engine/weather';
 import { buyUpgrade, fuelCap } from './engine/upgrades';
 import { daysThisSeason } from './selectors';
+import { alignmentOn, portClosedTo, coolStars, payDividend } from './engine/alignment';
 
 // Pure: returns a new state; never mutates the input. We clone once and mutate
 // the draft (engine fns operate on the draft), which keeps rule code readable.
@@ -42,7 +44,7 @@ function applyAction(d: GameState, a: Action): boolean {
     case 'DROP': dropBuoy(d, a.playerId); return false;
     case 'HAUL': haulBuoy(d, a.playerId, a.buoyId, a.policy ?? 'clean', a.eggers); return false;
     case 'STEAL': stealBuoy(d, a.playerId, a.ownerId, a.buoyId, a.policy ?? 'clean', a.eggers); return false;
-    case 'SELL': sell(d, a.playerId); return false;
+    case 'SELL': sell(d, a.playerId, a.bribeDice ?? 0); return false;
     case 'REFUEL': {
       const p = d.players[a.playerId];
       const price = fuelPriceAt(d, p.node); // dear at island ports, dearer at shelters
@@ -101,9 +103,12 @@ function dayRollover(d: GameState): void {
   for (const id of [...d.turnOrder].reverse()) {
     const p = d.players[id];
     if (!p.berthed) {
-      if (isPort(d, p.node)) p.madeHarbour = true; // got home on their own, just didn't formally berth
-      if (!isPort(d, p.node)) {
-        const port = nearestPort(d, p.node);
+      // A dock that's shut to you (you ran from it, or you're an outlaw at a refuge)
+      // is no harbour tonight: you're towed on to the next one.
+      const shut = portClosedTo(d, p, p.node);
+      if (isPort(d, p.node) && !shut) p.madeHarbour = true; // got home on their own, just didn't formally berth
+      if (!isPort(d, p.node) || shut) {
+        const port = shut ? nearestOpenPort(d, p.id) : nearestPort(d, p.node);
         if (port) { p.node = port; p.berthNode = port; }
         const fee = Math.min(p.money, d.config.tow.fee);
         p.money -= fee;
@@ -122,14 +127,16 @@ function dayRollover(d: GameState): void {
   // THE POLE: first slot in tomorrow's order costs standing — to whoever ends up with
   // it, whether they berthed for it, bribed for it, or simply got seated there. You
   // cannot dodge the front of the queue by refusing to make a decision.
+  // Under the switchboard the berth order is simply arrival order: get back early for
+  // a good slot, or (if you're dark) pay the harbourmaster. No charge, no courtesy.
   const poleId = d.pendingNextOrder[0];
-  if (poleId && d.config.poleRepCost && d.pendingNextOrder.length > 1) {
+  if (!alignmentOn(d) && poleId && d.config.poleRepCost && d.pendingNextOrder.length > 1) {
     const pp = d.players[poleId];
     pp.tracks.reputation -= d.config.poleRepCost;
     d.log.push(`${pp.name} takes the pole (slot 0) — -${d.config.poleRepCost} reputation, now ${pp.tracks.reputation}`);
   }
   const lastId = d.pendingNextOrder[d.pendingNextOrder.length - 1];
-  if (lastId && d.pendingNextOrder.length > 1) {
+  if (!alignmentOn(d) && lastId && d.pendingNextOrder.length > 1) {
     const lp = d.players[lastId];
     lp.fuel = Math.min(d.config.fuelTankMax, lp.fuel + d.config.lastSlotSweetenerFuel);
     // The courtesy is only earned by a captain who CHOSE to come in and take the back
@@ -161,6 +168,12 @@ function dayRollover(d: GameState): void {
       p.money -= paid;
       if (paid < d.config.wagePerDay) d.log.push(`${p.name} cannot make the full crew wage (paid ${paid.toFixed(1)} of ${d.config.wagePerDay})`);
     }
+  }
+
+  // Lying low: a day away from the counter cools you off. The warden watches sales.
+  for (const p of Object.values(d.players)) {
+    if (!p.soldToday) coolStars(d, p, d.config.heat.coolPerDayUnsold, 'a day away from the counter');
+    p.barredPorts = undefined;
   }
 
   // hold decay + reset day flags + recover prices
@@ -202,10 +215,24 @@ function dayRollover(d: GameState): void {
 // no draft ("screw everyone": the commons is a stranded scramble) and rolls over
 // directly.
 function seasonRollover(d: GameState): void {
+  payDividend(d); // the co-op shares out at every season's end (switchboard only)
   if (d.season >= d.config.seasons) {
     d.phase = 'GAME_OVER';
     d.log.push('Final season over. Game over.');
     return;
   }
   finishSeasonRollover(d);
+}
+
+// The nearest dock this captain may actually tie up at tonight.
+function nearestOpenPort(d: GameState, pid: string): string | null {
+  const p = d.players[pid];
+  let best: string | null = null;
+  let bestD = Infinity;
+  for (const n of allPorts(d).sort()) {
+    if (portClosedTo(d, p, n)) continue;
+    const dist = distance(d, p.node, n);
+    if (dist < bestD) { bestD = dist; best = n; }
+  }
+  return best ?? nearestPort(d, p.node);
 }

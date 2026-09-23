@@ -2,16 +2,17 @@ import type { GameState } from './types';
 import { neighbors, distance } from './engine/movement';
 import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
 import { isRipe } from './engine/soak';
-import { upgradesOn, upgradeDisplay, canBuyUpgrade, freesAction, fuelCap, stepsPerSteam } from './engine/upgrades';
+import { upgradesOn, upgradeDisplay, canBuyUpgrade, freesAction, fuelCap, stepsPerSteam, darkOffer } from './engine/upgrades';
 import type { HaulPolicy, EggerChoice } from './engine/buoys';
 import { spaceHasRoom } from './engine/buoys';
+import { alignmentOn, bandOf, portClosedTo } from './engine/alignment';
 
 export type Action =
   | { type: 'STEAM'; playerId: string; to: string }
   | { type: 'DROP'; playerId: string }
   | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy; eggers?: EggerChoice }
   | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy; eggers?: EggerChoice }
-  | { type: 'SELL'; playerId: string }
+  | { type: 'SELL'; playerId: string; bribeDice?: number } // bribeDice: heat dice to buy off the warden's check (flags.alignment)
   | { type: 'REFUEL'; playerId: string; units: number }
   | { type: 'REPORT'; playerId: string }
   | { type: 'BERTH'; playerId: string }
@@ -84,8 +85,8 @@ export function legalActions(state: GameState, playerId: string): Action[] {
       }
     }
   }
-  // port actions (any dock; only market ports buy)
-  if (atPort) {
+  // port actions (any dock; only market ports buy) — none at a dock that's shut to you
+  if (atPort && !portClosedTo(state, p, p.node)) {
     if (isMarketPort(state, p.node) && !p.soldToday && p.hold.length > 0) {
       const t: Action = { type: 'SELL', playerId };
       if (canAfford(t)) out.push(t);
@@ -101,10 +102,10 @@ export function legalActions(state: GameState, playerId: string): Action[] {
       if (canAfford(t)) out.push(t);
     }
     out.push({ type: 'BERTH', playerId });
-    if (p.money >= cfg.bribeMoneyCost) out.push({ type: 'BRIBE', playerId });
+    if (p.money >= cfg.bribeMoneyCost && (!alignmentOn(state) || bandOf(state, p).harbourBribe)) out.push({ type: 'BRIBE', playerId });
     // refit at the chandlery: any face-up upgrade you can afford with a free slot
     if (upgradesOn(state)) {
-      for (const id of upgradeDisplay(state, p.node)) {
+      for (const id of [...upgradeDisplay(state, p.node), ...darkOffer(state, p)]) {
         const t: Action = { type: 'BUY_UPGRADE', playerId, upgradeId: id };
         if (canBuyUpgrade(state, p, id) && canAfford(t)) out.push(t);
       }
