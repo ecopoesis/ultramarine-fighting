@@ -224,7 +224,7 @@ export const defaultConfig: Config = {
       { name: 'honest', atLeast: 3, priceCut: 0, starsPerCrime: 3, mustLicense: true, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false, bribeFloor: 1, bribeCosts: [4, 6, 8, 10] },
       { name: 'neutral', atLeast: -2, priceCut: 0, starsPerCrime: 2, mustLicense: false, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false, bribeFloor: 1, bribeCosts: [4, 6, 8, 10] },
       { name: 'shady', atLeast: -6, priceCut: 0, starsPerCrime: 1, mustLicense: false, coop: false, refuge: true, harbourBribe: true, dividend: false, blackMarket: true, bribeFloor: 2, bribeCosts: [6, 9, 12, 15] },
-      { name: 'outlaw', atLeast: -Infinity, priceCut: 1, starsPerCrime: 1, mustLicense: false, coop: false, refuge: false, harbourBribe: true, dividend: false, blackMarket: true, bribeFloor: 3, bribeCosts: [8, 12, 16, 20] },
+      { name: 'outlaw', atLeast: -Infinity, priceCut: 0, starsPerCrime: 1, mustLicense: false, coop: false, refuge: false, harbourBribe: true, dividend: false, blackMarket: true, bribeFloor: 3, bribeCosts: [8, 12, 16, 20] },
     ],
     step: {
       notch: 1, licence: 1, coopLanding: 1, report: 1,
