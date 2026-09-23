@@ -359,7 +359,7 @@ export interface Config {
   alignment: AlignmentConfig;
   heat: HeatConfig;
   closure: ClosureConfig;
-  dividend: { byHealth: { atLeast: number; money: number }[] };
+  dividend: { byHealth: { atLeast: number; money: number; paragon: number }[] }; // two columns: members, and paragons (paid more)
   // WARDEN PATROLS: at the start of every day, draw this many ocean spaces from the
   // patrol deck and put a warden boat on each — at least `base`, plus one per captain
   // on the dark side (Shady or Outlaw), up to `max`. Random area denial.
@@ -397,6 +397,7 @@ export interface AlignmentConfig {
     illegalKeep: number; poachHaul: number; steal: number; bribe: number; caught: number; darkRefit: number;
   };
   paragonFallTo: number;             // a Paragon who fails a heat check drops straight here
+  floorStarsPerCrime: number;        // pinned at the dark end: each crime that can't move you costs this many stars instead
   // Season-2 licences are players − this (index = player count). From season 3 on
   // there is one for everyone: a single squeeze that forces the issue.
   darkSlotsByPlayers: number[];

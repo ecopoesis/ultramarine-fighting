@@ -231,6 +231,7 @@ export const defaultConfig: Config = {
       illegalKeep: -1, poachHaul: -1, steal: -2, bribe: -1, caught: -2, darkRefit: -2,
     },
     paragonFallTo: -3, // top of Shady: a good name is a long way to fall
+    floorStarsPerCrime: 1, // an outlaw pinned at -10 pays for further crimes in stars
     darkSlotsByPlayers: [0, 0, 1, 1, 1, 2, 2], // index = player count; about a third, rounded to nearest
     squeezeSeason: 2,
     darkRefits: ['net', 'smoker'],
@@ -252,17 +253,17 @@ export const defaultConfig: Config = {
       { belowPct: 35, closedTo: ['neutral', 'shady', 'outlaw'] },
       { belowPct: 60, closedTo: ['shady', 'outlaw'] },
     ],
-    starsPerHaul: 1,
+    starsPerHaul: 2,  // was 1: in opus15 outlaws hauled closed water 17 times and the ocean fell to 9%
   },
   // The co-op's season-end dividend to licensed members Neutral or lighter, read off the
   // ocean's health (whole %). The light side's steady income depends on live water.
   dividend: {
     byHealth: [
-      { atLeast: 80, money: 8 },
-      { atLeast: 60, money: 6 },
-      { atLeast: 40, money: 4 },
-      { atLeast: 20, money: 2 },
-      { atLeast: 0, money: 0 },
+      { atLeast: 80, money: 8, paragon: 16 },
+      { atLeast: 60, money: 6, paragon: 12 },
+      { atLeast: 40, money: 4, paragon: 8 },
+      { atLeast: 20, money: 2, paragon: 4 },
+      { atLeast: 0, money: 0, paragon: 0 },
     ],
   },
 

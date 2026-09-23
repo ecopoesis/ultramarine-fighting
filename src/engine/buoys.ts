@@ -145,7 +145,7 @@ function settleHaul(d: GameState, playerId: string, r: { illegalKept: number; no
   const st = d.config.alignment.step;
   stepAlignment(d, p, r.notched * st.notch, `notched ${r.notched}`);
   if (r.illegalKept > 0) {
-    stepAlignment(d, p, r.illegalKept * st.illegalKeep, 'kept illegal catch');
+    stepAlignment(d, p, r.illegalKept * st.illegalKeep, 'kept illegal catch', r.illegalKept);
     commitCrimes(d, p, r.illegalKept, 'illegal catch aboard');
   }
 }
@@ -162,7 +162,7 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
   if (p.licensed === false) { // poaching: every trap you pull is illegal
     p.tracks.reputation += d.config.unlicensed.repPerHaul;
     d.log.push(`${p.name} hauls without a licence (${d.config.unlicensed.repPerHaul} reputation)`);
-    stepAlignment(d, p, d.config.alignment.step.poachHaul, 'poaching');
+    stepAlignment(d, p, d.config.alignment.step.poachHaul, 'poaching', 1);
     if (d.config.heat.poachHaulIsCrime) commitCrimes(d, p, 1, 'poaching');
   }
   // Closed water is still fishable — at a price in stars per pot pulled.
@@ -199,7 +199,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
   delete owner.soak[buoyId];
   owner.buoysAvailable += 1; // owner recovers the gear, loses the catch
   thief.tracks.reputation += d.config.rep.steal;
-  stepAlignment(d, thief, d.config.alignment.step.steal, 'theft');
+  stepAlignment(d, thief, d.config.alignment.step.steal, 'theft', 1);
   commitCrimes(d, thief, 1, 'theft');
   d.thefts.push({ victimId: ownerId, thiefId, value });
   d.log.push(`${thief.name} STEALS buoy ${buoyId} from ${owner.name} (value ~${value})`);

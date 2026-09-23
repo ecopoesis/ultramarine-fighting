@@ -5,7 +5,7 @@ import { reduce } from '../src/reducer';
 import { legalActions } from '../src/actions';
 import { activePlayerId } from '../src/selectors';
 import { BOTS } from '../src/bots';
-import { heatCheck, bandOf, licencesOnSale, bribeCost } from '../src/engine/alignment';
+import { heatCheck, bandOf, licencesOnSale, bribeCost, stepAlignment, payDividend } from '../src/engine/alignment';
 import { sell } from '../src/engine/market';
 import type { Config, GameState, Tile } from '../src/types';
 
@@ -71,6 +71,30 @@ describe('heat check', () => {
     const legal = legalActions(busted!, 'p1').map((a) => a.type);
     expect(legal).not.toContain('BERTH');
     expect(legal).not.toContain('REFUEL');
+  });
+});
+
+describe('the ends of the track', () => {
+  it('a crime at the dark end costs a star instead of alignment; a bribe there does not', () => {
+    const s = createInitialState(on, 1);
+    const p = s.players.p1;
+    p.tracks.alignment = on.alignment.min + 1; // one step of room left
+    stepAlignment(s, p, 3 * on.alignment.step.illegalKeep, 'kept illegal catch', 3);
+    expect(p.tracks.alignment).toBe(on.alignment.min);
+    expect(p.tracks.heat).toBe(2 * on.alignment.floorStarsPerCrime); // two of the three crimes had nowhere to go
+    stepAlignment(s, p, on.alignment.step.bribe, 'bribed the warden'); // not a crime
+    expect(p.tracks.heat).toBe(2 * on.alignment.floorStarsPerCrime);
+  });
+
+  it('paragons read the higher dividend column', () => {
+    const s = createInitialState(on, 1);
+    s.players.p1.tracks.alignment = on.alignment.max;            // paragon
+    s.players.p2.tracks.alignment = 0;                           // neutral
+    const m1 = s.players.p1.money, m2 = s.players.p2.money;
+    payDividend(s);
+    const row = on.dividend.byHealth[0];                         // a fresh ocean is healthy
+    expect(s.players.p1.money - m1).toBe(row.paragon);
+    expect(s.players.p2.money - m2).toBe(row.money);
   });
 });
 

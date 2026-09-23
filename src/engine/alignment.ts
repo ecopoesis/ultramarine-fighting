@@ -24,10 +24,22 @@ export function bandOf(d: GameState, p: PlayerState): AlignmentBand {
 }
 
 // Move along the track by whole steps, clamped to its printed ends.
-export function stepAlignment(d: GameState, p: PlayerState, delta: number, why: string): void {
+//
+// `crimes` marks a step as crimes (illegal keeps, poaching, theft, black-market gear).
+// THE BOTTOM OF THE VILLAIN ARC: once an Outlaw is pinned at the dark end, a crime can
+// no longer cost them alignment — measured, opus15's outlaws said so out loud ("I'm
+// already at −10, so poaching can't push me lower"). So each crime that would have
+// pushed them past the end costs a star instead.
+export function stepAlignment(d: GameState, p: PlayerState, delta: number, why: string, crimes = 0): void {
   if (!alignmentOn(d) || delta === 0) return;
   const { min, max } = d.config.alignment;
   const before = bandOf(d, p).name;
+  if (crimes > 0 && delta < 0) {
+    const perCrime = -delta / crimes;
+    const room = p.tracks.alignment - min;             // steps left before the end of the track
+    const overflowCrimes = Math.max(0, crimes - Math.floor(room / perCrime));
+    if (overflowCrimes > 0) addStars(d, p, overflowCrimes * d.config.alignment.floorStarsPerCrime, 'nowhere darker to go');
+  }
   p.tracks.alignment = Math.max(min, Math.min(max, p.tracks.alignment + delta));
   const after = bandOf(d, p).name;
   d.log.push(`${p.name} ${delta > 0 ? 'steps lighter' : 'steps darker'} (${why}): alignment ${p.tracks.alignment}${after !== before ? ` — now ${after.toUpperCase()}` : ''}`);
@@ -140,13 +152,15 @@ export function payDividend(d: GameState): void {
   if (!alignmentOn(d)) return;
   const pct = Math.floor(avgBagHealth(d) * 100);
   const row = d.config.dividend.byHealth.find((r) => pct >= r.atLeast);
-  const money = row?.money ?? 0;
-  if (money <= 0) { d.log.push(`The co-op pays no dividend — the ocean is at ${pct}%`); return; }
+  if (!row || (row.money <= 0 && row.paragon <= 0)) { d.log.push(`The co-op pays no dividend — the ocean is at ${pct}%`); return; }
+  // Two columns on the printed table: members, and PARAGONS, who are paid more.
   const paid: string[] = [];
   for (const p of Object.values(d.players)) {
     if (p.licensed === false || !bandOf(d, p).dividend) continue;
+    const money = bandOf(d, p).name === 'paragon' ? row.paragon : row.money;
+    if (money <= 0) continue;
     p.money += money;
-    paid.push(p.name);
+    paid.push(`${p.name} ${money}`);
   }
-  d.log.push(`The co-op pays a ${money} dividend (ocean ${pct}%) to ${paid.length ? paid.join(', ') : 'nobody'}`);
+  d.log.push(`The co-op pays its dividend (ocean ${pct}%: ${row.money}, paragons ${row.paragon}) to ${paid.length ? paid.join(', ') : 'nobody'}`);
 }

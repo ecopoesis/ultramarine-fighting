@@ -85,7 +85,7 @@ function switchboardSection(cfg: Config, players: number): string {
   });
   const slots = a.darkSlotsByPlayers[Math.min(players, a.darkSlotsByPlayers.length - 1)] ?? 0;
   const closures = cfg.closure.levels.map((l) => `below ${l.belowPct}% of its starting size → closed to ${l.closedTo.join(', ')}`).join('; ');
-  const dividend = cfg.dividend.byHealth.map((r) => `≥${r.atLeast}% → ${r.money}`).join(', ');
+  const dividend = cfg.dividend.byHealth.map((r) => `≥${r.atLeast}% → ${r.money} (paragons ${r.paragon})`).join(', ');
   const dark = cfg.upgrades.catalog.filter((u) => u.dark).map((u) => `${u.id} "${u.label}" (${u.slot}, ${u.cost})`).join(', ');
   return `## THE SWITCHBOARD — alignment and heat
 **Money is the only score.** Alignment and heat are not points. They decide HOW you can earn money.
@@ -99,7 +99,7 @@ ${bandRows.join('\n')}
 What moves you (whole steps, public):
 - LIGHTER: notch an egger +${st.notch} each; buy the season's licence +${st.licence}; land ${'a real catch'} at the co-op +${st.coopLanding}; report a theft against you +${st.report}.
 - DARKER: keep an illegal tile (egger, jumbo or short) ${st.illegalKeep} each; haul while unlicensed (poaching) ${st.poachHaul} per haul; steal a pot ${st.steal}; bribe the warden or the harbourmaster ${st.bribe}; buy a black-market refit ${st.darkRefit}; get busted by the warden ${st.caught}.
-You can cross in either direction, any time. Neutral is a real place to live, but it has neither side's perks. A PARAGON who gets busted falls straight to alignment ${a.paragonFallTo}.
+You can cross in either direction, any time. Neutral is a real place to live, but it has neither side's perks. A PARAGON who gets busted falls straight to alignment ${a.paragonFallTo}. At the dark END of the track (${a.min}) there is nowhere darker to go, so each further crime (illegal catch, poaching, theft, black-market gear) costs +${a.floorStarsPerCrime}★ instead, on top of the crime's own stars.
 
 ### Heat: 0–${h.max} stars. The warden's check happens every time you SELL.
 - A CRIME adds stars according to your band: ${a.bands.map((b) => `${b.name} ${b.starsPerCrime}★`).join(', ')}. Everyone expects an outlaw to cheat; a paragon who cheats is a scandal. Crimes: each illegal tile you keep; each theft; each haul with the illegal net${h.poachHaulIsCrime ? '; each unlicensed haul' : ''}. Hauling a pot from water CLOSED to your band adds +${cfg.closure.starsPerHaul}★ per pot. Being reported for theft adds +${h.reportedStars}★.
@@ -125,7 +125,7 @@ Every morning ${cfg.patrol.base === 1 ? 'one card' : `${cfg.patrol.base} cards`}
 Each ground's bag health is public. When a ground falls ${closures}. Closed water is still fishable, but every pot you haul there adds +${cfg.closure.starsPerHaul}★ to you. Light captains fish it freely.
 
 ### The co-op dividend
-At the end of every season the co-op pays each LICENSED member in a dividend band (Neutral or lighter) money read off the whole ocean's health: ${dividend}. It is the light side's steady income, and it depends on live water.
+At the end of every season the co-op pays each LICENSED member in a dividend band (Neutral or lighter) money read off the whole ocean's health, and PARAGONS are paid more: ${dividend}. It is the light side's steady income, and it depends on live water.
 
 ### The season ${a.squeezeSeason} licence squeeze
 In season ${a.squeezeSeason} only ${players - slots} licences are sold at this ${players}-player table, going down the bid order. Whoever is left over fishes unlicensed that season whether they meant to or not. From season ${a.squeezeSeason + 1} there is a licence for everyone again. HONEST and PARAGON captains MUST buy one when they can.

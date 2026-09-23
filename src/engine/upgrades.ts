@@ -125,7 +125,7 @@ export function buyUpgrade(d: GameState, pid: string, id: string): void {
   const stock = def.dark ? d.darkStock! : d.upgradeStock[p.node];
   const idx = stock.indexOf(id);
   if (idx >= 0) stock.splice(idx, 1); // pull it from the deck (the next one slides face-up)
-  if (def.dark) stepAlignment(d, p, d.config.alignment.step.darkRefit, `bought ${def.label.toLowerCase()} on the black market`);
+  if (def.dark) stepAlignment(d, p, d.config.alignment.step.darkRefit, `bought ${def.label.toLowerCase()} on the black market`, 1);
   if (def.buoyBonus) p.buoysAvailable += def.buoyBonus; // more hold space, right now
   d.log.push(`${p.name} refits: ${def.label} (-${def.cost} money) at ${p.node}`);
 }
