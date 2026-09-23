@@ -114,7 +114,14 @@ ${odds.join('\n')}
 - **Bribing the warden:** when you SELL you may buy dice off THIS roll only: \`SELL BRIBE <n>\`. Your BAND sets the price and how far down you can go (the band card): each die costs more than the last, the darker you are the more each costs, and ${a.bands.filter((b) => b.bribeFloor > 1).map((b) => `${/^[aeiou]/i.test(b.name) ? 'an' : 'a'} ${b.name.toUpperCase()} captain can never go below ${b.bribeFloor} dice`).join(' and ')}. So a hot outlaw always rolls with a real chance of a bust. Bribing steps you ${-st.bribe} darker. Your stars stay.
 - **Cooling off:** every day you do NOT sell, you lose ${h.coolPerDayUnsold}★ at nightfall. Lying low costs you a day's sales and lets the hold lose weight.
 
-### Closed water
+${cfg.flags.patrols ? `### Warden patrols
+Every morning ${cfg.patrol.base === 1 ? 'one card' : `${cfg.patrol.base} cards`}, plus one for every captain on the dark side (Shady or Outlaw) that morning, up to ${cfg.patrol.max}, come off the patrol deck (one card per ocean space), and a WARDEN BOAT goes on each drawn space. Their positions are public.
+- Wardens ignore captains with no stars.
+- A captain WITH stars who ENTERS a warden's space takes a heat check at sea, every time they enter, even the same boat twice in a day: one heat die per star, and no bribe out here. (A two-space steam only counts the space between if every route passes a warden.)
+- All blanks: nerves of steel, lose a star. A total of ${h.failAt} or more: BUSTED AT SEA. Your day is over, you are escorted home to ${cfg.map.startPort}, you step ${-st.caught} darker, and you launch LAST tomorrow (anyone stopped after you launches behind you). Your catch and pots stay yours.
+- One or two stars can never bust, so the boats only really threaten a hot captain. They bend your route; steer around them.
+
+` : ''}### Closed water
 Each ground's bag health is public. When a ground falls ${closures}. Closed water is still fishable, but every pot you haul there adds +${cfg.closure.starsPerHaul}★ to you. Light captains fish it freely.
 
 ### The co-op dividend

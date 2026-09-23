@@ -14,6 +14,26 @@ import { spaceHasRoom } from '../engine/buoys';
 import { auctionMinBid } from '../engine/auction';
 import { alignmentOn, portClosedTo, groundClosedTo, bribeCost, bribeableDice } from '../engine/alignment';
 import { pricePerLb } from '../engine/market';
+import { isWarden } from '../engine/patrol';
+
+// Only 3+ stars can bust (two heat dice top out at 4), so that is when a warden boat is
+// worth steering around.
+const wardenShy = (state: GameState, pid: string): boolean =>
+  (state.wardens?.length ?? 0) > 0 && state.players[pid].tracks.heat >= 3;
+
+// The next hop toward `target`, steering around warden boats when they matter: prefer a
+// step that gets as close (or goes one sideways) over one that lands on a warden.
+function steerToward(state: GameState, pid: string, target: string, reach: number): string | null {
+  const direct = hopToward(state, state.players[pid].node, target, reach);
+  if (!direct || !wardenShy(state, pid) || !isWarden(state, direct)) return direct;
+  const here = state.players[pid].node;
+  const now = distance(state, here, target);
+  const options = Object.keys(state.config.map.nodes)
+    .filter((n) => { const h = distance(state, here, n); return h >= 1 && h <= reach && !isWarden(state, n); })
+    .filter((n) => distance(state, n, target) <= now); // no further off than we are
+  options.sort((a, b) => distance(state, a, target) - distance(state, b, target) || a.localeCompare(b));
+  return options[0] ?? direct;
+}
 
 const UPGRADE_RESERVE = 10; // money a bot keeps in hand rather than sinking into a refit
 
@@ -210,6 +230,7 @@ function chooseTarget(
       for (const zone of groundNodesOfType(state, g)) {
         if (!okReach(zone) || buoys.some((b) => b.node === zone)) continue;
         if (!spaceHasRoom(state, zone)) continue; // that ground is already full of gear
+        if (wardenShy(state, pid) && isWarden(state, zone)) continue; // don't set gear under a warden while hot
         // Closed water: the light side never needs it barred; a dark bot works it only while cool.
         if (side === 'dark' && groundClosedTo(state, g, p) && p.tracks.heat + state.config.closure.starsPerHaul > (cc.heatCeiling ?? 3)) continue;
         const s = scoreZone(state, p.node, zone, g, cc);
@@ -325,7 +346,7 @@ export function makeCardCounter(cc: CardCounter): Policy {
       const tripActions = hops(distance(state, p.node, target)) + 1 + hops(distanceToNearestPort(state, target));
       const daylight = Math.ceil(tripActions / cfg.actionsPerTurn) <= hoursLeftToday(state);
       if (!last && targetIsGround && targetOk && daylight) {
-        const step = hopToward(state, p.node, target, hopReach);
+        const step = steerToward(state, pid, target, hopReach);
         const steam = step ? ofType(legal, 'STEAM').find((s) => s.to === step) : undefined;
         if (steam) return steam;
       }
@@ -344,14 +365,14 @@ export function makeCardCounter(cc: CardCounter): Policy {
     }
 
     // Steam toward the target (grounds only while a port is still reachable after).
-    const step = hopToward(state, p.node, target, hopReach);
+    const step = steerToward(state, pid, target, hopReach);
     if (step) {
       const steam = ofType(legal, 'STEAM').find((s) => s.to === step);
       if (steam && (!targetIsGround || targetOk)) return steam;
     }
     // Otherwise limp toward the nearest port.
     const homePort = nearestPort(state, p.node);
-    const homeStep = homePort ? hopToward(state, p.node, homePort, hopReach) : null;
+    const homeStep = homePort ? steerToward(state, pid, homePort, hopReach) : null;
     const homeSteam = homeStep ? ofType(legal, 'STEAM').find((s) => s.to === homeStep) : undefined;
     if (homeSteam) return homeSteam;
 

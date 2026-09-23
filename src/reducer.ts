@@ -14,6 +14,7 @@ import { stormWhittle } from './engine/weather';
 import { buyUpgrade, fuelCap } from './engine/upgrades';
 import { daysThisSeason } from './selectors';
 import { alignmentOn, portClosedTo, coolStars, payDividend } from './engine/alignment';
+import { placeWardens } from './engine/patrol';
 
 // Pure: returns a new state; never mutates the input. We clone once and mutate
 // the draft (engine fns operate on the draft), which keeps rule code readable.
@@ -122,6 +123,11 @@ function dayRollover(d: GameState): void {
       d.nextSlot++;
     }
   }
+  // Captains stopped by a patrol launch LAST, in the order they were stopped: whoever
+  // is stopped after you launches behind you.
+  const stopped = Object.values(d.players).filter((p) => p.patrolBustSeq !== undefined).sort((a, b) => a.patrolBustSeq! - b.patrolBustSeq!);
+  for (const p of stopped) { d.pendingNextOrder.push(p.id); d.nextSlot++; p.patrolBustSeq = undefined; }
+
   // last-slot sweetener: fuel AND standing. Whoever ends up at the back of tomorrow's
   // order let everyone else in ahead of them; the harbour notices.
   // THE POLE: first slot in tomorrow's order costs standing — to whoever ends up with
@@ -197,6 +203,7 @@ function dayRollover(d: GameState): void {
   if (d.day > daysThisSeason(d)) { seasonRollover(d); return; }
   d.hour = 1;
   d.activePlayerIndex = 0;
+  placeWardens(d); // this morning's patrol (switchboard + patrols only)
   // grant the first turn, skipping any boat still recovering from a tow (it loses
   // the morning). With small lostTurns vs hoursPerDay, someone is always eligible.
   for (let guard = 0; guard < 10000; guard++) {

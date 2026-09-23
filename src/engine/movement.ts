@@ -2,6 +2,7 @@ import type { GameState } from '../types';
 import { randInt } from '../rng';
 import { weatherOn, isStormed } from './weather';
 import { stepsPerSteam, isStormImmune } from './upgrades';
+import { patrolsOn, isWarden, patrolCheck } from './patrol';
 
 export function neighbors(state: GameState, node: string): string[] {
   const out: string[] = [];
@@ -35,6 +36,7 @@ export function distance(state: GameState, from: string, to: string): number {
 export function steam(d: GameState, playerId: string, to: string): void {
   const p = d.players[playerId];
   // A bigger engine moves several nodes per STEAM action; base ships hop one.
+  const from = p.node;
   const hops = distance(d, p.node, to);
   if (hops < 1 || hops > stepsPerSteam(d, p)) throw new Error(`Cannot steam ${p.node}->${to} in one action`);
   const cost = hops * d.config.map.fuelPerStep;
@@ -49,5 +51,16 @@ export function steam(d: GameState, playerId: string, to: string): void {
     const loss = Math.min(p.fuel, d.config.weather.hazardFuel);
     p.fuel -= loss;
     d.log.push(`${p.name} takes a beating in the storm at ${to} (-${loss} fuel, now ${p.fuel})`);
+  }
+
+  // Warden patrols: a captain with stars who enters a warden's space is checked. A long
+  // steam passes through the space between; at the table you'd steer around a boat, so
+  // it only counts if EVERY route through goes past one.
+  if (patrolsOn(d) && p.tracks.heat > 0) {
+    if (hops === 2) {
+      const middles = neighbors(d, from).filter((m) => neighbors(d, m).includes(to));
+      if (middles.length && middles.every((m) => isWarden(d, m)) && patrolCheck(d, p, middles[0])) return;
+    }
+    patrolCheck(d, p, to);
   }
 }

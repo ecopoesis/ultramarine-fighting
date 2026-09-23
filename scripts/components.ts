@@ -123,6 +123,10 @@ const woodRows: Row[] = [
   ...(al ? [
     { qty: `${MAX_PLAYERS}`, part: 'Alignment markers, player-coloured', text: `One per captain on the alignment track (${cfg.alignment.min} … +${cfg.alignment.max}). Everyone starts at 0.` },
     { qty: `${MAX_PLAYERS}`, part: 'Heat markers (stars), player-coloured', text: `One per captain on their heat track, 0–${cfg.heat.max}★.` },
+    ...(cfg.flags.patrols ? [
+      { qty: String(cfg.patrol.max), part: 'Warden boats', text: 'Placed each morning on the spaces drawn from the patrol deck.', note: `One, plus one per captain on the dark side that morning, up to ${cfg.patrol.max}. A captain with stars who enters a warden's space takes a heat check at sea (no bribe). Bust: day over, home to ${cfg.map.startPort}, launch last tomorrow.` },
+      { qty: String(grounds.length), part: 'Patrol deck', text: 'One card per ocean space.', note: 'Shuffle and draw each morning; every card drawn puts a warden boat on that space.' },
+    ] : []),
   ] : []),
   { qty: String(4), part: 'Lobster traps (one per ground)', text: 'A trap you can reach into.', note: 'Every lobster landed and sold goes into its home ground\'s trap rather than out of the game. At a season change the ground\'s breeding stock spawns and you draw that many back out BLIND — shake and take. You can see how full a trap is; you cannot see what is in it.' },
 ];

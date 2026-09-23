@@ -607,6 +607,25 @@ and did the switch pay.
 - Bots can test whether each side can win; only LLM captains can test whether
   switching is played well (the arena can't adapt, see CLAUDE.md).
 
+### 14.10a Warden patrols (`flags.patrols`)
+
+Random area denial for the dark side. Every morning, cards come off a PATROL DECK
+(one card per ocean space, 17) and a WARDEN BOAT goes on each drawn space: one boat,
+plus one per captain on the dark side (Shady or Outlaw) that morning, up to three.
+The more crooked the harbour, the more boats are out.
+
+- Wardens ignore captains with no stars.
+- A captain with stars who ENTERS a warden's space takes a heat check at sea, every
+  time, even against the same boat twice in a day. One die per star; no bribe at sea.
+  A two-space steam counts the space between only if every route passes a warden.
+- All blanks: nerves of steel, one star off. Bust: the day is over, the captain is
+  escorted home to Rockland, steps darker as for any bust, and launches LAST
+  tomorrow. Anyone stopped after them launches behind them.
+- *Assumed, not yet decided by the designer:* a bust at sea keeps the catch and gear.
+  The price is the day and the turn order.
+- Smart captains steer around the boats, so this may rarely fire. It bends routes;
+  it doesn't have to catch anyone.
+
 ### 14.11 How it gets tested
 
 1. **Bot arena first (free).** Fixed-policy bots are exactly right for this question:

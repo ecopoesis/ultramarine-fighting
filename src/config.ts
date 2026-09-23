@@ -266,5 +266,9 @@ export const defaultConfig: Config = {
     ],
   },
 
-  flags: { weather: true, seeded: true, upgrades: true, eras: false, multiShip: false, inspections: false, alignment: true },
+  // Warden patrols (flags.patrols, needs flags.alignment): boats drawn onto ocean spaces
+  // every morning. A captain with stars who enters one takes a heat check at sea.
+  patrol: { base: 1, perDarkCaptain: 1, max: 3 },
+
+  flags: { weather: true, seeded: true, upgrades: true, eras: false, multiShip: false, inspections: false, alignment: true, patrols: true },
 };

@@ -53,7 +53,7 @@ function pileSummary(state: GameState, g: Ground): string {
 
 function describeAction(state: GameState, a: Action): string {
   switch (a.type) {
-    case 'STEAM': return `STEAM ${a.to}${state.stormed.includes(a.to) ? ' (STORM)' : ''}`;
+    case 'STEAM': return `STEAM ${a.to}${state.stormed.includes(a.to) ? ' (STORM)' : ''}${state.wardens?.includes(a.to) && state.players[a.playerId].tracks.heat > 0 ? ' (WARDEN)' : ''}`;
     case 'DROP': return `DROP (${potCapacity(state) - potsOnNode(state, state.players[a.playerId].node)} of ${potCapacity(state)} berths left on this ground)`;
     case 'HAUL': return `HAUL ${a.buoyId}`;
     case 'STEAL': return `STEAL ${a.buoyId} (${state.players[a.ownerId].name}'s)`;
@@ -94,6 +94,7 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   const berthed = state.pendingNextOrder.map((id, i) => `${state.players[id].name}@${state.players[id].berthNode} slot${i}`);
   lines.push(`Berthed so far today: ${berthed.length ? berthed.join(', ') : 'nobody'} (next slot ${state.nextSlot})`);
   lines.push(`Storms this season: ${state.stormed.length ? state.stormed.join(', ') : 'none'}`);
+  if (state.wardens?.length) lines.push(`WARDEN BOATS today: ${state.wardens.join(', ')}${state.players[pid].tracks.heat > 0 ? ` — you have ${state.players[pid].tracks.heat}★: entering one of these spaces is a heat check at sea${state.players[pid].tracks.heat >= 3 ? ' that CAN BUST you' : ' (it cannot bust you at 1–2★)'}` : ' (they ignore you: no stars)'}`);
   lines.push('');
 
   // me

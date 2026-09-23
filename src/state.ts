@@ -3,6 +3,7 @@ import { buildBag, tileTemplate } from './tiles';
 import { placeStorms } from './engine/weather';
 import { seedSpaces } from './engine/seeded';
 import { generateUpgradeStock } from './engine/upgrades';
+import { placeWardens } from './engine/patrol';
 
 export function createInitialState(config: Config, seed = 12345, names?: string[]): GameState {
   const players: Record<string, PlayerState> = {};
@@ -88,6 +89,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
   placeStorms(state); // season 1 is calm by design → a no-op (no RNG), but honors a nonzero S1 track
   seedSpaces(state);  // season 1's generic lobsters onto every fishing space
   generateUpgradeStock(state); // stock each chandlery's refit display
+  placeWardens(state); // season 1, day 1's patrol (a no-op without the switchboard's patrols)
   state.log.push(`Season 1, Day 1 begins at ${config.map.startPort}. Order: ${ids.join(', ')}`);
   return state;
 }

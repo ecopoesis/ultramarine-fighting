@@ -62,6 +62,9 @@ export interface PlayerState {
   // Ports shut to this captain for the rest of the day — you dropped your catch and
   // ran from here. Cleared at the day rollover.
   barredPorts?: string[];
+  // Stopped by a warden patrol today (flags.patrols): the day is over and they launch
+  // last tomorrow, in the order they were stopped. Cleared at the day rollover.
+  patrolBustSeq?: number;
 }
 
 export type UpgradeSlot = 'stern' | 'midPrimary' | 'midSecondary';
@@ -137,6 +140,10 @@ export interface GameState {
   // The black-market refit stack (flags.alignment): not at any chandlery, sized to the
   // dark slots, open to Shady and darker at any market port.
   darkStock?: string[];
+  // WARDEN PATROLS (flags.patrols): the ocean spaces with a warden boat on them today,
+  // drawn from the patrol deck at the start of every day. Public.
+  wardens?: string[];
+  patrolBusts?: number; // how many captains the patrols have stopped today (launch order)
   nextSlot: number;
   pendingNextOrder: string[];
   thefts: TheftRecord[];
@@ -353,8 +360,12 @@ export interface Config {
   heat: HeatConfig;
   closure: ClosureConfig;
   dividend: { byHealth: { atLeast: number; money: number }[] };
+  // WARDEN PATROLS: at the start of every day, draw this many ocean spaces from the
+  // patrol deck and put a warden boat on each — at least `base`, plus one per captain
+  // on the dark side (Shady or Outlaw), up to `max`. Random area denial.
+  patrol: { base: number; perDarkCaptain: number; max: number };
 
-  flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean; alignment: boolean };
+  flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean; alignment: boolean; patrols: boolean };
 }
 
 export type BandName = 'paragon' | 'honest' | 'neutral' | 'shady' | 'outlaw';

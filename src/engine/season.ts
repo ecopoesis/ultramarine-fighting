@@ -4,6 +4,7 @@ import { seedSpaces } from './seeded';
 import { buoyCap } from './upgrades';
 import { enterAuction, auctionMinBid } from './auction';
 import { breedingRollover } from './breeding';
+import { placeWardens } from './patrol';
 
 // The season boundary: pull every pot, send the fleet home, let the protected stock
 // spawn, re-roll the weather, then open the new season — via the licence auction,
@@ -57,6 +58,7 @@ export function openSeason(d: GameState, order: string[]): void {
   d.day = 1;
   d.hour = 1;
   d.activePlayerIndex = 0;
+  placeWardens(d); // day one's patrol
   d.players[d.turnOrder[0]].actionsLeft = d.config.actionsPerTurn;
   d.log.push(`=== Season ${d.season} begins at ${d.config.map.startPort}. Order: ${order.map((id) => d.players[id].name).join(', ')} ===`);
 }

@@ -32,8 +32,8 @@ export function withOverrides(base: Config, kv: string[]): Config {
   return cfg;
 }
 
-interface Row { games: number; wins: number; money: number[]; busts: number; checks: number; unlicensedS2: number; unlicSeasons: number; finalAlign: number; forcedWins: number; forcedGames: number }
-const blank = (): Row => ({ games: 0, wins: 0, money: [], busts: 0, checks: 0, unlicensedS2: 0, unlicSeasons: 0, finalAlign: 0, forcedWins: 0, forcedGames: 0 });
+interface Row { games: number; wins: number; money: number[]; busts: number; checks: number; stops: number; seaBusts: number; unlicensedS2: number; unlicSeasons: number; finalAlign: number; forcedWins: number; forcedGames: number }
+const blank = (): Row => ({ games: 0, wins: 0, money: [], busts: 0, checks: 0, stops: 0, seaBusts: 0, unlicensedS2: 0, unlicSeasons: 0, finalAlign: 0, forcedWins: 0, forcedGames: 0 });
 
 function play(cfg: Config, seed: number, seats: string[]) {
   const names = seats.map((b, i) => `${b}#${i}`);
@@ -56,11 +56,15 @@ function play(cfg: Config, seed: number, seats: string[]) {
   const rows = score(s);
   const busts: Record<string, number> = {};
   const checks: Record<string, number> = {};
+  const stops: Record<string, number> = {};
+  const seaBusts: Record<string, number> = {};
   for (const l of s.log) {
     const m = l.match(/^(\S+)'s heat check: .*?(BUSTED)?$/);
     if (m) { checks[m[1]] = (checks[m[1]] ?? 0) + 1; if (m[2]) busts[m[1]] = (busts[m[1]] ?? 0) + 1; }
+    const w = l.match(/^A warden boat stops (\S+) at .*?(BUSTED at sea)?$/);
+    if (w) { stops[w[1]] = (stops[w[1]] ?? 0) + 1; if (w[2]) seaBusts[w[1]] = (seaBusts[w[1]] ?? 0) + 1; }
   }
-  return { s, rows, ids, names, unlicS2, unlicSeasons, busts, checks, health: avgBagHealth(s) };
+  return { s, rows, ids, names, unlicS2, unlicSeasons, busts, checks, stops, seaBusts, health: avgBagHealth(s) };
 }
 
 const sd = (xs: number[]) => { const m = xs.reduce((a, b) => a + b, 0) / xs.length; return Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / xs.length); };
@@ -94,6 +98,8 @@ for (const lu of lineups.length ? lineups : DEFAULT_LINEUPS) {
         row.wins += won;
         row.busts += r.busts[r.names[i]] ?? 0;
         row.checks += r.checks[r.names[i]] ?? 0;
+        row.stops += r.stops[r.names[i]] ?? 0;
+        row.seaBusts += r.seaBusts[r.names[i]] ?? 0;
         if (r.unlicS2[id]) row.unlicensedS2++;
         row.unlicSeasons += r.unlicSeasons[id] ?? 0;
         row.finalAlign += r.s.players[id].tracks.alignment;
@@ -116,6 +122,8 @@ for (const lu of lineups.length ? lineups : DEFAULT_LINEUPS) {
       'min–max': `${Math.min(...r.money)}–${Math.max(...r.money)}`,
       'busts/game': (r.busts / r.games).toFixed(2),
       'checks/game': (r.checks / r.games).toFixed(1),
+      'patrol stops': (r.stops / r.games).toFixed(2),
+      'sea busts': (r.seaBusts / r.games).toFixed(2),
       'unlic S2': `${((r.unlicensedS2 / r.games) * 100).toFixed(0)}%`,
       'end align': (r.finalAlign / r.games).toFixed(1),
       ...(r.forcedGames ? { 'forced-dark win': `${((r.forcedWins / r.forcedGames) * 100).toFixed(0)}% of ${r.forcedGames}` } : {}),
