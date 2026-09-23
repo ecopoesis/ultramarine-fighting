@@ -1,6 +1,6 @@
 import type { GameState, Ground, Tile } from '../types';
 import type { Action } from '../actions';
-import type { HaulPolicy } from '../engine/buoys';
+import type { HaulPolicy, EggerChoice } from '../engine/buoys';
 import { stageFor, isRipe } from '../engine/soak';
 import { pricePerLb } from '../engine/market';
 import { fuelPriceAt, isPort } from '../engine/ports';
@@ -193,7 +193,8 @@ export type Parsed =
   | { ok: false; error: string };
 
 const POLICIES: HaulPolicy[] = ['clean', 'highgrade', 'greedy'];
-const isModifier = (tok?: string) => !!tok && POLICIES.includes(tok.toLowerCase() as HaulPolicy);
+const EGGER_WORDS: Record<string, EggerChoice> = { 'keep-eggers': 'keep', keepeggers: 'keep', 'notch-eggers': 'notch', notcheggers: 'notch' };
+const isModifier = (tok?: string) => !!tok && (POLICIES.includes(tok.toLowerCase() as HaulPolicy) || tok.toLowerCase() in EGGER_WORDS);
 
 // Resolve one command string against the legal action set. GOTO resolves to its
 // first STEAM hop (the caller keeps the macro alive across turns).
@@ -205,6 +206,7 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
   const find = <T extends Action['type']>(type: T, pred?: (a: Extract<Action, { type: T }>) => boolean) =>
     legal.find((a) => a.type === type && (!pred || pred(a as Extract<Action, { type: T }>))) as Extract<Action, { type: T }> | undefined;
   const policyOf = (toks: string[]): HaulPolicy => (toks.map((t) => t.toLowerCase()).find((t) => POLICIES.includes(t as HaulPolicy)) as HaulPolicy) ?? 'clean';
+  const eggersOf = (toks: string[]): EggerChoice | undefined => toks.map((t) => EGGER_WORDS[t.toLowerCase()]).find(Boolean);
   const tokenOf = (toks: string[]) => toks.some((t) => t.toLowerCase() === 'token');
 
   if (state.phase === 'AUCTION') {
@@ -249,13 +251,13 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
       const id = isModifier(args[0]) ? undefined : args[0];
       const a = id ? find('HAUL', (h) => h.buoyId === id) : find('HAUL');
       if (!a) return { ok: false, error: `cannot HAUL ${id ?? ''} (not your ripe pot here, or no action points)` };
-      return { ok: true, action: { ...a, policy: policyOf(args) } };
+      return { ok: true, action: { ...a, policy: policyOf(args), eggers: eggersOf(args) } };
     }
     case 'STEAL': {
       const id = isModifier(args[0]) ? undefined : args[0];
       const a = id ? find('STEAL', (s) => s.buoyId === id) : find('STEAL');
       if (!a) return { ok: false, error: `cannot STEAL ${id ?? ''} (no ripe rival pot of that id here, or fewer than 2 action points)` };
-      return { ok: true, action: { ...a, policy: policyOf(args) } };
+      return { ok: true, action: { ...a, policy: policyOf(args), eggers: eggersOf(args) } };
     }
     case 'SELL': {
       const a = find('SELL');

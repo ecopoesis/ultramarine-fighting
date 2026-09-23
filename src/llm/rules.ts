@@ -122,7 +122,8 @@ ${drawLines.join('\n')}
   - clean: keep legal keepers (up to the keep limit, heaviest first), throw shorts and jumbos back, V-NOTCH every egger — which means giving up ${cfg.eggerWeightLb} lb of landable meat each time.
 - V-NOTCHING, and why eggers are FINITE: when you notch an egger you TAKE her out of the bag (+${cfg.rep.vNotch} conservation) and drop a V-NOTCHED lobster in her place, and her ground's BREEDING STOCK track goes up one (see section 9). The bag is the same size, but that lobster is now a protected breeder: whoever draws her later must release her and scores NOTHING. So each egger in the ocean pays exactly once, to whoever notches her first, and every notch leaves behind a tile that dilutes all future hauls — including your own. Notching is a choice about WHERE as well as whether: the water you protect is the water that comes back.
   - highgrade: like clean, but KEEP jumbos (${cfg.rep.illegalKeep} reputation each). Shorts still go back, eggers still v-notched.
-  - greedy: keep every illegal tile drawn, eggers included (${cfg.rep.illegalKeep} reputation per illegal tile; eggers kept this way earn nothing and are not v-notched).
+  - greedy: keep every illegal tile drawn, shorts, jumbos and eggers alike (${cfg.rep.illegalKeep} reputation per illegal tile).
+- EGGERS ARE YOUR CALL, separately from the policy: add keep-eggers or notch-eggers to a HAUL or STEAL. Without it, greedy keeps eggers and clean/highgrade notch them. A kept egger goes in your hold and SELLS like any lobster (${cfg.eggerWeightLb} lb at the market price), costs ${cfg.rep.illegalKeep} reputation, is not notched (no conservation, no breeding stock) and is gone from the ocean for good. A notched egger earns +${cfg.rep.vNotch} conservation and grows her ground's breeding stock, and you land nothing. Nobody can see what you drew; the reputation track is public.
   - Keepers over the keep limit go back in the bag.
 - Hauling returns the pot to your hand. A hauled catch goes to your HOLD.
 - SEEDED LOBSTERS: at the start of every season one generic ${cfg.seeded.weightLb} lb keeper is placed on EVERY fishing node, and they accumulate on nodes nobody fishes. Whoever hauls (or steals) a pot on a node first collects that node's whole seeded pile, before the bag draw. Neglected corners become jackpots.
@@ -179,8 +180,8 @@ Commands (one per string, uppercase keyword first):
 - STEAM <NODE> — move to an adjacent node (with a bigger engine, up to 2 nodes away).
 - GOTO <NODE> — macro: steam step by step toward NODE across as many turns as needed (spends 1 action per hop). Stops if fuel runs out or the day ends.
 - DROP — place a pot on this fishing ground.
-- HAUL <potId> [clean|highgrade|greedy] — haul your ripe pot here (default clean).
-- STEAL <potId> [clean|highgrade|greedy] — steal a rival's ripe pot here.
+- HAUL <potId> [clean|highgrade|greedy] [keep-eggers|notch-eggers] — haul your ripe pot here (default clean; eggers follow the policy unless you say).
+- STEAL <potId> [clean|highgrade|greedy] [keep-eggers|notch-eggers] — steal a rival's ripe pot here.
 - SELL — sell your whole hold at this market port.
 - REFUEL [units] — buy fuel here (default: fill the tank or spend what you can).
 - BUY <refitId> — install a face-up refit here.

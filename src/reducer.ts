@@ -40,8 +40,8 @@ function applyAction(d: GameState, a: Action): boolean {
   switch (a.type) {
     case 'STEAM': steam(d, a.playerId, a.to); return false;
     case 'DROP': dropBuoy(d, a.playerId); return false;
-    case 'HAUL': haulBuoy(d, a.playerId, a.buoyId, a.policy ?? 'clean'); return false;
-    case 'STEAL': stealBuoy(d, a.playerId, a.ownerId, a.buoyId, a.policy ?? 'clean'); return false;
+    case 'HAUL': haulBuoy(d, a.playerId, a.buoyId, a.policy ?? 'clean', a.eggers); return false;
+    case 'STEAL': stealBuoy(d, a.playerId, a.ownerId, a.buoyId, a.policy ?? 'clean', a.eggers); return false;
     case 'SELL': sell(d, a.playerId); return false;
     case 'REFUEL': {
       const p = d.players[a.playerId];

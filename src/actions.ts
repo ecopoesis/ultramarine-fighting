@@ -3,14 +3,14 @@ import { neighbors, distance } from './engine/movement';
 import { isPort, isMarketPort, fuelPriceAt } from './engine/ports';
 import { isRipe } from './engine/soak';
 import { upgradesOn, upgradeDisplay, canBuyUpgrade, freesAction, fuelCap, stepsPerSteam } from './engine/upgrades';
-import type { HaulPolicy } from './engine/buoys';
+import type { HaulPolicy, EggerChoice } from './engine/buoys';
 import { spaceHasRoom } from './engine/buoys';
 
 export type Action =
   | { type: 'STEAM'; playerId: string; to: string }
   | { type: 'DROP'; playerId: string }
-  | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy }
-  | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy }
+  | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy; eggers?: EggerChoice }
+  | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy; eggers?: EggerChoice }
   | { type: 'SELL'; playerId: string }
   | { type: 'REFUEL'; playerId: string; units: number }
   | { type: 'REPORT'; playerId: string }

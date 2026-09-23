@@ -57,9 +57,16 @@ export function dropBuoy(d: GameState, playerId: string): void {
 //               tiles that actually pay, without burning rep on worthless ones.
 export type HaulPolicy = 'clean' | 'greedy' | 'highgrade';
 
+// What to do with a berried female, chosen independently of the policy above, so a
+// captain can land her 4 lb without also taking every short and jumbo. Without this
+// the only way to keep an egger was `greedy`, nobody ever chose it, and conservation
+// measured who happened to draw eggers rather than who resisted keeping them. Omitted,
+// greedy keeps her and everything else notches — the old behaviour, so old logs replay.
+export type EggerChoice = 'notch' | 'keep';
+
 function resolveDraw(
   d: GameState, playerId: string, ground: Ground, stage: Stage, policy: HaulPolicy,
-  stormy = false,
+  stormy = false, eggers?: EggerChoice,
 ): void {
   const p = d.players[playerId];
   const rule = d.config.drawByStage[stage];
@@ -91,8 +98,8 @@ function resolveDraw(
       d.bags[ground].push(t);
       d.log.push(`${p.name} draws an already-notched breeder at ${ground} — released`);
     } else if (isEgger(t)) {
-      if (policy === 'greedy') {
-        p.hold.push(t); // illegal keep of a berried female (indiscriminate greed)
+      if ((eggers ?? (policy === 'greedy' ? 'keep' : 'notch')) === 'keep') {
+        p.hold.push(t); // illegal keep of a berried female: no log line — the public rep track is the only tell
         p.tracks.reputation += d.config.rep.illegalKeep;
       } else {
         // V-NOTCH: you TAKE the egger (she leaves the world as your scoring proof)
@@ -119,7 +126,7 @@ function resolveDraw(
   d.log.push(`${p.name} hauls (${ground}/${stage}): kept ${kept}`);
 }
 
-export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean'): void {
+export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean', eggers?: EggerChoice): void {
   const p = d.players[playerId];
   const idx = p.deployed.findIndex((b) => b.buoyId === buoyId);
   if (idx < 0) throw new Error('Not your buoy / not deployed');
@@ -133,14 +140,14 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
     d.log.push(`${p.name} hauls without a licence (${d.config.unlicensed.repPerHaul} reputation)`);
   }
   pullSeeded(d, playerId, buoy.node); // the space's seeded pile comes up first, then the bag
-  resolveDraw(d, playerId, rec.ground, stage, policy, d.stormed.includes(buoy.node));
+  resolveDraw(d, playerId, rec.ground, stage, policy, d.stormed.includes(buoy.node), eggers);
   // recover the gear
   p.deployed.splice(idx, 1);
   delete p.soak[buoyId];
   p.buoysAvailable += 1;
 }
 
-export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId: string, policy: HaulPolicy = 'clean'): void {
+export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId: string, policy: HaulPolicy = 'clean', eggers?: EggerChoice): void {
   const thief = d.players[thiefId];
   const owner = d.players[ownerId];
   const idx = owner.deployed.findIndex((b) => b.buoyId === buoyId);
@@ -153,7 +160,7 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
 
   const holdBefore = thief.hold.length;
   pullSeeded(d, thiefId, buoy.node); // the thief also grabs the space's seeded pile
-  resolveDraw(d, thiefId, rec.ground, stage, policy, d.stormed.includes(buoy.node));
+  resolveDraw(d, thiefId, rec.ground, stage, policy, d.stormed.includes(buoy.node), eggers);
   const stolen = thief.hold.slice(holdBefore);
   const value = stolen.reduce((s, t) => s + t.weightLb, 0) * refPrice(d);
 
