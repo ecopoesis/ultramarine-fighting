@@ -307,7 +307,7 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
     }
     case 'REFUEL': {
       const a = find('REFUEL');
-      if (!a) return { ok: false, error: 'cannot REFUEL (not at a port, tank full, no money, or no action points)' };
+      if (!a) return { ok: false, error: 'cannot REFUEL (not at a port, a port closed to you, tank full, no money, or no action points)' };
       const want = args[0] === undefined ? NaN : Number(args[0]);
       const units = Number.isFinite(want) ? Math.max(0, Math.min(Math.floor(want), a.units)) : a.units;
       if (units === 0) return { ok: false, error: 'REFUEL 0 buys nothing (omit the number to fill up, or give a positive amount)' };
@@ -316,7 +316,7 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
     case 'BUY': case 'BUY_UPGRADE': case 'REFIT': {
       const id = (args[0] ?? '').toLowerCase();
       const a = find('BUY_UPGRADE', (b) => b.upgradeId === id);
-      return a ? { ok: true, action: a } : { ok: false, error: `cannot BUY ${id || '?'} here (not face-up at this port, slot taken, or cannot afford it)` };
+      return a ? { ok: true, action: a } : { ok: false, error: `cannot BUY ${id || '?'} here (not face-up at this port or not open to your band, slot taken, a port closed to you, or cannot afford it)` };
     }
     case 'REPORT': {
       const a = find('REPORT');
@@ -324,7 +324,7 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
     }
     case 'BERTH': {
       const a = find('BERTH');
-      return a ? { ok: true, action: a } : { ok: false, error: 'cannot BERTH (must be at a port)' };
+      return a ? { ok: true, action: a } : { ok: false, error: 'cannot BERTH (must be at a port that will have you)' };
     }
     case 'BRIBE': {
       const a = find('BRIBE');
