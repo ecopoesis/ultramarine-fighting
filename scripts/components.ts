@@ -44,7 +44,7 @@ for (const [id, n] of markets) {
   boardRows.push({
     qty: '—',
     part: `${n.label} (market port)`,
-    text: `${m.base}/lb · −1/lb for every ${m.dropPerLbs} lb landed today · floor ${m.floor}/lb${m.rareBonus ? ` · rare +${m.rareBonus}/lb` : ''} · fuel ${n.port!.fuelCostPerUnit}/unit${m.coopRep ? ` · CO-OP: land ${m.coopMinLb}lb+ for +${m.coopRep} reputation` : ''}`,
+    text: `${m.base}/lb · −1/lb for every ${m.dropPerLbs} lb landed today · floor ${m.floor}/lb${m.rareBonus ? ` · rare +${m.rareBonus}/lb` : ''} · fuel ${n.port!.fuelCostPerUnit}/unit${m.coopRep ? (al ? ` · CO-OP: land ${m.coopMinLb}lb+ to step +${cfg.alignment.step.coopLanding} lighter (licensed, Neutral or lighter)` : ` · CO-OP: land ${m.coopMinLb}lb+ for +${m.coopRep} reputation`) : ''}`,
   });
 }
 for (const [, n] of shelters) {
