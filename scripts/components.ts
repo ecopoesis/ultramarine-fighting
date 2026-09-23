@@ -164,14 +164,14 @@ const hb = cfg.scoring.healthBuckets ?? [];
 const band = (b: (typeof cfg.alignment.bands)[number], i: number) => {
   const hi = i === 0 ? cfg.alignment.max : cfg.alignment.bands[i - 1].atLeast - 1;
   const lo = b.atLeast === -Infinity ? cfg.alignment.min : b.atLeast;
-  return `${b.name.toUpperCase().padEnd(8)} ${lo}…${hi}: ${[b.priceCut ? `−${b.priceCut}/lb` : 'full price', `${b.starsPerCrime}★/crime`, b.mustLicense ? 'must license' : '', b.coop ? 'co-op' : '', b.dividend ? 'dividend' : '', b.refuge ? '' : 'no refuge', b.blackMarket ? 'black market' : '', b.harbourBribe ? 'harbour bribe' : ''].filter(Boolean).join(' · ')}`;
+  return `${b.name.toUpperCase().padEnd(8)} ${lo}…${hi}: ${[b.priceCut ? `−${b.priceCut}/lb` : 'full price', `${b.starsPerCrime}★/crime`, b.mustLicense ? 'must license' : '', b.coop ? 'co-op' : '', b.dividend ? 'dividend' : '', b.refuge ? '' : 'no refuge', b.blackMarket ? 'black market' : '', b.harbourBribe ? 'harbour bribe' : '', `bribe ${b.bribeCosts.join('/')} to ${b.bribeFloor}d`].filter(Boolean).join(' · ')}`;
 };
 const st = cfg.alignment.step;
 const switchboardCards: Row[] = [
   { qty: '1', part: 'Scoring card', text: 'Most money wins. Nothing else scores.' },
   { qty: `${MAX_PLAYERS}`, part: 'Band cards', text: cfg.alignment.bands.map(band).join('\n'), note: `A Paragon who gets busted falls straight to ${cfg.alignment.paragonFallTo}.` },
   { qty: '1', part: 'Alignment card', text: [`LIGHTER: notch an egger +${st.notch} · buy the licence +${st.licence} · land at the co-op +${st.coopLanding} · report a theft +${st.report}`, `DARKER: keep an illegal tile ${st.illegalKeep} · poach a haul ${st.poachHaul} · steal ${st.steal} · bribe ${st.bribe} · black-market refit ${st.darkRefit} · busted ${st.caught}`].join('\n') },
-  { qty: '1', part: 'Heat card', text: [`A crime adds stars by your band (see the band card): each illegal tile kept, each theft, each haul with the illegal net. Closed water +${cfg.closure.starsPerHaul}★ a pot. Reported +${cfg.heat.reportedStars}★.`, `SELL with stars: roll one heat die per star and add them. Under ${cfg.heat.failAt}: the warden takes ${cfg.heat.takePerPoint} a point. ${cfg.heat.failAt}+: BUSTED — drop the catch, no pay, the port is shut to you today.`, `All blanks: nerves of steel, −1★. A day you don't sell: −${cfg.heat.coolPerDayUnsold}★.`, `Bribe dice off one roll (never below one): ${cfg.heat.bribePerDie.join(', ')} each, added up.`].join('\n') },
+  { qty: '1', part: 'Heat card', text: [`A crime adds stars by your band (see the band card): each illegal tile kept, each theft, each haul with the illegal net. Closed water +${cfg.closure.starsPerHaul}★ a pot. Reported +${cfg.heat.reportedStars}★.`, `SELL with stars: roll one heat die per star and add them. Under ${cfg.heat.failAt}: the warden takes ${cfg.heat.takePerPoint} a point. ${cfg.heat.failAt}+: BUSTED — drop the catch, no pay, the port is shut to you today.`, `All blanks: nerves of steel, −1★. A day you don't sell: −${cfg.heat.coolPerDayUnsold}★.`, 'Bribe dice off one roll, down to your band\'s floor: each die at the price on your band card, added up.'].join('\n') },
 ];
 const cardRows: Row[] = [
   ...(al ? switchboardCards : [{

@@ -371,6 +371,11 @@ export interface AlignmentBand {
   harbourBribe: boolean;  // may bribe the harbourmaster for the front berth
   dividend: boolean;      // shares the co-op's season dividend (if licensed)
   blackMarket: boolean;   // may buy from the black-market refit stack
+  // THE WARDEN'S PRICE, printed on the band's row. A bribe buys dice off one heat check,
+  // down to this floor and no further: the darker you are, the fewer dice you can shed
+  // (an outlaw always rolls at least three, so a hot outlaw always risks a bust).
+  bribeFloor: number;
+  bribeCosts: number[];   // the 1st, 2nd, … die bought off, added up: each costs more than the last
 }
 
 export interface AlignmentConfig {
@@ -394,7 +399,6 @@ export interface HeatConfig {
   dieFaces: number[];         // the heat die: 0,1,1,1,2,2
   failAt: number;             // a total at or over this: drop your catch and run. Keep it above the die's top face, so one star can never bust
   takePerPoint: number;       // under the line: the warden's take, money per point rolled
-  bribePerDie: number[];      // cost of the 1st, 2nd, … die bought off one check (never below one die)
   coolPerDayUnsold: number;   // stars shed for a day you stay away from the counter
   poachHaulIsCrime: boolean;  // does an unlicensed haul add stars, or only alignment?
   reportedStars: number;      // stars on a thief a victim reports (flat: the harbour now knows)

@@ -12,7 +12,7 @@ import {
 import { upgradesOn, upgradeDef, stepsPerSteam, fuelCap } from '../engine/upgrades';
 import { spaceHasRoom } from '../engine/buoys';
 import { auctionMinBid } from '../engine/auction';
-import { alignmentOn, portClosedTo, groundClosedTo, bribeCost } from '../engine/alignment';
+import { alignmentOn, portClosedTo, groundClosedTo, bribeCost, bribeableDice } from '../engine/alignment';
 import { pricePerLb } from '../engine/market';
 
 const UPGRADE_RESERVE = 10; // money a bot keeps in hand rather than sinking into a refit
@@ -290,8 +290,8 @@ export function makeCardCounter(cc: CardCounter): Policy {
         // (a day away from the counter cools a star) — unless the season is ending.
         const holdValue = p.hold.reduce((v, t) => v + t.weightLb * pricePerLb(state, p.node, t.color === 'rare'), 0);
         const safe = cc.safeDice ?? 2;
-        let buy = Math.max(0, p.tracks.heat - safe);
-        while (buy > 0 && (bribeCost(state, p.tracks.heat, buy) > p.money || bribeCost(state, p.tracks.heat, buy) > holdValue / 2)) buy--;
+        let buy = Math.min(bribeableDice(state, p), Math.max(0, p.tracks.heat - safe));
+        while (buy > 0 && (bribeCost(state, p, buy) > p.money || bribeCost(state, p, buy) > holdValue / 2)) buy--;
         const dice = p.tracks.heat - buy;
         if (dice > (cc.maxDiceToSell ?? 3) && !last) {
           const berthAction = firstOfType(legal, 'BERTH');

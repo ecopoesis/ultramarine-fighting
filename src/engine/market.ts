@@ -24,14 +24,23 @@ export function sell(d: GameState, playerId: string, bribeDice = 0): void {
 
   // Under the table: a dark captain's buyer knocks whole money off every pound.
   const cut = alignmentOn(d) ? bandOf(d, p).priceCut : 0;
-  // snapshot price on the lbs sold so far today at this port; then add this volume
+  // A sale floods its OWN price. Lay the hold out one lobster at a time, best first
+  // (rare, then heaviest — what any captain would do): each is paid at the price the
+  // track stands at when it lands, then the marker moves down by its weight. Pricing
+  // the whole hold at the pre-sale price let a hoarded 159 lb hold sell for 805 in one
+  // go without denting its own market (opus13) — only the captains after you paid for
+  // the flood. It stays hand-computable: step down the price track as you lay tiles.
   let revenue = 0;
   let lbs = 0;
-  for (const t of p.hold) {
-    revenue += t.weightLb * Math.max(0, pricePerLb(d, p.node, t.color === 'rare') - cut);
+  let cutLoss = 0;
+  const order = [...p.hold].sort((a, b) => (Number(b.color === 'rare') - Number(a.color === 'rare')) || (b.weightLb - a.weightLb));
+  for (const t of order) {
+    const price = pricePerLb(d, p.node, t.color === 'rare');
+    revenue += t.weightLb * Math.max(0, price - cut);
+    cutLoss += t.weightLb * Math.min(cut, price);
     lbs += t.weightLb;
+    d.markets[p.node].lbsSoldToday += t.weightLb; // the flood lands as you sell, and stays for the day
   }
-  d.markets[p.node].lbsSoldToday += lbs; // flood: depresses THIS port for the rest of the day
   p.soldToday = true;
 
   // THE WARDEN'S CHECK (flags.alignment): one heat die per star. Bust, and you drop the
@@ -66,7 +75,7 @@ export function sell(d: GameState, playerId: string, bribeDice = 0): void {
     if (alignmentOn(d)) stepAlignment(d, p, d.config.alignment.step.coopLanding, 'landed at the co-op');
     else d.log.push(`${p.name} lands at the co-op (+${coop} reputation, now ${p.tracks.reputation})`);
   }
-  d.log.push(`${p.name} sells ${p.hold.length} tiles (${lbs}lb) at ${p.node} for ${revenue.toFixed(1)}${cut > 0 ? ` (under the table: ${cut * lbs} less)` : ''}`);
+  d.log.push(`${p.name} sells ${p.hold.length} tiles (${lbs}lb) at ${p.node} for ${revenue.toFixed(1)}${cutLoss > 0 ? ` (under the table: ${cutLoss} less)` : ''}`);
   // Sold BAG lobsters aren't destroyed — they land on their home bag's extraction
   // pile, where the inter-season restock draft can return some to the commons.
   // Seeded (generic) lobsters are an OPEN injection: they leave the world on sale.

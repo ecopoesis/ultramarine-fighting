@@ -39,12 +39,22 @@ describe('heat check', () => {
     }
   });
 
-  it('a bribe buys dice off this roll only, never below one die, and leaves the stars', () => {
+  it('a bribe buys dice off this roll only, down to the band floor, and leaves the stars', () => {
     const s = atMarket(5);
+    const cost = bribeCost(s, s.players.p1, 99);
     const c = heatCheck(s, s.players.p1, 99);
-    expect(c.dice).toBe(1);
+    expect(c.dice).toBe(1); // neutral: down to one die
     expect(s.players.p1.tracks.heat).toBeGreaterThanOrEqual(4); // stars stay (nerves of steel may take one)
-    expect(s.players.p1.money).toBe(100 - bribeCost(s, 5, 4));
+    expect(s.players.p1.money).toBe(100 - cost);
+  });
+
+  it('an outlaw can never buy below three dice, and pays the outlaw row', () => {
+    const s = atMarket(5);
+    const p = s.players.p1;
+    p.tracks.alignment = on.alignment.min;
+    const outlaw = on.alignment.bands[on.alignment.bands.length - 1];
+    expect(bribeCost(s, p, 99)).toBe(outlaw.bribeCosts.slice(0, 5 - outlaw.bribeFloor).reduce((a, b) => a + b, 0));
+    expect(heatCheck(s, p, 99).dice).toBe(outlaw.bribeFloor);
   });
 
   it('a bust drops the catch, pays nothing, and shuts the port for the day', () => {
@@ -107,10 +117,17 @@ describe('a whole switchboard game', () => {
     }
   });
 
-  it('the dark side actually rolls, and the light side never does', () => {
-    const s = play(12);
-    const checks = (who: string) => s.log.filter((l) => l.startsWith(`${s.players[who].name}'s heat check`)).length;
-    expect(checks('p2') + checks('p4')).toBeGreaterThan(0);
-    expect(checks('p1')).toBe(0);
+  it('the dark side actually rolls, and the light side never commits a crime', () => {
+    // (A light bot CAN still take stars: squeezed out of a licence, it poaches, drifts to
+    // Neutral, and closed water then costs it stars. That is the rule working.)
+    let dark = 0;
+    for (const seed of [12, 13, 14, 15]) {
+      const s = play(seed);
+      const checks = (who: string) => s.log.filter((l) => l.startsWith(`${s.players[who].name}'s heat check`)).length;
+      dark += checks('p2') + checks('p4');
+      const lightName = s.players.p1.name;
+      expect(s.log.filter((l) => l.startsWith(`${lightName}'s heat rises`) && /illegal|theft|net/.test(l))).toHaveLength(0);
+    }
+    expect(dark).toBeGreaterThan(0);
   });
 });

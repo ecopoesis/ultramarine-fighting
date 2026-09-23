@@ -90,10 +90,16 @@ export function licencesOnSale(d: GameState): number {
 
 // ---- the warden's check at the counter ----
 
-// What a captain would pay to buy `dice` dice off a check at this heat.
-export function bribeCost(d: GameState, heat: number, dice: number): number {
-  const buy = Math.max(0, Math.min(dice, heat - 1)); // never below one die
-  const row = d.config.heat.bribePerDie;
+// How many dice this captain may buy off a check at their heat: down to their band's
+// floor and no further (and never below one die).
+export function bribeableDice(d: GameState, p: PlayerState): number {
+  return Math.max(0, p.tracks.heat - Math.max(1, bandOf(d, p).bribeFloor));
+}
+
+// What this captain would pay to buy `dice` dice off a check, read off their band's row.
+export function bribeCost(d: GameState, p: PlayerState, dice: number): number {
+  const buy = Math.max(0, Math.min(dice, bribeableDice(d, p)));
+  const row = bandOf(d, p).bribeCosts;
   let cost = 0;
   for (let i = 0; i < buy; i++) cost += row[Math.min(i, row.length - 1)];
   return cost;
@@ -107,11 +113,11 @@ export function heatCheck(d: GameState, p: PlayerState, bribeDice = 0): HeatChec
   const none: HeatCheck = { rolled: false, dice: 0, total: 0, failed: false, take: 0, nerves: false };
   if (!alignmentOn(d) || p.tracks.heat <= 0) return none;
   const h = d.config.heat;
-  // Buy dice off, dearest last, as far as the money goes.
-  let buy = Math.max(0, Math.min(bribeDice, p.tracks.heat - 1));
-  while (buy > 0 && bribeCost(d, p.tracks.heat, buy) > p.money) buy--;
+  // Buy dice off, down to the band's floor, as far as the money goes.
+  let buy = Math.max(0, Math.min(bribeDice, bribeableDice(d, p)));
+  while (buy > 0 && bribeCost(d, p, buy) > p.money) buy--;
   if (buy > 0) {
-    const cost = bribeCost(d, p.tracks.heat, buy);
+    const cost = bribeCost(d, p, buy);
     p.money -= cost;
     d.log.push(`${p.name} pays the warden ${cost} to look away (${buy} fewer heat ${buy === 1 ? 'die' : 'dice'})`);
     stepAlignment(d, p, d.config.alignment.step.bribe, 'bribed the warden');

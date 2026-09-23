@@ -9,7 +9,7 @@ import { potCapacity, potsOnNode } from '../engine/buoys';
 import { diceFor } from '../engine/breeding';
 import { hopToward } from '../bots/helpers';
 import { daysThisSeason, activePlayerId } from '../selectors';
-import { alignmentOn, bandOf, groundClosedTo, groundHealthPct, portClosedTo, bribeCost, licencesOnSale } from '../engine/alignment';
+import { alignmentOn, bandOf, groundClosedTo, groundHealthPct, portClosedTo, bribeCost, bribeableDice, licencesOnSale } from '../engine/alignment';
 import { darkOffer } from '../engine/upgrades';
 
 // The captain's VIEW: a compact text rendering of everything a player is allowed
@@ -61,8 +61,8 @@ function describeAction(state: GameState, a: Action): string {
       const me = state.players[a.playerId];
       if (!alignmentOn(state) || me.tracks.heat <= 0) return 'SELL';
       const n = me.tracks.heat;
-      const offers = Array.from({ length: n - 1 }, (_, i) => `BRIBE ${i + 1} = ${bribeCost(state, n, i + 1)}`).join(', ');
-      return `SELL (heat check: ${n} ${n === 1 ? 'die' : 'dice'}${offers ? `; ${offers}` : ''})`;
+      const offers = Array.from({ length: bribeableDice(state, me) }, (_, i) => `BRIBE ${i + 1} = ${bribeCost(state, me, i + 1)}`).join(', ');
+      return `SELL (heat check: ${n} ${n === 1 ? 'die' : 'dice'}${offers ? `; ${offers}` : `; your band cannot buy any off`})`;
     }
     case 'REFUEL': return `REFUEL (up to ${a.units})`;
     case 'REPORT': return 'REPORT';
@@ -110,7 +110,7 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
     : `YOU — ${p.name}: at ${where} | fuel ${p.fuel}/${fuelCap(state, p)} | money ${p.money.toFixed(1)} | reputation ${p.tracks.reputation} | conservation ${p.tracks.conservation} | pots in hand ${p.buoysAvailable}/${buoyCap(state, p)} | sold today: ${p.soldToday ? 'yes' : 'no'}`);
   if (al) {
     const b = bandOf(state, p);
-    lines.push(`Your band switches: ${b.priceCut ? `markets pay you ${b.priceCut} less per lb` : 'full price'}; a crime costs you ${b.starsPerCrime}★; ${b.coop ? 'co-op open' : 'co-op CLOSED'}; ${b.dividend ? 'dividend if licensed' : 'no dividend'}; ${b.mustLicense ? 'you MUST buy the licence' : 'licence optional'}${b.refuge ? '' : '; the outer shelters turn you away'}${b.blackMarket ? '; black market open' : ''}${b.harbourBribe ? '; may bribe the harbourmaster' : ''}`);
+    lines.push(`Your band switches: ${b.priceCut ? `markets pay you ${b.priceCut} less per lb` : 'full price'}; a crime costs you ${b.starsPerCrime}★; warden bribes ${b.bribeCosts.join('/')} a die, down to ${b.bribeFloor} ${b.bribeFloor === 1 ? 'die' : 'dice'}; ${b.coop ? 'co-op open' : 'co-op CLOSED'}; ${b.dividend ? 'dividend if licensed' : 'no dividend'}; ${b.mustLicense ? 'you MUST buy the licence' : 'licence optional'}${b.refuge ? '' : '; the outer shelters turn you away'}${b.blackMarket ? '; black market open' : ''}${b.harbourBribe ? '; may bribe the harbourmaster' : ''}`);
     if (p.barredPorts?.length) lines.push(`*** CLOSED TO YOU TODAY (you ran): ${p.barredPorts.join(', ')} — you cannot sell, refuel or berth there. ***`);
   }
   lines.push(`Your hold: ${holdSummary(p.hold)}`);

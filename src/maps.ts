@@ -17,9 +17,13 @@ export interface MapConfig {
 }
 
 // Shared economics, so a reshape does not silently re-tune the markets as well.
-const ROCKLAND_PORT: PortConfig = { fuelCostPerUnit: 1, market: { base: 5, dropPerLbs: 2, floor: 2, rareBonus: 0, coopRep: 3, coopMinLb: 5 } };
-const VINALHAVEN_PORT: PortConfig = { fuelCostPerUnit: 2, market: { base: 7, dropPerLbs: 1, floor: 3, rareBonus: 1 } };
-const STONINGTON_PORT: PortConfig = { fuelCostPerUnit: 2, market: { base: 6, dropPerLbs: 3, floor: 3, rareBonus: 1 } };
+// dropPerLbs tripled (2/1/3 → 6/3/9) when a sale began flooding its OWN price: the old
+// steps were tuned for a seller who never felt their own flood, and under self-flooding
+// they cut an ordinary 9 lb landing's price per lb by a third and pushed the fleet into
+// fuel poverty. At ×3 a normal landing keeps its value and a hoard still pays for itself.
+const ROCKLAND_PORT: PortConfig = { fuelCostPerUnit: 1, market: { base: 5, dropPerLbs: 6, floor: 2, rareBonus: 0, coopRep: 3, coopMinLb: 5 } };
+const VINALHAVEN_PORT: PortConfig = { fuelCostPerUnit: 2, market: { base: 7, dropPerLbs: 3, floor: 3, rareBonus: 1 } };
+const STONINGTON_PORT: PortConfig = { fuelCostPerUnit: 2, market: { base: 6, dropPerLbs: 9, floor: 3, rareBonus: 1 } };
 const SHELTER: PortConfig = { fuelCostPerUnit: 4, shelter: true };
 
 // ---------------------------------------------------------------------------

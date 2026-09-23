@@ -178,8 +178,12 @@ function dayRollover(d: GameState): void {
 
   // hold decay + reset day flags + recover prices
   for (const p of Object.values(d.players)) {
+    // Everything caught spoils in the hold, eggers included. Only keepers and jumbos
+    // used to lose weight — a leftover from before anyone fished for eggers — so a hold
+    // of kept eggers could be hoarded for free while its owner lay low (opus13). A tile
+    // that weighs nothing (a short) has nothing to lose.
     p.hold = p.hold
-      .map((t) => (t.kind === 'KEEPER' || t.kind === 'JUMBO'
+      .map((t) => (t.weightLb > 0
         ? { ...t, weightLb: Math.max(1, t.weightLb - d.config.holdDecayLbPerDay) }
         : t));
     p.soldToday = false;

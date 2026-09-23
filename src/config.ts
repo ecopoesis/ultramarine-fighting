@@ -135,7 +135,7 @@ export const defaultConfig: Config = {
       { id: 'cargo', label: 'Cargo hold', slot: 'midSecondary', cost: 14, buoyBonus: 1 },           // + one buoy
       { id: 'tank', label: 'Bigger tanks', slot: 'midSecondary', cost: 10, fuelBonus: 6 },          // + fuel capacity
       // BLACK MARKET (flags.alignment) — never at a chandlery; a small stack for Shady and darker.
-      { id: 'net', label: 'Illegal net', slot: 'midSecondary', cost: 12, dark: true, bonusDraws: 2 },     // +2 tiles drawn per haul; every haul with it is a crime
+      { id: 'net', label: 'Illegal net', slot: 'midSecondary', cost: 12, dark: true, bonusDraws: 3 },     // +3 tiles drawn (and kept) per haul; every haul with it is a crime
       { id: 'smoker', label: 'Cheap engine', slot: 'stern', cost: 9, dark: true, stepsPerSteam: 2, pollutes: 1 }, // the big engine's reach for half the price — and every haul you make strips another tile off that ground
     ],
     perPortStock: 6, // each of the 3 market ports stocks this many refit tokens (drawn from the catalog)
@@ -220,11 +220,11 @@ export const defaultConfig: Config = {
     // more you must pay your dues; the darker, the worse the market pays and the more
     // doors close — but the more of the catch you keep.
     bands: [
-      { name: 'paragon', atLeast: 7, priceCut: 0, starsPerCrime: 5, mustLicense: true, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false },
-      { name: 'honest', atLeast: 3, priceCut: 0, starsPerCrime: 3, mustLicense: true, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false },
-      { name: 'neutral', atLeast: -2, priceCut: 0, starsPerCrime: 2, mustLicense: false, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false },
-      { name: 'shady', atLeast: -6, priceCut: 0, starsPerCrime: 1, mustLicense: false, coop: false, refuge: true, harbourBribe: true, dividend: false, blackMarket: true },
-      { name: 'outlaw', atLeast: -Infinity, priceCut: 1, starsPerCrime: 1, mustLicense: false, coop: false, refuge: false, harbourBribe: true, dividend: false, blackMarket: true },
+      { name: 'paragon', atLeast: 7, priceCut: 0, starsPerCrime: 5, mustLicense: true, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false, bribeFloor: 1, bribeCosts: [4, 6, 8, 10] },
+      { name: 'honest', atLeast: 3, priceCut: 0, starsPerCrime: 3, mustLicense: true, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false, bribeFloor: 1, bribeCosts: [4, 6, 8, 10] },
+      { name: 'neutral', atLeast: -2, priceCut: 0, starsPerCrime: 2, mustLicense: false, coop: true, refuge: true, harbourBribe: false, dividend: true, blackMarket: false, bribeFloor: 1, bribeCosts: [4, 6, 8, 10] },
+      { name: 'shady', atLeast: -6, priceCut: 0, starsPerCrime: 1, mustLicense: false, coop: false, refuge: true, harbourBribe: true, dividend: false, blackMarket: true, bribeFloor: 2, bribeCosts: [6, 9, 12, 15] },
+      { name: 'outlaw', atLeast: -Infinity, priceCut: 1, starsPerCrime: 1, mustLicense: false, coop: false, refuge: false, harbourBribe: true, dividend: false, blackMarket: true, bribeFloor: 3, bribeCosts: [8, 12, 16, 20] },
     ],
     step: {
       notch: 1, licence: 1, coopLanding: 1, report: 1,
@@ -239,8 +239,7 @@ export const defaultConfig: Config = {
     max: 5,
     dieFaces: [0, 1, 1, 1, 2, 2], // averages just over 1, tops out at 2: the total climbs, never spikes
     failAt: 5,                    // 1–2 dice never bust; 3 dice 20%, 4 dice 56%, 5 dice 81%
-    takePerPoint: 2,              // under the line, the warden's take: money per point rolled
-    bribePerDie: [4, 6, 8, 10],   // 1st die bought off a check, 2nd, … — the last safe die is the dearest
+    takePerPoint: 1,              // under the line, the warden's take: money per point rolled
     coolPerDayUnsold: 1,          // stay away from the counter for a day: one star cools
     poachHaulIsCrime: false,      // an unlicensed haul costs alignment; the warden cares what's in the hold
     reportedStars: 1,
