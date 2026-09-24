@@ -3,6 +3,8 @@ import { dirname } from 'node:path';
 import { defaultConfig } from '../src/config';
 import { tileTemplate } from '../src/tiles';
 import type { Config, Ground } from '../src/types';
+import { FONTS, BASE_CSS } from './lib/docStyle';
+import { actionLines } from './lib/actionsText';
 
 // THE COMPONENT MANIFEST — everything that goes in the box, generated FROM src/config.ts
 // so it can never drift from the rules the engine actually plays. Counts are quoted at
@@ -17,6 +19,10 @@ const MAX_PLAYERS = 6;
 const al = cfg.flags.alignment;
 const darkSlots = (n: number) => cfg.alignment.darkSlotsByPlayers[Math.min(n, cfg.alignment.darkSlotsByPlayers.length - 1)] ?? 0;
 const darkRefits = cfg.upgrades.catalog.filter((u) => u.dark);
+// Spare generic lobsters for breeding top-ups from empty traps (counterfactual: about 5-10 a game).
+const GENERIC_SPARE = 30;
+// The refit slots as printed on the mat (the engine's ids are stern / midPrimary / midSecondary).
+const SLOT: Record<string, string> = { stern: 'stern', midPrimary: 'amidships', midSecondary: 'deck' };
 const deckRefits = cfg.upgrades.catalog.filter((u) => !u.dark || !al);
 const scale = MAX_PLAYERS / cfg.referencePlayers;
 const GROUNDS: Ground[] = ['inshore', 'mid', 'offshore', 'deep'];
@@ -82,6 +88,14 @@ if (al) {
   boardRows.push({ qty: '—', part: 'Co-op dividend table (printed on board)', text: cfg.dividend.byHealth.map((r) => `ocean ${r.atLeast}%+ → ${r.money} · paragon ${r.paragon}`).join('\n'), note: 'Paid at every season end to each licensed captain in a dividend band (Neutral or lighter); Paragons read the second column.' });
   boardRows.push({ qty: '—', part: `Season ${cfg.alignment.squeezeSeason} licence count (printed on board)`, text: [3, 4, 5, 6].map((n) => `${n} players: ${n - darkSlots(n)} licences`).join(' · '), note: `Season ${cfg.alignment.squeezeSeason} only; from season ${cfg.alignment.squeezeSeason + 1} there is one for everyone.` });
 }
+boardRows.push({ qty: '—', part: 'Day and hour track (printed on board)', text: `Days 1–${Math.max(...(cfg.daysSchedule ?? [cfg.daysPerSeason]))} · Hours 1–${cfg.hoursPerDay}`, note: `Each hour every captain still out takes one turn of ${cfg.actionsPerTurn} actions, in turn order.` });
+boardRows.push({ qty: '—', part: 'Turn order track (printed on board)', text: `${MAX_PLAYERS} slots: today's order, left to right.`, note: 'Season day 1: the licence auction\'s bid order. Every other day: yesterday\'s berth order.' });
+for (const [, n] of markets) {
+  const m = n.port!.market!;
+  const steps: string[] = [];
+  for (let p = m.base, lb = 0; p >= m.floor; p--, lb += m.dropPerLbs) steps.push(p === m.floor ? `${p} (floor, ${lb}+ lb)` : `${p} (${lb} lb)`);
+  boardRows.push({ qty: '—', part: `${n.label} price track (printed on board)`, text: steps.join(' → '), note: 'The price marker starts each day at the top. Every lobster sold here pushes it down by its weight, a sale\'s own lobsters included; overnight it goes back to the top.' });
+}
 boardRows.push({ qty: '—', part: 'Landmarks (printed, decorative)', text: (cfg.map.landmarks ?? []).map((l) => l.name).join(' · ') });
 
 // ---------- lobster tiles ----------
@@ -116,19 +130,26 @@ const potsEach = cfg.buoysPerPlayer + Math.max(0, ...cfg.upgrades.catalog.map((u
 
 const woodRows: Row[] = [
   { qty: String(eggerTotal), part: 'V-notch lobster meeples', text: 'A notched breeder, released.', note: `Take the egger out of the bag and put one of these in her place. She can never be scored again: whoever draws her releases her for nothing. One per egger in the game (${eggerTotal} at ${MAX_PLAYERS} players).` },
-  { qty: String(seededTotal), part: 'Seeded lobsters (generic)', text: `${cfg.seeded.weightLb} lb`, note: `${cfg.seeded.perSeason} placed on every fishing ground at the start of each season, accumulating on grounds nobody works. The first haul on a space takes the whole pile.` },
+  { qty: String(seededTotal + (cfg.breeding.emptyTrapGeneric ? GENERIC_SPARE : 0)), part: 'Generic lobsters', text: `${cfg.seeded.weightLb} lb`, note: `${cfg.seeded.perSeason} placed on every fishing ground at the start of each season (${seededTotal} over a game), piling up on grounds nobody works; the first haul on a space takes the whole pile.${cfg.breeding.emptyTrapGeneric ? ` Plus ${GENERIC_SPARE} spare: when a breeding spawn empties a trap, the rest come back as generic lobsters.` : ''} Sold, they go back to this supply, not to a trap.` },
   { qty: String(stormMax), part: 'Storm tokens', text: '⛈', note: 'Placed at each season change per the weather track. The most ever on the board at once is the full-blow count.' },
   { qty: `${MAX_PLAYERS} × ${potsEach}`, part: 'Pots (buoys), player-coloured', text: `${cfg.buoysPerPlayer} to a captain, plus one spare for the cargo hold refit.` },
   { qty: `${MAX_PLAYERS}`, part: 'Boats, player-coloured', text: 'One per captain.' },
   ...(al ? [
     { qty: `${MAX_PLAYERS}`, part: 'Alignment markers, player-coloured', text: `One per captain on the alignment track (${cfg.alignment.min} … +${cfg.alignment.max}). Everyone starts at 0.` },
     { qty: `${MAX_PLAYERS}`, part: 'Heat markers (stars), player-coloured', text: `One per captain on their heat track, 0–${cfg.heat.max}★.` },
+    { qty: `${MAX_PLAYERS}`, part: 'Licence tokens', text: 'LICENSED', note: 'Placed on your mat when you buy the season\'s licence (season 1\'s comes with the boat); returned at the season change. No token = poaching.' },
+    { qty: `${MAX_PLAYERS}`, part: '"Port closed" markers', text: 'CLOSED TO YOU TODAY', note: 'Placed on a port you ran from after a bust. You cannot sell, refuel or berth there until tomorrow.' },
     ...(cfg.flags.patrols ? [
       { qty: String(cfg.patrol.max), part: 'Warden boats', text: 'Placed each morning on the spaces drawn from the patrol deck.', note: `One, plus one per captain on the dark side that morning, up to ${cfg.patrol.max}. A captain with stars who enters a warden's space takes a heat check at sea (bribe on the band card, as at the market). Bust: the catch in the hold is seized, day over, home to ${cfg.map.startPort}, launch last tomorrow. Pots stay in the water.` },
       { qty: String(grounds.length), part: 'Patrol deck', text: 'One card per ocean space.', note: 'Shuffle and draw each morning; every card drawn puts a warden boat on that space.' },
     ] : []),
   ] : []),
-  { qty: String(4), part: 'Lobster traps (one per ground)', text: 'A trap you can reach into.', note: 'Every lobster landed and sold goes into its home ground\'s trap rather than out of the game. At a season change the ground\'s breeding stock spawns and you draw that many back out BLIND — shake and take. You can see how full a trap is; you cannot see what is in it.' },
+  { qty: '3', part: 'Season, day and hour markers', text: 'One for each track.' },
+  { qty: `${MAX_PLAYERS}`, part: 'Turn order discs, player-coloured', text: 'One per captain on the turn order and berth order tracks.' },
+  { qty: String(markets.length), part: 'Price markers', text: 'One per market port\'s price track.' },
+  ...(al ? [{ qty: '4', part: 'Ground health markers', text: 'One per ground\'s health track.' }] : []),
+  { qty: '4', part: 'Breeding stock markers', text: 'One per ground\'s breeding stock track.' },
+  { qty: String(4), part: 'Lobster traps (one per ground)', text: 'A trap you can reach into.', note: 'Every lobster that leaves a bag for good (sold, dropped when you run from the warden, seized, or fouled by the cheap engine) goes into its home ground\'s trap rather than out of the game. At a season change the ground\'s breeding stock spawns and you draw that many back out BLIND — shake and take. You can see how full a trap is; you cannot see what is in it.' },
 ];
 
 // ---------- refit tiles ----------
@@ -136,17 +157,18 @@ const refitRows: Row[] = deckRefits.map((u) => {
   const fx: string[] = [];
   if (u.stepsPerSteam) fx.push(`STEAM moves up to ${u.stepsPerSteam} spaces`);
   if (u.stormImmune) fx.push('no storm entry hazard');
+  if (u.whittleRecover) fx.push('a pot the storm parts comes back to your hand');
   if (u.whittleMult !== undefined) fx.push(`storms part your gear ${Math.round((1 - u.whittleMult) * 100)}% less often`);
   if (u.freeAction) fx.push(`${u.freeAction} costs no action`);
   if (u.fuelBonus) fx.push(`+${u.fuelBonus} fuel capacity`);
   if (u.buoyBonus) fx.push(`+${u.buoyBonus} pot`);
   if (u.bonusDraws) fx.push(`draw and keep +${u.bonusDraws} per haul — every haul with it is a crime`);
   if (u.pollutes) fx.push(`strips ${u.pollutes} more lobster off the ground per haul`);
-  return { qty: '2', part: `${u.label} — ${u.slot}`, text: `${u.cost} · ${fx.join(' · ')}` };
+  return { qty: '2', part: `${u.label} — ${SLOT[u.slot] ?? u.slot}`, text: `${u.cost} · ${fx.join(' · ')}` };
 });
 const blackMarketRows: Row[] = darkRefits.map((u) => ({
   qty: String(darkSlots(MAX_PLAYERS)),
-  part: `${u.label} — ${u.slot} (BLACK MARKET)`,
+  part: `${u.label} — ${SLOT[u.slot] ?? u.slot} (BLACK MARKET)`,
   text: `${u.cost} · ${[u.stepsPerSteam ? `STEAM moves up to ${u.stepsPerSteam} spaces` : '', u.bonusDraws ? `draw and keep +${u.bonusDraws} per haul — every haul with it is a crime` : '', u.pollutes ? `strips ${u.pollutes} more lobster off the ground per haul` : ''].filter(Boolean).join(' · ')}`,
   note: `One per dark slot at the table (${[3, 4, 5, 6].map((n) => `${n}p ${darkSlots(n)}`).join(', ')}). Shady and Outlaw only, at any market port. Buying it steps you ${-cfg.alignment.step.darkRefit} darker.`,
 }));
@@ -187,21 +209,40 @@ const cardRows: Row[] = [
   },
   { qty: '1', part: 'Commons health card', text: hb.map((b) => `${b.atLeast}% of the bags remaining → ${b.vp} VP`).join('\n'), note: 'One end-of-game read, shared by everyone at the table. A stripped ocean costs the steward too.' }]),
   { qty: '1', part: 'Soak card', text: GROUNDS.map((g) => `${g}: ${cfg.soakCurves[g].map((s, i) => `${i}n ${s}`).join(' → ')}`).join('\n'), note: 'Nights soaked, left to right. A pot cannot be hauled until it reaches PRIME.' },
-  { qty: '1', part: 'Draw card', text: Object.entries(cfg.drawByStage).map(([s, r]) => `${s}: draw ${r.draw}, keep ${r.keep}`).join('\n'), note: `Hauling in a storm: draw +${cfg.weather.bonusDraws}, keep +${cfg.weather.bonusKeep}.` },
-  { qty: '1', part: 'Action card', text: Object.entries(cfg.actionCost).map(([a, c]) => `${a} ${c}`).join(' · '), note: `${cfg.actionsPerTurn} actions a turn, ${cfg.hoursPerDay} turns a day. Unspent actions are lost.` },
+  { qty: '1', part: 'Draw card', text: Object.entries(cfg.drawByStage).map(([s, r]) => `${s}: draw ${r.draw}, keep ${r.keep}`).join('\n'), note: `Hauling in a storm: draw +${cfg.weather.bonusDraws}, keep +${cfg.weather.bonusKeep}.${darkRefits.find((u) => u.bonusDraws) ? ` With the illegal net: draw +${darkRefits.find((u) => u.bonusDraws)!.bonusDraws}, keep +${darkRefits.find((u) => u.bonusDraws)!.bonusDraws}.` : ''}` },
   ...(al ? [] : [{
     qty: '1',
     part: 'Reputation card',
     text: [`steal ${cfg.rep.steal}`, `keep an illegal lobster ${cfg.rep.illegalKeep}`, `reported ${cfg.rep.reported}`, `bribe ${cfg.rep.bribe}`, `towed in ${cfg.tow.rep}`, `haul without a licence ${cfg.unlicensed.repPerHaul}`, `take the pole −${cfg.poleRepCost}`, `report a theft +${cfg.rep.report}`, `land at the co-op +${markets.find(([, n]) => n.port!.market!.coopRep)?.[1].port!.market!.coopRep ?? 0}`, `take the last berth +${cfg.lastSlotRep}`].join('\n'),
     note: `Everyone starts at ${cfg.startReputation}.`,
   }]),
-  { qty: `${MAX_PLAYERS}`, part: 'Captain mats', text: `Three refit slots (stern · mid primary · mid secondary), a fuel track to ${cfg.fuelTankMax} (${cfg.fuelTankMax + Math.max(0, ...cfg.upgrades.catalog.map((u) => u.fuelBonus ?? 0))} with bigger tanks), a hold, and ${al ? `an alignment track (${cfg.alignment.min} … +${cfg.alignment.max}, banded) and a heat track (0–${cfg.heat.max}★)` : 'the three score tracks'}.` },
+  { qty: `${MAX_PLAYERS}`, part: 'Captain mats — the boat', text: [
+      `FUEL track 0–${cfg.fuelTankMax} (to ${cfg.fuelTankMax + Math.max(0, ...cfg.upgrades.catalog.map((u) => u.fuelBonus ?? 0))} with bigger tanks)`,
+      'REFIT slots: stern · amidships · deck',
+      'LICENCE space (this season\'s licence token)',
+      'HOLD: the lobsters you carry, laid out face up',
+      ...(al ? [
+        `ALIGNMENT track ${cfg.alignment.min} … +${cfg.alignment.max}, banded: ${cfg.alignment.bands.map((b, i) => `${b.name} ${b.atLeast === -Infinity ? cfg.alignment.min : b.atLeast}…${i === 0 ? cfg.alignment.max : cfg.alignment.bands[i - 1].atLeast - 1}`).join(' · ')}`,
+        `HEAT track 0–${cfg.heat.max}★`,
+      ] : ['the three score tracks']),
+    ].join('\n'), note: 'Your boat itself sails the board; the mat is its logbook. Money is kept in coins beside it.' },
+  { qty: `${MAX_PLAYERS}`, part: 'Captain mats — the pot tracker', text: [
+      ...Array.from({ length: potsEach }, (_, i) => `Pot ${i + 1}${i >= cfg.buoysPerPlayer ? ' (cargo hold refit)' : ''}:  ground ____   nights  ${Array.from({ length: Math.max(...GROUNDS.map((g) => cfg.soakCurves[g].length)) }, (_, n) => `[${n}]`).join(' ')}`),
+      '',
+      ...GROUNDS.map((g) => `${g.padEnd(8)} ${cfg.soakCurves[g].map((st, n) => `${n}:${st === 'PRIME' ? 'PRIME' : st.toLowerCase()}`).join('  ')}`),
+    ].join('\n'), note: `Your pots' soak stages are secret. When you drop a pot, note its ground; each night, advance its marker one box. Read the stage off the curve below it: a pot can be hauled from PRIME on (overripe and fouled pots still haul, for less), and it stays at the last stage once it runs off the end.` },
+  { qty: `${MAX_PLAYERS}`, part: 'Captain mats — actions', text: [
+      `${cfg.actionsPerTurn} actions a turn · one turn an hour · ${cfg.hoursPerDay} hours a day`,
+      '',
+      ...actionLines(cfg).map((a) => `${a.name.toUpperCase().padEnd(12)} ${String(a.cost)}  ${a.where.padEnd(18)} ${a.does}${a.freeWith ? ` (free with ${a.freeWith.toLowerCase()})` : ''}`),
+    ].join('\n'), note: 'Printed along the bottom of every mat, so nobody has to ask what a turn can do.' },
   { qty: '1', part: 'Tow card', text: `Caught at sea at day's end${al ? ', or at a port shut to you' : ''}: towed to the nearest port${al ? ' that will have you' : ''}, −${cfg.tow.fee} money${al ? '' : `, ${cfg.tow.rep} reputation`}, fuel topped up to at least ${cfg.tow.emergencyFuel}, and you lose your next ${cfg.tow.lostTurns} turns.` },
 ];
 
 const moneyRows: Row[] = [
-  { qty: '~400', part: 'Money (1 / 5 / 20)', text: `Everyone starts with ${cfg.startMoney}. A good season can land several hundred.` },
+  { qty: '~150 coins', part: 'Money (1 / 5 / 20)', text: `Everyone starts with ${cfg.startMoney}.`, note: 'Winning captains finish around 300–400, so the bank should hold about 2,000 in value.' },
   { qty: '4', part: 'Cloth bags', text: 'One per ground type. Opaque — you draw blind.' },
+  { qty: '1 pad', part: 'Bid slips', text: 'Season ___   Captain ________   Bid ____', note: `For the sealed licence auction at the start of seasons 2–${cfg.seasons}: everyone writes a bid, all are revealed at once.` },
 ];
 
 const groups: Group[] = [
@@ -215,8 +256,8 @@ const groups: Group[] = [
   { id: 'money', title: 'Money & bags', blurb: '', rows: moneyRows },
 ];
 
-const pieceCount = tileTotal + preSeed + eggerTotal + seededTotal + stormMax + MAX_PLAYERS * potsEach + MAX_PLAYERS + 60 + deckRefits.length * 2 + 3
-  + (al ? 2 * MAX_PLAYERS + cfg.heat.max + darkRefits.length * darkSlots(MAX_PLAYERS) : 0);
+const pieceCount = tileTotal + preSeed + eggerTotal + seededTotal + (cfg.breeding.emptyTrapGeneric ? GENERIC_SPARE : 0) + stormMax + MAX_PLAYERS * potsEach + MAX_PLAYERS * 2 + 3 + markets.length + 8 + 150 + deckRefits.length * 2 + 3
+  + (al ? 4 * MAX_PLAYERS + cfg.heat.max + darkRefits.length * darkSlots(MAX_PLAYERS) + (cfg.flags.patrols ? cfg.patrol.max + grounds.length : 0) : 0);
 
 // ---------- render ----------
 const groupHtml = (g: Group) => `
@@ -241,110 +282,9 @@ const groupHtml = (g: Group) => `
 const html = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lobsters Component Manifest</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+${FONTS}
 <style>
-  :root{
-    --fog:#E8EDEB; --panel:#F3F6F5; --ink:#16232B; --muted:#5C6B6E;
-    --rule:#BDC9C6; --accent:#C93F1D; --verdigris:#357367; --verdigris-wash:#E2ECE8;
-    color-scheme:light;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --fog:#0E171C; --panel:#152128; --ink:#DCE5E3; --muted:#8FA2A4;
-      --rule:#2A3A42; --accent:#F0663F; --verdigris:#6FB8A6; --verdigris-wash:#16262A;
-      color-scheme:dark;
-    }
-  }
-  :root[data-theme="dark"]{
-    --fog:#0E171C; --panel:#152128; --ink:#DCE5E3; --muted:#8FA2A4;
-    --rule:#2A3A42; --accent:#F0663F; --verdigris:#6FB8A6; --verdigris-wash:#16262A;
-    color-scheme:dark;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0; background:var(--fog); color:var(--ink);
-    font-family:"Source Serif 4",Georgia,"Times New Roman",serif;
-    font-size:16px; line-height:1.55;
-  }
-  .sheet{max-width:60rem; margin:0 auto; padding-block:clamp(2rem,6vw,4.5rem); padding-left:20px; padding-right:20px;}
-
-  .masthead{border-bottom:3px solid var(--ink); padding-bottom:1.25rem; display:flex; flex-wrap:wrap; align-items:flex-end; gap:1rem 2rem;}
-  .masthead h1{
-    font-family:"Archivo Narrow",Arial Narrow,Helvetica,sans-serif;
-    font-weight:700; font-size:clamp(2.4rem,7vw,4rem); line-height:.95; margin:0;
-    letter-spacing:-.01em; text-transform:uppercase; text-wrap:balance; flex:1 1 18rem;
-  }
-  .masthead h1 small{display:block; font-size:.28em; letter-spacing:.22em; color:var(--accent); font-weight:600; margin-bottom:.5rem;}
-  .stamp{
-    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.72rem; line-height:1.7;
-    color:var(--muted); text-align:right; border-left:1px solid var(--rule); padding-left:1.25rem;
-  }
-  .stamp b{color:var(--ink); font-weight:500;}
-
-  .standfirst{
-    font-size:1.1rem; max-width:62ch; margin:1.75rem 0 0; color:var(--ink);
-  }
-  .standfirst em{color:var(--accent); font-style:normal; font-weight:600;}
-
-  .scales{
-    display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px;
-    background:var(--rule); border:1px solid var(--rule); margin-top:2.25rem;
-  }
-  .scale{background:var(--panel); padding:.9rem 1rem;}
-  .scale dt{
-    font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase;
-    letter-spacing:.14em; font-size:.66rem; color:var(--muted); font-weight:600;
-  }
-  .scale dd{
-    margin:.3rem 0 0; font-family:"IBM Plex Mono",monospace; font-size:1.35rem;
-    font-variant-numeric:tabular-nums; color:var(--ink);
-  }
-
-  .group{margin-top:3.5rem;}
-  .group-head{display:flex; align-items:baseline; gap:1rem; border-bottom:1px solid var(--ink); padding-bottom:.4rem;}
-  .group-head h2{
-    font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase;
-    letter-spacing:.1em; font-size:1.05rem; font-weight:700; margin:0; flex:1;
-  }
-  .tally{
-    font-family:"IBM Plex Mono",monospace; font-size:.75rem; color:var(--accent);
-    font-variant-numeric:tabular-nums;
-  }
-  .blurb{color:var(--muted); max-width:62ch; margin:.9rem 0 0; font-size:.95rem;}
-
-  .parts{list-style:none; margin:1.25rem 0 0; padding:0; display:flex; flex-direction:column; gap:1.5rem;}
-  .part{display:grid; grid-template-columns:4.5rem 1fr; gap:1.25rem; align-items:start;}
-  .qty{
-    font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
-    font-size:1rem; color:var(--accent); text-align:right; padding-top:.1rem;
-    border-right:1px solid var(--rule); padding-right:1.25rem; min-height:1.4rem;
-  }
-  .detail h3{
-    font-family:"Archivo Narrow",Arial Narrow,sans-serif; font-weight:600; font-size:1.02rem;
-    margin:0; letter-spacing:.01em;
-  }
-  .printed{
-    font-family:"IBM Plex Mono",monospace; font-size:.78rem; line-height:1.65;
-    background:var(--verdigris-wash); border-left:2px solid var(--verdigris);
-    color:var(--ink); margin:.5rem 0 0; padding:.6rem .8rem; white-space:pre-wrap;
-    overflow-x:auto;
-  }
-  .note{color:var(--muted); font-size:.9rem; margin:.5rem 0 0; max-width:62ch;}
-
-  footer{
-    margin-top:4rem; border-top:1px solid var(--rule); padding-top:1.25rem;
-    color:var(--muted); font-size:.85rem; max-width:62ch;
-  }
-  footer code{font-family:"IBM Plex Mono",monospace; color:var(--ink); font-size:.95em;}
-
-  @media (max-width:520px){
-    .part{grid-template-columns:3.2rem 1fr; gap:.85rem;}
-    .qty{padding-right:.85rem;}
-    .stamp{text-align:left; border-left:0; padding-left:0;}
-  }
-</style>
+${BASE_CSS}</style>
 
 <div class="sheet">
   <header class="masthead">
@@ -358,9 +298,10 @@ const html = `<meta charset="utf-8">
   </header>
 
   <p class="standfirst">
-    Five seasons on Penobscot Bay. The bags only ever empty, and what you throw back is
-    the only thing that puts anything in them. Every count below is <em>generated from the
-    rules the engine actually plays</em>, so the box and the game cannot drift apart.
+    Five seasons on Penobscot Bay, fished clean or dirty. What you take is gone until the
+    breeding stock brings it back, and every egger kept is one less to breed. Every count
+    below is <em>generated from the rules the engine actually plays</em>, so the box and the
+    game cannot drift apart.
   </p>
 
   <dl class="scales">
