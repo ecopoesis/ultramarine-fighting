@@ -16,6 +16,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "components": "tsx scripts/components.ts",
+    "rulebook": "tsx scripts/rulebook.ts",
     "check-integers": "tsx scripts/checkIntegers.ts"
   },
   "devDependencies": {

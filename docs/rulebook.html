@@ -1,0 +1,260 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lobsters Rulebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{
+    --fog:#E8EDEB; --panel:#F3F6F5; --ink:#16232B; --muted:#5C6B6E;
+    --rule:#BDC9C6; --accent:#C93F1D; --verdigris:#357367; --verdigris-wash:#E2ECE8;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --fog:#0E171C; --panel:#152128; --ink:#DCE5E3; --muted:#8FA2A4;
+      --rule:#2A3A42; --accent:#F0663F; --verdigris:#6FB8A6; --verdigris-wash:#16262A;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --fog:#0E171C; --panel:#152128; --ink:#DCE5E3; --muted:#8FA2A4;
+    --rule:#2A3A42; --accent:#F0663F; --verdigris:#6FB8A6; --verdigris-wash:#16262A;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--fog); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,"Times New Roman",serif;
+    font-size:16px; line-height:1.55;
+  }
+  .sheet{max-width:60rem; margin:0 auto; padding-block:clamp(2rem,6vw,4.5rem); padding-left:20px; padding-right:20px;}
+
+  .masthead{border-bottom:3px solid var(--ink); padding-bottom:1.25rem; display:flex; flex-wrap:wrap; align-items:flex-end; gap:1rem 2rem;}
+  .masthead h1{
+    font-family:"Archivo Narrow",Arial Narrow,Helvetica,sans-serif;
+    font-weight:700; font-size:clamp(2.4rem,7vw,4rem); line-height:.95; margin:0;
+    letter-spacing:-.01em; text-transform:uppercase; text-wrap:balance; flex:1 1 18rem;
+  }
+  .masthead h1 small{display:block; font-size:.28em; letter-spacing:.22em; color:var(--accent); font-weight:600; margin-bottom:.5rem;}
+  .stamp{
+    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.72rem; line-height:1.7;
+    color:var(--muted); text-align:right; border-left:1px solid var(--rule); padding-left:1.25rem;
+  }
+  .stamp b{color:var(--ink); font-weight:500;}
+
+  .standfirst{
+    font-size:1.1rem; max-width:62ch; margin:1.75rem 0 0; color:var(--ink);
+  }
+  .standfirst em{color:var(--accent); font-style:normal; font-weight:600;}
+
+  .scales{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px;
+    background:var(--rule); border:1px solid var(--rule); margin-top:2.25rem;
+  }
+  .scale{background:var(--panel); padding:.9rem 1rem;}
+  .scale dt{
+    font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase;
+    letter-spacing:.14em; font-size:.66rem; color:var(--muted); font-weight:600;
+  }
+  .scale dd{
+    margin:.3rem 0 0; font-family:"IBM Plex Mono",monospace; font-size:1.35rem;
+    font-variant-numeric:tabular-nums; color:var(--ink);
+  }
+
+  .group{margin-top:3.5rem;}
+  .group-head{display:flex; align-items:baseline; gap:1rem; border-bottom:1px solid var(--ink); padding-bottom:.4rem;}
+  .group-head h2{
+    font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase;
+    letter-spacing:.1em; font-size:1.05rem; font-weight:700; margin:0; flex:1;
+  }
+  .tally{
+    font-family:"IBM Plex Mono",monospace; font-size:.75rem; color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+  .blurb{color:var(--muted); max-width:62ch; margin:.9rem 0 0; font-size:.95rem;}
+
+  .parts{list-style:none; margin:1.25rem 0 0; padding:0; display:flex; flex-direction:column; gap:1.5rem;}
+  .part{display:grid; grid-template-columns:4.5rem 1fr; gap:1.25rem; align-items:start;}
+  .qty{
+    font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+    font-size:1rem; color:var(--accent); text-align:right; padding-top:.1rem;
+    border-right:1px solid var(--rule); padding-right:1.25rem; min-height:1.4rem;
+  }
+  .detail h3{
+    font-family:"Archivo Narrow",Arial Narrow,sans-serif; font-weight:600; font-size:1.02rem;
+    margin:0; letter-spacing:.01em;
+  }
+  .printed{
+    font-family:"IBM Plex Mono",monospace; font-size:.78rem; line-height:1.65;
+    background:var(--verdigris-wash); border-left:2px solid var(--verdigris);
+    color:var(--ink); margin:.5rem 0 0; padding:.6rem .8rem; white-space:pre-wrap;
+    overflow-x:auto;
+  }
+  .note{color:var(--muted); font-size:.9rem; margin:.5rem 0 0; max-width:62ch;}
+
+  footer{
+    margin-top:4rem; border-top:1px solid var(--rule); padding-top:1.25rem;
+    color:var(--muted); font-size:.85rem; max-width:62ch;
+  }
+  footer code{font-family:"IBM Plex Mono",monospace; color:var(--ink); font-size:.95em;}
+
+  @media (max-width:520px){
+    .part{grid-template-columns:3.2rem 1fr; gap:.85rem;}
+    .qty{padding-right:.85rem;}
+    .stamp{text-align:left; border-left:0; padding-left:0;}
+  }
+
+  .toc{margin-top:2rem; display:flex; flex-wrap:wrap; gap:.4rem 1.4rem; font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase; letter-spacing:.12em; font-size:.78rem;}
+  .toc a{color:var(--ink); text-decoration:none; border-bottom:1px solid var(--rule);}
+  .toc a:hover, .toc a:focus-visible{color:var(--accent); border-color:var(--accent); outline:none;}
+  .chapter{margin-top:3.5rem;}
+  .chapter > h2{font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase; letter-spacing:.08em; font-size:1.45rem; margin:0 0 1rem; padding-bottom:.4rem; border-bottom:1px solid var(--ink); text-wrap:balance;}
+  .chapter p, .chapter li{max-width:65ch;}
+  .chapter strong{font-weight:600;}
+  h3{font-family:"Archivo Narrow",Arial Narrow,sans-serif; font-size:1.1rem; font-weight:600; margin:0 0 .35rem; letter-spacing:.01em;}
+  .steps{list-style:none; counter-reset:step; padding:0; margin:1.5rem 0 0; display:flex; flex-direction:column; gap:1.6rem;}
+  .steps > li{counter-increment:step; display:grid; grid-template-columns:2.6rem 1fr; column-gap:1rem; max-width:none;}
+  .steps > li::before{content:counter(step); grid-row:1 / span 20; font-family:"IBM Plex Mono",monospace; font-size:1.05rem; color:var(--accent); text-align:right; padding-top:.05rem; border-right:1px solid var(--rule); padding-right:.9rem;}
+  .steps > li > *{grid-column:2; margin:0;}
+  .steps > li > p{margin-top:.1rem;}
+  .table-wrap{overflow-x:auto; margin-top:.8rem; max-width:100%;}
+  table{border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-variant-numeric:tabular-nums;}
+  caption{text-align:left; font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase; letter-spacing:.1em; font-size:.72rem; color:var(--muted); padding-bottom:.35rem;}
+  th, td{padding:.3rem .7rem; border-bottom:1px solid var(--rule); text-align:right; white-space:nowrap;}
+  th:first-child, td:first-child{text-align:left;}
+  th{font-weight:500; color:var(--muted);}
+  tr.total td{color:var(--ink); font-weight:500; border-bottom:1px solid var(--ink);}
+  .setup-table{background:var(--verdigris-wash); border-left:2px solid var(--verdigris);}
+  .frames{margin:1.5rem 0 2rem; padding:0;}
+  .frame{border:1px solid var(--rule); border-radius:3px; padding:.6rem .8rem .8rem; margin-top:.55rem; background:var(--panel); display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .8rem;}
+  .frame > .frame{flex-basis:100%;}
+  .f-game{margin-top:0; background:var(--fog); border-color:var(--ink);}
+  .f-action{background:var(--verdigris-wash); border-color:var(--verdigris);}
+  .frame-label{font-family:"Archivo Narrow",Arial Narrow,sans-serif; text-transform:uppercase; letter-spacing:.12em; font-size:.74rem; font-weight:700;}
+  .frame-count{font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--muted);}
+  .f-turn > .frame-label{color:var(--accent);}
+  figcaption{margin-top:.7rem; font-size:.9rem; color:var(--muted); max-width:62ch;}
+  .edge{margin-top:2.2rem; padding-top:1rem; border-top:1px dashed var(--rule);}
+  .edge ol{margin:.5rem 0 0; padding-left:1.3rem; display:flex; flex-direction:column; gap:.5rem;}
+  .when{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--muted); font-weight:400; margin-left:.4rem; letter-spacing:0;}
+  .actions{width:100%;}
+  .actions td{white-space:normal; text-align:left; vertical-align:top; font-family:"Source Serif 4",Georgia,serif; font-size:.9rem;}
+  .actions td.an{font-family:"Archivo Narrow",Arial Narrow,sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;}
+  .actions td.ac{font-family:"IBM Plex Mono",monospace; color:var(--accent); text-align:center;}
+  .actions td.aw{font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--muted); white-space:nowrap;}
+  .actions th{text-align:left;}
+  .free{color:var(--verdigris); font-style:italic;}
+  .bite{color:var(--accent); font-weight:600;}
+  .aside{font-size:.9rem; color:var(--muted);}
+  @media (max-width:520px){ .steps > li{grid-template-columns:1.8rem 1fr; column-gap:.7rem;} .actions td.aw{white-space:normal;} }
+</style>
+
+<div class="sheet">
+  <header class="masthead">
+    <h1><small>How to play</small>Lobsters</h1>
+    <div class="stamp">
+      Rulebook, first draft<br>
+      Generated from <b>src/config.ts</b><br>
+      2–6 captains<br>
+      2026-09-24
+    </div>
+  </header>
+  <p class="standfirst">Every number in this book is <em>read from the rules the engine plays</em>, so the book, the box and the game agree. This draft covers setup and the shape of a game; the chapters on each action come next.</p>
+  <nav class="toc" aria-label="Contents"><a href="#idea">The idea</a><a href="#setup">Setup</a><a href="#structure">How a game runs</a><a href="#coming">Still to write</a></nav>
+  <section class="chapter" id="idea"><h2>The idea</h2><p>You captain a lobster boat on Penobscot Bay for 5 seasons. Set pots, let them soak, haul them, and sell the catch in the island ports. The ocean is shared: every lobster anyone lands is gone until the breeding stock brings some back.</p>
+<p><strong>The captain with the most money at the end wins.</strong> How you earn it is up to you. Fish clean, and the co-op pays you a share when the ocean is healthy. Fish dirty, keeping the lobsters the law says go back, and you land more but risk the warden. Your <em>alignment</em> on the light–dark track decides what is open to you; your <em>heat</em>, 0 to 5 stars, decides how closely the warden watches.</p></section>
+<section class="chapter" id="setup"><h2>Setup</h2><p>The counts below depend on how many captains are playing: the ocean is built to the size of the fleet.</p>
+<ol class="steps">
+  <li><h3>Fill the bags</h3><p>Put each ground's lobster tiles in its cloth bag and shake it. The 4 grounds each have their own bag; every fishing space of that ground draws from it.</p><div class="table-wrap"><table class="setup-table"><caption>Inshore bag</caption>
+    <thead><tr><th>tile</th><th>2p</th><th>3p</th><th>4p</th><th>5p</th><th>6p</th></tr></thead>
+    <tbody><tr><td>1 lb</td><td>5</td><td>8</td><td>11</td><td>13</td><td>16</td></tr><tr><td>2 lb</td><td>3</td><td>4</td><td>5</td><td>7</td><td>8</td></tr><tr><td>short</td><td>3</td><td>4</td><td>5</td><td>7</td><td>8</td></tr><tr><td>jumbo</td><td>1</td><td>1</td><td>1</td><td>2</td><td>2</td></tr><tr><td>egger</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr><tr class="total"><td>in the bag</td><td>14</td><td>20</td><td>26</td><td>34</td><td>40</td></tr></tbody></table></div><div class="table-wrap"><table class="setup-table"><caption>Mid bag</caption>
+    <thead><tr><th>tile</th><th>2p</th><th>3p</th><th>4p</th><th>5p</th><th>6p</th></tr></thead>
+    <tbody><tr><td>2 lb</td><td>5</td><td>7</td><td>9</td><td>12</td><td>14</td></tr><tr><td>3 lb</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr><tr><td>2 lb rare</td><td>1</td><td>1</td><td>1</td><td>2</td><td>2</td></tr><tr><td>short</td><td>3</td><td>4</td><td>5</td><td>7</td><td>8</td></tr><tr><td>jumbo</td><td>1</td><td>2</td><td>3</td><td>3</td><td>4</td></tr><tr><td>egger</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr><tr class="total"><td>in the bag</td><td>14</td><td>20</td><td>26</td><td>34</td><td>40</td></tr></tbody></table></div><div class="table-wrap"><table class="setup-table"><caption>Offshore bag</caption>
+    <thead><tr><th>tile</th><th>2p</th><th>3p</th><th>4p</th><th>5p</th><th>6p</th></tr></thead>
+    <tbody><tr><td>3 lb</td><td>6</td><td>9</td><td>12</td><td>15</td><td>18</td></tr><tr><td>3 lb rare</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr><tr><td>short</td><td>4</td><td>6</td><td>8</td><td>10</td><td>12</td></tr><tr><td>jumbo</td><td>3</td><td>5</td><td>7</td><td>8</td><td>10</td></tr><tr><td>egger</td><td>5</td><td>7</td><td>9</td><td>12</td><td>14</td></tr><tr class="total"><td>in the bag</td><td>20</td><td>30</td><td>40</td><td>50</td><td>60</td></tr></tbody></table></div><div class="table-wrap"><table class="setup-table"><caption>Deep bag</caption>
+    <thead><tr><th>tile</th><th>2p</th><th>3p</th><th>4p</th><th>5p</th><th>6p</th></tr></thead>
+    <tbody><tr><td>4 lb</td><td>3</td><td>4</td><td>5</td><td>7</td><td>8</td></tr><tr><td>4 lb rare</td><td>1</td><td>2</td><td>3</td><td>3</td><td>4</td></tr><tr><td>short</td><td>5</td><td>7</td><td>9</td><td>12</td><td>14</td></tr><tr><td>jumbo</td><td>3</td><td>5</td><td>7</td><td>8</td><td>10</td></tr><tr><td>egger</td><td>8</td><td>12</td><td>16</td><td>20</td><td>24</td></tr><tr class="total"><td>in the bag</td><td>20</td><td>30</td><td>40</td><td>50</td><td>60</td></tr></tbody></table></div></li>
+  <li><h3>Stock the traps</h3><p>Next to each ground's bag, put its <strong>trap</strong>. Drop 2 of each sellable tile into it from the box's trap starters (inshore: 1 lb, 2 lb, jumbo; mid: 2 lb, 3 lb, 2 lb rare, jumbo; offshore: 3 lb, 3 lb rare, jumbo; deep: 4 lb, 4 lb rare, jumbo). The trap is where landed lobsters go, and what the breeding stock draws back from.</p></li>
+  <li><h3>Set the ocean's tracks</h3><p>Put each ground's <strong>breeding stock</strong> marker on the number of eggers in its bag. Put each ground's <strong>health</strong> marker on 100%.</p><div class="table-wrap"><table class="setup-table"><caption>Breeding stock markers start at</caption>
+  <thead><tr><th>ground</th><th>2p</th><th>3p</th><th>4p</th><th>5p</th><th>6p</th></tr></thead>
+  <tbody><tr><td>inshore</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr><tr><td>mid</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr><tr><td>offshore</td><td>5</td><td>7</td><td>9</td><td>12</td><td>14</td></tr><tr><td>deep</td><td>8</td><td>12</td><td>16</td><td>20</td><td>24</td></tr></tbody></table></div></li>
+  <li><h3>Seed the grounds</h3><p>Put one generic lobster on every fishing space. There are no storms in season 1.</p></li>
+  <li><h3>Open the markets</h3><p>Put each market port's price marker at the top of its track: Rockland 5, Vinalhaven 7, Stonington 6.</p></li>
+  <li><h3>Stock the chandleries</h3><p>Shuffle the refit tiles. Deal 6 face down to each market port and turn the top 3 face up. Set the <strong>black market</strong> beside the board: 2p/3p/4p/5p/6p tables take 1/1/1/2/2 of each black-market refit.</p></li>
+  <li><h3>Shuffle the patrol deck</h3><p>One card for every fishing space. It is drawn each morning.</p></li>
+  <li><h3>Take your boat</h3><p>Each captain takes a mat, a boat, 4 pots, 8 fuel on the fuel track and 10 money. Your boat starts in Rockland. Season 1's licence comes with the boat: take a licence token. Put your alignment marker on 0 (Neutral) and your heat marker on 0 stars.</p></li>
+  <li><h3>Decide who goes first</h3><p>Seat order, starting with a random captain, is season 1's turn order. Put the turn order discs on the track. Put the season marker on 1, the day marker on 1 and the hour marker on 1.</p></li>
+</ol></section>
+<section class="chapter" id="structure"><h2>How a game runs</h2><figure class="frames" aria-label="The structure of a game">
+  <div class="frame f-game"><span class="frame-label">The game</span><span class="frame-count">5 seasons</span>
+    <div class="frame f-season"><span class="frame-label">A season</span><span class="frame-count">4–6 days</span>
+      <div class="frame f-day"><span class="frame-label">A day</span><span class="frame-count">6 hours</span>
+        <div class="frame f-hour"><span class="frame-label">An hour</span><span class="frame-count">one turn for each captain still out, in turn order</span>
+          <div class="frame f-turn"><span class="frame-label">Your turn</span><span class="frame-count">2 actions</span>
+            <div class="frame f-action"><span class="frame-label">An action</span><span class="frame-count">steam · drop · haul · sell · refuel · …</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Each frame repeats inside the one around it. Things happen at the edges: when a season begins, each morning, each night, and when a season ends.</figcaption>
+</figure>
+<p>A game is 5 seasons of 4, 5, 5, 6, 6 days (26 days in all): seasons get longer as the years go on. Every day is 6 hours. Every hour, each captain who is still out takes one turn, in turn order. A turn is 2 actions.</p>
+
+<section class="edge" id="season-begins"><h3>When a season begins <span class="when">seasons 2–5</span></h3>
+<ol>
+  <li><strong>The weather turns.</strong> Clear last season's storms. For each ground, place the number of storm tokens its row of the weather track shows (season 1: 0/0/0/0 · season 2: 0/0/1/1 · season 3: 0/1/2/1 · season 4: 0/2/3/1 · season 5: 0/2/3/1; inshore/mid/offshore/deep), using the storm die to pick which spaces. Inshore and the shelters never storm.</li>
+  <li><strong>New lobsters.</strong> Put one generic lobster on every fishing space. They pile up on spaces nobody fishes.</li>
+  <li><strong>The licence auction.</strong> Everyone writes a sealed bid on a slip, at least the season's reserve (season 2: 6, season 3: 8, season 4: 10, season 5: 12), and all bids are revealed at once. Everyone who buys pays the <em>second-highest</em> bid (the reserve, if fewer than two captains bid). The two highest bidders must buy; everyone else, in bid order, may buy at that price or pass. Buying steps you 1 lighter. Honest and Paragon captains must buy if they can afford it. In season 2 only some licences are for sale (2p: 1, 3p: 2, 4p: 3, 5p: 3, 6p: 4): once they are gone, the rest of the table fishes unlicensed. Without a licence you may still fish, but every haul is poaching.</li>
+  <li><strong>The bid order is this season's turn order.</strong> Highest bid first; captains who did not bid follow in seat order. You are bidding for first pick of the water as much as for the licence.</li>
+</ol></section>
+
+<section class="edge" id="morning"><h3>Each morning</h3>
+<ol>
+  <li><strong>The wardens go out.</strong> Draw one patrol card, plus one for every captain on the dark side (Shady or Outlaw), up to 3. Put a warden boat on each space drawn.</li>
+  <li><strong>Turn order</strong> is the order captains berthed last night (on the first day of a season, the auction's bid order). Move the hour marker to 1.</li>
+</ol></section>
+
+<section class="edge" id="hour"><h3>Each hour</h3>
+<p>Going down the turn order, every captain who has not berthed takes one turn. A captain still recovering from a tow loses their turn instead. When everyone has had their turn, move the hour marker on. The day ends after hour 6, or as soon as everyone has berthed.</p></section>
+
+<section class="edge" id="turn"><h3>Your turn</h3>
+<p>You have <strong>2 actions</strong>. Spend them on anything below, in any order, as long as you can pay each one's cost. Your turn ends when your actions are spent, or when you <em>Pass</em>, <em>Berth</em> or <em>Bribe</em>. Actions you don't spend are lost.</p>
+<div class="table-wrap"><table class="actions"><thead><tr><th>action</th><th>cost</th><th>where</th><th>what it does</th></tr></thead><tbody>
+<tr><td class="an">Steam</td><td class="ac">1</td><td class="aw">anywhere</td><td>Move to a space next door (1 fuel a lane). A bigger engine reaches 2 spaces.</td></tr>
+<tr><td class="an">Drop</td><td class="ac">1</td><td class="aw">fishing ground</td><td>Set a pot here from your hand. A ground only takes so many pots, all captains counted. <span class="free">Free with the pot rack.</span></td></tr>
+<tr><td class="an">Haul</td><td class="ac">1</td><td class="aw">your ripe pot</td><td>Take the space's seeded pile, then draw from the bag by the pot's stage. Choose what you keep. The pot returns to your hand. <span class="free">Free with the hauling crane.</span></td></tr>
+<tr><td class="an">Steal</td><td class="ac">2</td><td class="aw">a rival's ripe pot</td><td>Haul a rival's ripe pot as your own. A crime. The owner gets the empty pot back. <span class="free">Free with the grappling gear.</span></td></tr>
+<tr><td class="an">Sell</td><td class="ac">1</td><td class="aw">market port</td><td>Sell your whole hold, once a day, best lobster first as the price steps down. With stars, the warden checks you first. <span class="free">Free with the tender.</span></td></tr>
+<tr><td class="an">Refuel</td><td class="ac">1</td><td class="aw">any port</td><td>Buy fuel at this port's price, up to your tank. <span class="free">Free with the fuel line.</span></td></tr>
+<tr><td class="an">Report</td><td class="ac">1</td><td class="aw">any port</td><td>Report a theft against you: take a bounty; the thief takes the heat. <span class="free">Free with the signal flares.</span></td></tr>
+<tr><td class="an">Buy a refit</td><td class="ac">1</td><td class="aw">market port</td><td>Install a face-up refit in an empty slot. Shady or darker: the black market too.</td></tr>
+<tr><td class="an">Berth</td><td class="ac">0</td><td class="aw">any port that will have you</td><td>End your day here. The order captains berth is tomorrow's turn order.</td></tr>
+<tr><td class="an">Bribe</td><td class="ac">0</td><td class="aw">any port</td><td>Shady or darker only: pay 4, step darker, take tomorrow's first slot, and berth.</td></tr>
+<tr><td class="an">Pass</td><td class="ac">0</td><td class="aw">anywhere</td><td>End your turn. Unspent actions are lost.</td></tr>
+</tbody></table></div>
+<p class="aside">This list is printed along the bottom of every captain mat. The chapters that follow explain each action in full.</p></section>
+
+<section class="edge" id="night"><h3>Each night</h3>
+<ol>
+  <li><strong>Everyone comes in.</strong> A captain who is still out and in a port that will have them berths there, behind everyone who berthed, in reverse of today's turn order. <span class="bite">A captain caught at sea, or in a port closed to them, is towed</span> to the nearest port that will have them: pay 5 money (you never go below 0), fuel goes up to at least 2, and you lose your next 4 turns. A captain busted away from the counter today launches last, and anyone busted after them launches behind them.</li>
+  <li><strong>Tomorrow's turn order</strong> is the berth order you just made.</li>
+  <li><strong>Pots soak.</strong> Advance every pot in the water one night on your pot tracker.</li>
+  <li><strong>Storms whittle.</strong> Roll the weather die for every pot on a stormed space: on 1 or less the storm parts it, and it is lost until the season changes.</li>
+  <li><strong>Heat cools.</strong> Every captain who did not sell today loses a star. Remove any "port closed" markers.</li>
+  <li><strong>The hold spoils.</strong> Every lobster in every hold loses 1 lb, to a minimum of 1 lb.</li>
+  <li><strong>Prices recover.</strong> Every market's price marker goes back to the top.</li>
+</ol>
+<p>If that was the season's last day, the season ends. Otherwise move the day marker on; it is morning.</p></section>
+
+<section class="edge" id="season-ends"><h3>When a season ends</h3>
+<ol>
+  <li><strong>The co-op pays its dividend.</strong> Read the ocean's health (the average of the four health tracks) off the dividend table: 80%+: 8 (Paragons 16) · 60%+: 6 (Paragons 12) · 40%+: 4 (Paragons 8) · 20%+: 2 (Paragons 4) · 0%+: 0 (Paragons 0). Every licensed captain who is Neutral or lighter is paid; Paragons read the second column.</li>
+  <li><strong>The breeding stock spawns</strong> (after seasons 1, 2, 3; never into the final season). For each ground, read its breeding stock track: 1+ breeders roll 1, 3+ breeders roll 2, 6+ breeders roll 3, 10+ breeders roll 4, 15+ breeders roll 5. Roll that many lobster dice (they average 1.5) and draw that many lobsters blind out of that ground's trap into its bag. If the trap runs out, the rest come back as generic lobsters.</li>
+  <li><strong>Everyone goes home.</strong> Every pot still in the water comes up empty and goes back to its captain's hand. Every boat returns to Rockland. Licence tokens go back to the supply. Your hold, fuel, money and refits stay with you.</li>
+</ol>
+<p>After season 5 the co-op still pays its dividend, but nothing spawns and nobody goes home: the game ends. <strong>The captain with the most money wins.</strong> Ties share the win.</p></section></section>
+<section class="chapter" id="coming"><h2>Still to write</h2><p>The chapters that explain each action in full: fishing (dropping, soaking, hauling and what you keep); selling and the markets; alignment, heat and the warden (checks, bribes, busts, closed water, patrols); the weather; refits and the black market; theft and reporting; the ocean (breeding stock and health).</p></section>
+  <footer>This book is generated. Change a number in <code>src/config.ts</code> and run <code>npm run rulebook</code> to rebuild it; never edit its numbers by hand.</footer>
+</div>
