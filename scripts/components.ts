@@ -156,7 +156,7 @@ const faces = cfg.breeding.dieFaces;
 const diceRows: Row[] = [
   { qty: String(Math.max(...cfg.breeding.diceByStock.map((r) => r.dice))), part: 'Lobster dice',
     text: faces.map((f) => (f === 0 ? 'blank' : String(f))).join(' / '),
-    note: `Rolled at each season change (never into the final season): a ground rolls one per band of its breeding-stock track and returns that many lobsters from its trap, drawn blind. ${cfg.breeding.diceByStock.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ ${cfg.breeding.mode === 'breeders' ? 'breeders' : 'notches'} = ${r.dice}`).join(', ')}.` },
+    note: `Rolled at each season change (never into the final season): a ground rolls one per band of its breeding-stock track and returns that many lobsters from its trap, drawn blind${cfg.breeding.emptyTrapGeneric ? ' (if the trap runs out, the rest come back as generic lobsters)' : ''}. ${cfg.breeding.diceByStock.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ ${cfg.breeding.mode === 'breeders' ? 'breeders' : 'notches'} = ${r.dice}`).join(', ')}.` },
   { qty: '1', part: 'Storm die (d6)', text: '1–6', note: 'Picks which ground in a tier the storm lands on. The rings are six spaces wide for exactly this reason.' },
   ...(al ? [{ qty: String(cfg.heat.max), part: 'Heat dice', text: cfg.heat.dieFaces.map((f) => (f === 0 ? 'blank' : String(f))).join(' / '),
     note: `The warden's check at every sale: roll one per heat star (no stars, no roll). Total ${cfg.heat.failAt}+ = busted. One or two dice can never bust.` }] : []),

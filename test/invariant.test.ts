@@ -12,10 +12,11 @@ import type { GameState } from '../src/types';
 // minted or destroyed after setup — so this total is conserved for the whole game.
 function totalTilesInWorld(s: GameState): number {
   let n = 0;
-  for (const g of Object.values(s.bags)) n += g.length;
-  // seeded (generic) lobsters are an OPEN injection (minted onto spaces, they leave
-  // the world on sale) — they never touch bags/piles, so exclude them from the CLOSED
+  // seeded (generic) lobsters are an OPEN injection — minted onto spaces, or into a bag
+  // when an empty trap's spawn is topped up — and they leave the world on sale. They
+  // never land on a pile, so exclude them wherever they are from the CLOSED
   // bag+hold+pile census.
+  for (const g of Object.values(s.bags)) n += g.filter((t) => !t.seeded).length;
   for (const p of Object.values(s.players)) n += p.hold.filter((t) => !t.seeded).length;
   for (const g of Object.values(s.piles)) n += g.length;
   return n;

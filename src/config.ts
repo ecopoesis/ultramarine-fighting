@@ -80,8 +80,8 @@ export const defaultConfig: Config = {
   // chance of two. Mean 5/6 a die, so a well-tended ground still needs several.
   breeding: {
     mode: 'breeders', // the track starts at each ground's egger count and dwindles as eggers are KEPT (was: started at 0, rose with notches)
-    emptyTrapGeneric: false, // an empty trap caps recovery at what's been landed; true tops the shortfall up with generic lobsters
-    dieFaces: [0, 0, 1, 1, 1, 2],
+    emptyTrapGeneric: true, // an empty trap's shortfall comes back as generic lobsters (else recovery is capped by what's been landed). Counterfactual opus16-18: +3 points final health, no dry traps
+    dieFaces: [0, 1, 1, 2, 2, 3], // averages 1.5: a blank means a bad year, a 3 a big one. Counterfactual opus16-18 (breeders + generic): final health 40% vs 33% on the old 0-0-1-1-1-2 die, and the narrowest light/dark money gap measured (180/196)
     diceByStock: [
       { atLeast: 15, dice: 5 },
       { atLeast: 10, dice: 4 },

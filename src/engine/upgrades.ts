@@ -93,7 +93,7 @@ export function pollute(d: GameState, p: PlayerState, ground: keyof GameState['b
   const n = installed(d, p).reduce((s, u) => s + (u.pollutes ?? 0), 0);
   for (let i = 0; i < n; i++) {
     const t = takeRandom(d, d.bags[ground], 'pollution');
-    if (t) d.piles[ground].push(t);
+    if (t && !t.seeded) d.piles[ground].push(t); // a generic lobster just leaves the world
   }
   if (n > 0) d.log.push(`${p.name}'s cheap engine fouls the ${ground} water (${n} lobster gone)`);
 }
