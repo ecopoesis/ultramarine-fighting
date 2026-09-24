@@ -94,6 +94,8 @@ export function pollute(d: GameState, p: PlayerState, ground: keyof GameState['b
   for (let i = 0; i < n; i++) {
     const t = takeRandom(d, d.bags[ground], 'pollution');
     if (t && !t.seeded) d.piles[ground].push(t); // a generic lobster just leaves the world
+    // A berried female lost to the exhaust is a breeder gone, the same as one kept.
+    if (t?.kind === 'EGGER') d.breeders[ground] = Math.max(0, (d.breeders[ground] ?? 0) - 1);
   }
   if (n > 0) d.log.push(`${p.name}'s cheap engine fouls the ${ground} water (${n} lobster gone)`);
 }

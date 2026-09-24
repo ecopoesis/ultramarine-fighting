@@ -72,7 +72,7 @@ boardRows.push({
   qty: '—',
   part: 'Breeding stock tracks (printed on board, one per ground)',
   text: GROUNDS.join(' · '),
-  note: `${cfg.breeding.mode === 'breeders' ? "Starts FULL at the ground's egger count; drop it one step every time a captain keeps an egger from that ground (raise it one if a spawn draws a kept egger back out of the trap)." : "Advance a ground's track one step every time a berried female is v-notched and released there."} Public. At each season change the stock spawns from it. Longest track needed: ${GROUNDS.map((g) => Math.round((cfg.bags[g].EGGER ?? 0) * scale)).reduce((a, b) => Math.max(a, b), 0)} steps, the most eggers any one bag holds at ${MAX_PLAYERS} players.`,
+  note: `${cfg.breeding.mode === 'breeders' ? "Starts FULL at the ground's egger count; drop it one step every time a captain keeps an egger from that ground (or the cheap engine's pollution takes one) (raise it one if a spawn draws a kept egger back out of the trap)." : "Advance a ground's track one step every time a berried female is v-notched and released there."} Public. At each season change the stock spawns from it. Longest track needed: ${GROUNDS.map((g) => Math.round((cfg.bags[g].EGGER ?? 0) * scale)).reduce((a, b) => Math.max(a, b), 0)} steps, the most eggers any one bag holds at ${MAX_PLAYERS} players.`,
 });
 boardRows.push(al
   ? { qty: '—', part: 'Berth order track (printed on board)', text: `${MAX_PLAYERS} numbered slots, filled in arrival order — tomorrow's turn order. Free. Shady and Outlaw captains may bribe the harbourmaster (${cfg.bribeMoneyCost} money, one step darker) to take slot 1.` }

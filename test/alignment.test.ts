@@ -7,6 +7,7 @@ import { activePlayerId } from '../src/selectors';
 import { BOTS } from '../src/bots';
 import { heatCheck, bandOf, licencesOnSale, bribeCost, stepAlignment, payDividend } from '../src/engine/alignment';
 import { sell } from '../src/engine/market';
+import { pollute } from '../src/engine/upgrades';
 import type { Config, GameState, Tile } from '../src/types';
 
 // THE SWITCHBOARD (SPEC §14): the rules a later tuning pass must not quietly break.
@@ -95,6 +96,18 @@ describe('the ends of the track', () => {
     const row = on.dividend.byHealth[0];                         // a fresh ocean is healthy
     expect(s.players.p1.money - m1).toBe(row.paragon);
     expect(s.players.p2.money - m2).toBe(row.money);
+  });
+});
+
+describe('the breeders track', () => {
+  it('an egger lost to the cheap engine lowers her ground\'s track, like a kept one', () => {
+    const s = createInitialState(on, 1);
+    const p = s.players.p1;
+    p.upgrades = { stern: 'smoker' };
+    s.bags.inshore = s.bags.inshore.filter((t) => t.kind === 'EGGER').slice(0, 1); // only an egger to pollute
+    const before = s.breeders.inshore;
+    pollute(s, p, 'inshore');
+    expect(s.breeders.inshore).toBe(before - 1);
   });
 });
 
