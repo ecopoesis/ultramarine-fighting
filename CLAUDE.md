@@ -11,7 +11,7 @@ rule, it belongs in config. Everything downstream is generated or derived from i
 
 ## Keep the derived documents current
 
-Three things are generated from the config and go stale silently if you change a
+These are generated from the config and go stale silently if you change a
 number and forget them. Regenerate whichever the change touches, in the same commit
 as the change:
 
