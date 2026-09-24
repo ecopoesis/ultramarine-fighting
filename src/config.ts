@@ -80,6 +80,7 @@ export const defaultConfig: Config = {
   // chance of two. Mean 5/6 a die, so a well-tended ground still needs several.
   breeding: {
     mode: 'breeders', // the track starts at each ground's egger count and dwindles as eggers are KEPT (was: started at 0, rose with notches)
+    emptyTrapGeneric: false, // an empty trap caps recovery at what's been landed; true tops the shortfall up with generic lobsters
     dieFaces: [0, 0, 1, 1, 1, 2],
     diceByStock: [
       { atLeast: 15, dice: 5 },

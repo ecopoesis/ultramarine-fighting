@@ -49,17 +49,28 @@ const rollOne = (d: GameState): number => {
 // lands undersized shorts puts 0 lb tiles in the trap, and lightest-first handed those
 // back BEFORE any real lobster — one dirty player could poison a ground's recovery for
 // everyone at no cost to themselves. Drawn at random they are just part of the mix.
-function returnFromPile(d: GameState, g: Ground, n: number): number {
+function returnFromPile(d: GameState, g: Ground, n: number): { back: number; generic: number } {
   const pile = d.piles[g];
   let back = 0;
+  let generic = 0;
   for (let i = 0; i < n; i++) {
     const t: Tile | undefined = takeRandom(d, pile, 'breeding');
-    if (!t) break;                       // the trap is empty: nothing left to come back
+    if (!t) {
+      // The trap is empty. With breeding.emptyTrapGeneric the shortfall comes back as
+      // GENERIC lobsters (the seeded kind: a fixed weight, and they leave the world when
+      // sold), so recovery isn't capped by how much happens to have been landed here.
+      if (!d.config.breeding.emptyTrapGeneric) break;
+      const w = d.config.seeded.weightLb;
+      d.bags[g].push({ id: `gen-${g}-${d.season}-${i}-${d.bags[g].length}`, kind: 'KEEPER', weightLb: w, color: 'common', ground: g, seeded: true });
+      generic++;
+      back++;
+      continue;
+    }
     d.bags[g].push(t);
     if (t.kind === 'EGGER') d.breeders[g] = (d.breeders[g] ?? 0) + 1; // she's back in the water: a breeder again
     back++;
   }
-  return back;
+  return { back, generic };
 }
 
 // The season's breeding. Called at each season change except the one into the final
@@ -74,8 +85,8 @@ export function breedingRollover(d: GameState): void {
     const rolls: number[] = [];
     for (let i = 0; i < dice; i++) rolls.push(rollOne(d));
     const spawn = rolls.reduce((a, b) => a + b, 0);
-    const back = returnFromPile(d, g, spawn);
-    parts.push(`${g}: ${stock} ${word} → ${dice}d [${rolls.join(',')}] → ${back} back${back < spawn ? ` (pile ran dry, ${spawn} wanted)` : ''}`);
+    const { back, generic } = returnFromPile(d, g, spawn);
+    parts.push(`${g}: ${stock} ${word} → ${dice}d [${rolls.join(',')}] → ${back} back${generic ? ` (${generic} generic: trap empty)` : ''}${back < spawn ? ` (pile ran dry, ${spawn} wanted)` : ''}`);
   }
   d.log.push(`--- Breeding stock spawns. ${parts.join(' | ')} ---`);
 }

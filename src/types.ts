@@ -269,7 +269,7 @@ export interface Config {
   // mode 'breeders' (current): the track STARTS at each ground's egger count and falls by
   // one for every egger a captain keeps — unfound eggers and notched ones still breed.
   // mode 'notches' (the old rule): the track starts at 0 and rises with each notch.
-  breeding: { mode: 'breeders' | 'notches'; dieFaces: number[]; diceByStock: { atLeast: number; dice: number }[] };
+  breeding: { mode: 'breeders' | 'notches'; emptyTrapGeneric: boolean; dieFaces: number[]; diceByStock: { atLeast: number; dice: number }[] };
   // What a berried female is WORTH if you keep her illegally. At 0 she was worthless,
   // so notching was strictly dominant — measured, captains notched 41.8 of the 42
   // eggers in the ocean, every game. That made conservation a measure of how much you
