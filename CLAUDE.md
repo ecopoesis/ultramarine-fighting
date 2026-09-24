@@ -18,6 +18,7 @@ as the change:
 | document | command | what it is |
 |---|---|---|
 | **Component manifest** | `npm run components` | Everything in the box and the text printed on each piece — `docs/components.html`. **Any change to bags, board, refits, dice, scoring, tracks, licences or weather must be followed by regenerating this.** Never edit its counts by hand: the manifest and the rules would disagree and only one of them is right. Published at https://claude.ai/artifact/YRfoTwQLni4THyrMmMAi9m — republish that same URL after regenerating. |
+| **Rulebook** | `npm run rulebook` | How to play at the table — `docs/rulebook.html`, prose hand-written in `scripts/rulebook.ts` with every number read from config. Regenerate with the manifest; a new mechanic needs its prose added there. Published at https://claude.ai/artifact/C3cCEDEVSmP6aAjNUXUUYQ — republish that same URL. |
 | **LLM rules prompt** | (automatic) | `src/llm/rules.ts` builds the rulebook from config at run time. It is generated, but the *prose* around each number is hand-written — if you add a mechanic, add its explanation there too, or the Claude captains will have to reverse-engineer it from the event log (they did exactly that with the co-op). |
 | **Captain view** | (automatic) | `src/llm/view.ts` renders the situation report. A new piece of public state needs a line here or players cannot plan against it. |
 
