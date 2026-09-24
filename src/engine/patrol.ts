@@ -37,7 +37,7 @@ export function placeWardens(d: GameState): void {
   if (!patrolsOn(d)) { d.wardens = []; return; }
   const deck = oceanSpaces(d);
   const out: string[] = [];
-  for (let i = 0, n = wardenCount(d); i < n && deck.length; i++) out.push(deck.splice(randInt(d, deck.length), 1)[0]);
+  for (let i = 0, n = wardenCount(d); i < n && deck.length; i++) out.push(deck.splice(randInt(d, deck.length, 'patrol'), 1)[0]);
   d.wardens = out;
   d.log.push(`Warden boats out today: ${out.join(', ')}`);
 }

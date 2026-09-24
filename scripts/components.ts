@@ -72,7 +72,7 @@ boardRows.push({
   qty: '—',
   part: 'Breeding stock tracks (printed on board, one per ground)',
   text: GROUNDS.join(' · '),
-  note: `Advance a ground's track one step every time a berried female is v-notched and released there. Public. At each season change the stock spawns from it. Longest track needed: ${GROUNDS.map((g) => Math.round((cfg.bags[g].EGGER ?? 0) * scale)).reduce((a, b) => Math.max(a, b), 0)} steps, the most eggers any one bag holds at ${MAX_PLAYERS} players.`,
+  note: `${cfg.breeding.mode === 'breeders' ? "Starts FULL at the ground's egger count; drop it one step every time a captain keeps an egger from that ground (raise it one if a spawn draws a kept egger back out of the trap)." : "Advance a ground's track one step every time a berried female is v-notched and released there."} Public. At each season change the stock spawns from it. Longest track needed: ${GROUNDS.map((g) => Math.round((cfg.bags[g].EGGER ?? 0) * scale)).reduce((a, b) => Math.max(a, b), 0)} steps, the most eggers any one bag holds at ${MAX_PLAYERS} players.`,
 });
 boardRows.push(al
   ? { qty: '—', part: 'Berth order track (printed on board)', text: `${MAX_PLAYERS} numbered slots, filled in arrival order — tomorrow's turn order. Free. Shady and Outlaw captains may bribe the harbourmaster (${cfg.bribeMoneyCost} money, one step darker) to take slot 1.` }
@@ -154,9 +154,9 @@ const blackMarketRows: Row[] = darkRefits.map((u) => ({
 // ---------- dice & cards ----------
 const faces = cfg.breeding.dieFaces;
 const diceRows: Row[] = [
-  { qty: String(Math.max(...cfg.breeding.diceByNotches.map((r) => r.dice))), part: 'Lobster dice',
+  { qty: String(Math.max(...cfg.breeding.diceByStock.map((r) => r.dice))), part: 'Lobster dice',
     text: faces.map((f) => (f === 0 ? 'blank' : String(f))).join(' / '),
-    note: `Rolled at each season change (never into the final season): a ground rolls one per band of notches on its breeding-stock track and returns that many lobsters from its pile, lightest first. ${cfg.breeding.diceByNotches.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ notches = ${r.dice}`).join(', ')}. A die averages under one lobster, so even a well-tended ground can have a poor year.` },
+    note: `Rolled at each season change (never into the final season): a ground rolls one per band of its breeding-stock track and returns that many lobsters from its trap, drawn blind. ${cfg.breeding.diceByStock.slice().reverse().filter((r) => r.dice > 0).map((r) => `${r.atLeast}+ ${cfg.breeding.mode === 'breeders' ? 'breeders' : 'notches'} = ${r.dice}`).join(', ')}.` },
   { qty: '1', part: 'Storm die (d6)', text: '1–6', note: 'Picks which ground in a tier the storm lands on. The rings are six spaces wide for exactly this reason.' },
   ...(al ? [{ qty: String(cfg.heat.max), part: 'Heat dice', text: cfg.heat.dieFaces.map((f) => (f === 0 ? 'blank' : String(f))).join(' / '),
     note: `The warden's check at every sale: roll one per heat star (no stars, no roll). Total ${cfg.heat.failAt}+ = busted. One or two dice can never bust.` }] : []),

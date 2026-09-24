@@ -139,7 +139,7 @@ export function heatCheck(d: GameState, p: PlayerState, bribeDice = 0, logPrefix
   }
   const dice = p.tracks.heat - buy;
   const rolls: number[] = [];
-  for (let i = 0; i < dice; i++) rolls.push(h.dieFaces[randInt(d, h.dieFaces.length)]);
+  for (let i = 0; i < dice; i++) rolls.push(h.dieFaces[randInt(d, h.dieFaces.length, 'heat')]);
   const total = rolls.reduce((a, b) => a + b, 0);
   const failed = total >= h.failAt;
   const nerves = !failed && rolls.every((r) => r === 0);

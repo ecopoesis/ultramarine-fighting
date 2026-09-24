@@ -4,7 +4,8 @@ import { reduce } from '../src/reducer';
 import { legalActions } from '../src/actions';
 import { activePlayerId } from '../src/selectors';
 import { BOTS } from '../src/bots';
-import { withOverrides } from './alignArena';
+import { applyOverrides } from './lib/overrides';
+const withOverrides = (base: typeof defaultConfig, kv: string[]) => applyOverrides({ ...base, flags: { ...base.flags, alignment: true } }, kv);
 
 // Where does each side's money come from and go? Plays the switchboard with bots and
 // sums, per bot type per game, every flow the light/dark levers touch — so a gap in

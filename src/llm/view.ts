@@ -6,7 +6,7 @@ import { pricePerLb } from '../engine/market';
 import { fuelPriceAt, isPort } from '../engine/ports';
 import { upgradeDisplay, upgradeDef, fuelCap, buoyCap, stepsPerSteam } from '../engine/upgrades';
 import { potCapacity, potsOnNode } from '../engine/buoys';
-import { diceFor } from '../engine/breeding';
+import { diceFor, stockOf } from '../engine/breeding';
 import { hopToward } from '../bots/helpers';
 import { daysThisSeason, activePlayerId } from '../selectors';
 import { alignmentOn, bandOf, groundClosedTo, groundHealthPct, portClosedTo, bribeCost, bribeableDice, licencesOnSale } from '../engine/alignment';
@@ -148,8 +148,13 @@ export function renderView(state: GameState, pid: string, legal: Action[], opts:
   lines.push('BAGS (public):');
   for (const g of GROUNDS) lines.push(`  ${bagSummary(state, g)}`);
   lines.push(`TRAPS (how many landed lobsters sit in each ground's trap — what its breeding stock can bring back; you cannot see WHICH): ${GROUNDS.map((g) => pileSummary(state, g)).join(' | ')}`);
-  lines.push('BREEDING STOCK (public; berried females notched and released on each ground — at each season change except the last, a ground rolls this many dice and draws that many lobsters blind from its trap):');
-  lines.push(`  ${GROUNDS.map((g) => `${g} ${state.notches[g] ?? 0} notched = ${diceFor(state, state.notches[g] ?? 0)}d`).join(' | ')}`);
+  if (cfg.breeding.mode === 'breeders') {
+    lines.push('BREEDING STOCK (public; berried females still alive on each ground — started full, one lost per kept egger; at each season change except the last, a ground rolls this many dice and draws that many lobsters blind from its trap):');
+    lines.push(`  ${GROUNDS.map((g) => `${g} ${stockOf(state, g)} breeders = ${diceFor(state, stockOf(state, g))}d`).join(' | ')}`);
+  } else {
+    lines.push('BREEDING STOCK (public; berried females notched and released on each ground — at each season change except the last, a ground rolls this many dice and draws that many lobsters blind from its trap):');
+    lines.push(`  ${GROUNDS.map((g) => `${g} ${state.notches[g] ?? 0} notched = ${diceFor(state, state.notches[g] ?? 0)}d`).join(' | ')}`);
+  }
   const occupied = Object.keys(cfg.map.nodes)
     .filter((n) => cfg.map.nodes[n].type === 'ground' && potsOnNode(state, n) > 0)
     .map((n) => `${n} ${potsOnNode(state, n)}/${potCapacity(state)}`);

@@ -32,7 +32,7 @@ function pickDistinct(d: GameState, nodes: string[], k: number): string[] {
   const pool = nodes.slice();
   const out: string[] = [];
   for (let i = 0; i < k && pool.length > 0; i++) {
-    out.push(pool.splice(randInt(d, pool.length), 1)[0]);
+    out.push(pool.splice(randInt(d, pool.length, 'weather'), 1)[0]);
   }
   return out;
 }
@@ -65,7 +65,7 @@ export function stormWhittle(d: GameState): void {
     const recover = recoversParted(d, p); // a GPS plotter finds the gear again
     for (const b of p.deployed.slice()) {
       if (!isStormed(d, b.node)) continue;
-      if (randInt(d, 10) < d.config.weather.whittleInTen) {
+      if (randInt(d, 10, 'weather') < d.config.weather.whittleInTen) {
         p.deployed = p.deployed.filter((x) => x.buoyId !== b.buoyId);
         delete p.soak[b.buoyId];
         if (recover) { p.buoysAvailable += 1; d.log.push(`Storm parts ${p.name}'s pot at ${b.node} — the plotter finds it again (back in hand)`); }

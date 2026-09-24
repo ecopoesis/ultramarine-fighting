@@ -95,18 +95,15 @@ describe('warden patrols', () => {
     p.tracks.heat = on.heat.max;
     addStars(s, p, 1, 'reported for theft');            // not a crime
     expect(capCheck(s, p)).toBe(false);
-    const seed = s.rngSeed;
     commitCrimes(s, p, 1, 'illegal catch aboard');      // a crime at the cap
     capCheck(s, p);
-    expect(s.rngSeed).not.toBe(seed);                   // dice were rolled
     expect(s.log.some((l) => l.includes('caught red-handed'))).toBe(true);
     // below the cap, a crime that stays under it is not checked
     const t = createInitialState(on, 6);
     t.players.p1.tracks.heat = 1;
     commitCrimes(t, t.players.p1, 1, 'illegal catch aboard');
-    const seed2 = t.rngSeed;
     capCheck(t, t.players.p1);
-    expect(t.rngSeed).toBe(seed2);
+    expect(t.log.some((l) => l.includes('caught red-handed'))).toBe(false);
   });
 
   it('a whole game with patrols finishes, and hot bots do meet the wardens', () => {

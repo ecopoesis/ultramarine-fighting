@@ -7,6 +7,7 @@ import { score, avgBagHealth } from '../src/engine/scoring';
 import { bandOf } from '../src/engine/alignment';
 import { BOTS } from '../src/bots';
 import type { Config } from '../src/types';
+import { applyOverrides } from './lib/overrides';
 
 // THE SWITCHBOARD ARENA (SPEC §14.11). Plays light / dark / switch bots at 3–6 seats
 // with flags.alignment on, rotating seats, and reports what the pass marks need:
@@ -21,15 +22,7 @@ const lineups = args.filter((a) => a.includes(',') && !a.includes('='));
 const overrides = args.filter((a) => a.includes('='));
 
 export function withOverrides(base: Config, kv: string[]): Config {
-  const cfg: Config = structuredClone({ ...base, flags: { ...base.flags, alignment: true } });
-  for (const o of kv) {
-    const [path, raw] = o.split('=');
-    const keys = path.split('.');
-    let obj: Record<string, unknown> = cfg as unknown as Record<string, unknown>;
-    for (const k of keys.slice(0, -1)) obj = obj[k] as Record<string, unknown>;
-    obj[keys[keys.length - 1]] = JSON.parse(raw);
-  }
-  return cfg;
+  return applyOverrides({ ...base, flags: { ...base.flags, alignment: true } }, kv);
 }
 
 interface Row { games: number; wins: number; money: number[]; busts: number; checks: number; stops: number; seaBusts: number; unlicensedS2: number; unlicSeasons: number; finalAlign: number; forcedWins: number; forcedGames: number }

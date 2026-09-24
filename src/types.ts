@@ -129,6 +129,10 @@ export interface GameState {
   // Breeding-stock track per ground: how many berried females have been notched and
   // released there. PUBLIC — it sits on the board, and it is what spawns each season.
   notches: Record<Ground, number>;
+  // BREEDERS ALIVE per ground (breeding.mode 'breeders'): starts at the bag's egger count,
+  // -1 for every egger a captain keeps, +1 when a spawn draws an egger back out of the trap.
+  breeders: Record<Ground, number>;
+  rngStreams?: Record<string, number>; // the named random streams' seeds (config.rngStreams; see rng.ts)
   // Extraction piles: sold/fished lobsters, sorted by their home bag. Tiles removed
   // from the commons land here (never destroyed); the inter-season restock draft
   // returns some of them to the bags. Depletion = bag→pile drift, not tiles leaving
@@ -262,7 +266,10 @@ export interface Config {
   // should feel like tending something alive rather than doing arithmetic, and a thin
   // track can roll nothing at all. Bands widen, so the first notches on a ground are
   // worth the most and no one ground runs away with the recovery.
-  breeding: { dieFaces: number[]; diceByNotches: { atLeast: number; dice: number }[] };
+  // mode 'breeders' (current): the track STARTS at each ground's egger count and falls by
+  // one for every egger a captain keeps — unfound eggers and notched ones still breed.
+  // mode 'notches' (the old rule): the track starts at 0 and rises with each notch.
+  breeding: { mode: 'breeders' | 'notches'; dieFaces: number[]; diceByStock: { atLeast: number; dice: number }[] };
   // What a berried female is WORTH if you keep her illegally. At 0 she was worthless,
   // so notching was strictly dominant — measured, captains notched 41.8 of the 42
   // eggers in the ocean, every game. That made conservation a measure of how much you
@@ -368,6 +375,7 @@ export interface Config {
   // on the dark side (Shady or Outlaw), up to `max`. Random area denial.
   patrol: { base: number; perDarkCaptain: number; max: number };
 
+  rngStreams: boolean; // each kind of chance on its own random sequence (rng.ts)
   flags: { weather: boolean; seeded: boolean; upgrades: boolean; eras: boolean; multiShip: boolean; inspections: boolean; alignment: boolean; patrols: boolean };
 }
 

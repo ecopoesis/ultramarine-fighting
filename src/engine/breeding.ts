@@ -19,16 +19,21 @@ import { randInt, takeRandom } from '../rng';
 // The dice are the flavour: stewardship should feel like tending something alive, not
 // like arithmetic. A thin track can roll nothing at all; a well-tended one rarely does.
 
+// The number the dice are read from: breeders alive (current rule), or notches (old rule).
+export function stockOf(d: GameState, g: Ground): number {
+  return d.config.breeding.mode === 'breeders' ? (d.breeders?.[g] ?? 0) : (d.notches[g] ?? 0);
+}
+
 // Dice for a track, from the config's bands (widening, so the first notches on a
 // ground are worth the most and no single ground can run away with the recovery).
 export function diceFor(d: GameState, notches: number): number {
-  const row = d.config.breeding.diceByNotches.find((r) => notches >= r.atLeast);
+  const row = d.config.breeding.diceByStock.find((r) => notches >= r.atLeast);
   return row?.dice ?? 0;
 }
 
 const rollOne = (d: GameState): number => {
   const faces = d.config.breeding.dieFaces;
-  return faces[randInt(d, faces.length)];
+  return faces[randInt(d, faces.length, 'breeding')];
 };
 
 // Return `n` lobsters from a ground's pile to its bag, drawn AT RANDOM.
@@ -48,9 +53,10 @@ function returnFromPile(d: GameState, g: Ground, n: number): number {
   const pile = d.piles[g];
   let back = 0;
   for (let i = 0; i < n; i++) {
-    const t: Tile | undefined = takeRandom(d, pile);
+    const t: Tile | undefined = takeRandom(d, pile, 'breeding');
     if (!t) break;                       // the trap is empty: nothing left to come back
     d.bags[g].push(t);
+    if (t.kind === 'EGGER') d.breeders[g] = (d.breeders[g] ?? 0) + 1; // she's back in the water: a breeder again
     back++;
   }
   return back;
@@ -61,14 +67,15 @@ function returnFromPile(d: GameState, g: Ground, n: number): number {
 export function breedingRollover(d: GameState): void {
   const parts: string[] = [];
   for (const g of Object.keys(d.bags) as Ground[]) {
-    const notches = d.notches[g] ?? 0;
-    const dice = diceFor(d, notches);
-    if (dice === 0) { parts.push(`${g}: ${notches} notched, no stock to speak of`); continue; }
+    const stock = stockOf(d, g);
+    const word = d.config.breeding.mode === 'breeders' ? 'breeders' : 'notched';
+    const dice = diceFor(d, stock);
+    if (dice === 0) { parts.push(`${g}: ${stock} ${word}, no stock to speak of`); continue; }
     const rolls: number[] = [];
     for (let i = 0; i < dice; i++) rolls.push(rollOne(d));
     const spawn = rolls.reduce((a, b) => a + b, 0);
     const back = returnFromPile(d, g, spawn);
-    parts.push(`${g}: ${notches} notched → ${dice}d [${rolls.join(',')}] → ${back} back${back < spawn ? ` (pile ran dry, ${spawn} wanted)` : ''}`);
+    parts.push(`${g}: ${stock} ${word} → ${dice}d [${rolls.join(',')}] → ${back} back${back < spawn ? ` (pile ran dry, ${spawn} wanted)` : ''}`);
   }
   d.log.push(`--- Breeding stock spawns. ${parts.join(' | ')} ---`);
 }

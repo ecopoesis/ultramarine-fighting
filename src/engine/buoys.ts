@@ -107,6 +107,7 @@ function resolveDraw(
       if ((eggers ?? (policy === 'greedy' ? 'keep' : 'notch')) === 'keep') {
         p.hold.push(t); // illegal keep of a berried female: no log line — the public rep track is the only tell
         p.tracks.reputation += d.config.rep.illegalKeep;
+        d.breeders[ground] = Math.max(0, (d.breeders[ground] ?? 0) - 1); // one fewer breeder on this ground
         illegalKept++;
       } else {
         // V-NOTCH: you TAKE the egger (she leaves the world as your scoring proof)

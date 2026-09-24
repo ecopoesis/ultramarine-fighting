@@ -1,5 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { defaultConfig } from '../src/config';
+import { applyOverrides } from './lib/overrides';
+// Games recorded under older rules replay only under those rules: pass them as key=value
+// args. opus16-18: breeding.mode=\"notches\" rngStreams=false heat.capCheck=false.
+const AS_PLAYED = process.argv.slice(2).filter((a) => a.includes('='));
 import { createInitialState } from '../src/state';
 import { reduce } from '../src/reducer';
 import { bandOf } from '../src/engine/alignment';
@@ -12,14 +16,14 @@ import type { Config, GameState } from '../src/types';
 // did the dark side push its luck at the counter (sell into 3+ dice) or bribe to safety?
 // usage: npx tsx scripts/replaySwitchboard.ts <run> [game] [seasons]
 const run = process.argv[2];
-const game = process.argv[3] ?? 'r1g1';
-const seasons = process.argv[4] ? Number(process.argv[4]) : undefined; // smoke games run short
+const game = process.argv[3] && !process.argv[3].includes('=') ? process.argv[3] : 'r1g1';
+const seasons = process.argv[4] && !process.argv[4].includes('=') ? Number(process.argv[4]) : undefined; // smoke games run short
 const dir = `tournament/runs/${run}/games`;
 const res = JSON.parse(readFileSync(`${dir}/${game}.result.json`, 'utf8'));
 const names: string[] = res.seats.map((s: { captainName: string }) => s.captainName);
 const archs: string[] = res.seats.map((s: { agent?: string }) => s.agent ?? '');
 const cfg: Config = {
-  ...defaultConfig, players: names.length, flags: { ...defaultConfig.flags, alignment: true },
+  ...applyOverrides(defaultConfig, AS_PLAYED), players: names.length, flags: { ...applyOverrides(defaultConfig, AS_PLAYED).flags, alignment: true },
   ...(seasons ? { seasons, daysSchedule: Array.from({ length: seasons }, (_, i) => (i === seasons - 1 ? 3 : 2)) } : {}),
 };
 let s: GameState = createInitialState(cfg, res.seed, names);

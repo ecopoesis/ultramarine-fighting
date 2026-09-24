@@ -65,7 +65,7 @@ export function generateUpgradeStock(d: GameState): void {
   const cat = d.config.upgrades.catalog.filter((u) => !u.dark); // the black market is not at the chandlery
   for (const port of marketPorts(d)) {
     const stock: string[] = [];
-    for (let i = 0; i < d.config.upgrades.perPortStock; i++) stock.push(cat[randInt(d, cat.length)].id);
+    for (let i = 0; i < d.config.upgrades.perPortStock; i++) stock.push(cat[randInt(d, cat.length, 'setup')].id);
     d.upgradeStock[port] = stock;
   }
   // The black-market stack: one of each dark refit per dark slot at this table.
@@ -92,7 +92,7 @@ export function bonusDraws(d: GameState, p: PlayerState): number {
 export function pollute(d: GameState, p: PlayerState, ground: keyof GameState['bags']): void {
   const n = installed(d, p).reduce((s, u) => s + (u.pollutes ?? 0), 0);
   for (let i = 0; i < n; i++) {
-    const t = takeRandom(d, d.bags[ground]);
+    const t = takeRandom(d, d.bags[ground], 'pollution');
     if (t) d.piles[ground].push(t);
   }
   if (n > 0) d.log.push(`${p.name}'s cheap engine fouls the ${ground} water (${n} lobster gone)`);

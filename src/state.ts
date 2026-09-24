@@ -1,5 +1,6 @@
 import type { Config, GameState, PlayerState, Ground, Tile } from './types';
 import { buildBag, tileTemplate } from './tiles';
+import { streamSeeds } from './rng';
 import { placeStorms } from './engine/weather';
 import { seedSpaces } from './engine/seeded';
 import { generateUpgradeStock } from './engine/upgrades';
@@ -63,6 +64,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
   const state: GameState = {
     config,
     rngSeed: seed,
+    rngStreams: streamSeeds(seed), // each kind of chance on its own sequence (used when config.rngStreams)
     phase: 'PLAYING',
     season: 1,
     day: 1,
@@ -77,6 +79,7 @@ export function createInitialState(config: Config, seed = 12345, names?: string[
     upgradeStock: {},
     stormed: [],
     notches: { inshore: 0, mid: 0, offshore: 0, deep: 0 },
+    breeders: Object.fromEntries(grounds.map((g) => [g, bags[g].filter((t) => t.kind === 'EGGER').length])) as GameState['breeders'],
     seeded: {},
     nextSlot: 0,
     pendingNextOrder: [],

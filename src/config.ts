@@ -79,8 +79,9 @@ export const defaultConfig: Config = {
   // The lobster die, reimagined for breeding: mostly ones, a chance of nothing, a
   // chance of two. Mean 5/6 a die, so a well-tended ground still needs several.
   breeding: {
+    mode: 'breeders', // the track starts at each ground's egger count and dwindles as eggers are KEPT (was: started at 0, rose with notches)
     dieFaces: [0, 0, 1, 1, 1, 2],
-    diceByNotches: [
+    diceByStock: [
       { atLeast: 15, dice: 5 },
       { atLeast: 10, dice: 4 },
       { atLeast: 6, dice: 3 },
@@ -267,6 +268,10 @@ export const defaultConfig: Config = {
       { atLeast: 0, money: 0, paragon: 0 },
     ],
   },
+
+  // Every kind of chance on its own random sequence (rng.ts). Games recorded before this
+  // was switched on replay with it off.
+  rngStreams: true,
 
   // Warden patrols (flags.patrols, needs flags.alignment): boats drawn onto ocean spaces
   // every morning. A captain with stars who enters one takes a heat check at sea.

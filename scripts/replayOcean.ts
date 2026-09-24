@@ -1,5 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { defaultConfig } from '../src/config';
+import { applyOverrides } from './lib/overrides';
+// Games recorded under older rules replay only under those rules: pass them as key=value
+// args. opus16-18: breeding.mode=\"notches\" rngStreams=false heat.capCheck=false.
+const AS_PLAYED = process.argv.slice(2).filter((a) => a.includes('='));
 import { createInitialState } from '../src/state';
 import { reduce } from '../src/reducer';
 import { isEgger, isKeeper } from '../src/tiles';
@@ -16,11 +20,11 @@ import type { GameState, Ground, Tile } from '../src/types';
 // recovery, and the light side's dividend (paid on ocean health) dies with it.
 // usage: npx tsx scripts/replayOcean.ts <run> [game]
 const run = process.argv[2];
-const game = process.argv[3] ?? 'r1g1';
+const game = process.argv[3] && !process.argv[3].includes('=') ? process.argv[3] : 'r1g1';
 const dir = `tournament/runs/${run}/games`;
 const res = JSON.parse(readFileSync(`${dir}/${game}.result.json`, 'utf8'));
 const names: string[] = res.seats.map((s: { captainName: string }) => s.captainName);
-let s: GameState = createInitialState({ ...defaultConfig, players: names.length }, res.seed, names);
+let s: GameState = createInitialState({ ...applyOverrides(defaultConfig, AS_PLAYED), players: names.length }, res.seed, names);
 const lines = readFileSync(`${dir}/${game}.actions.jsonl`, 'utf8').split('\n').filter((l) => l.trim());
 const GROUNDS: Ground[] = ['inshore', 'mid', 'offshore', 'deep'];
 const darkMin = defaultConfig.alignment.bands.find((b) => b.name === 'shady')!.atLeast;
