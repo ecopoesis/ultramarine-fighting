@@ -5,7 +5,8 @@ import { reduce } from '../src/reducer';
 import { legalActions } from '../src/actions';
 import { activePlayerId } from '../src/selectors';
 import { BOTS } from '../src/bots';
-import { wardenCount, patrolCheck, placeWardens } from '../src/engine/patrol';
+import { wardenCount, patrolCheck, placeWardens, capCheck } from '../src/engine/patrol';
+import { commitCrimes, addStars } from '../src/engine/alignment';
 import type { Config, GameState } from '../src/types';
 
 // WARDEN PATROLS: random area denial for the dark side.
@@ -86,6 +87,26 @@ describe('warden patrols', () => {
     const outlaw = on.alignment.bands[on.alignment.bands.length - 1];
     patrolCheck(t, o, t.wardens![0], 99);
     expect(999 - o.money).toBe(outlaw.bribeCosts.slice(0, 5 - outlaw.bribeFloor).reduce((a, b) => a + b, 0));
+  });
+
+  it('a crime past the star cap is checked on the spot; a non-crime star is not', () => {
+    const s = createInitialState(on, 5);
+    const p = s.players.p1;
+    p.tracks.heat = on.heat.max;
+    addStars(s, p, 1, 'reported for theft');            // not a crime
+    expect(capCheck(s, p)).toBe(false);
+    const seed = s.rngSeed;
+    commitCrimes(s, p, 1, 'illegal catch aboard');      // a crime at the cap
+    capCheck(s, p);
+    expect(s.rngSeed).not.toBe(seed);                   // dice were rolled
+    expect(s.log.some((l) => l.includes('caught red-handed'))).toBe(true);
+    // below the cap, a crime that stays under it is not checked
+    const t = createInitialState(on, 6);
+    t.players.p1.tracks.heat = 1;
+    commitCrimes(t, t.players.p1, 1, 'illegal catch aboard');
+    const seed2 = t.rngSeed;
+    capCheck(t, t.players.p1);
+    expect(t.rngSeed).toBe(seed2);
   });
 
   it('a whole game with patrols finishes, and hot bots do meet the wardens', () => {

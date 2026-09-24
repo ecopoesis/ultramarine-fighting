@@ -10,8 +10,8 @@ import { alignmentOn, bandOf, portClosedTo } from './engine/alignment';
 export type Action =
   | { type: 'STEAM'; playerId: string; to: string; bribeDice?: number } // bribeDice: buy heat dice off a warden patrol's check, if one stops you
   | { type: 'DROP'; playerId: string }
-  | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy; eggers?: EggerChoice }
-  | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy; eggers?: EggerChoice }
+  | { type: 'HAUL'; playerId: string; buoyId: string; policy?: HaulPolicy; eggers?: EggerChoice; bribeDice?: number } // bribeDice: for a check on the spot, if a crime here runs past 5★
+  | { type: 'STEAL'; playerId: string; ownerId: string; buoyId: string; policy?: HaulPolicy; eggers?: EggerChoice; bribeDice?: number }
   | { type: 'SELL'; playerId: string; bribeDice?: number } // bribeDice: heat dice to buy off the warden's check (flags.alignment)
   | { type: 'REFUEL'; playerId: string; units: number }
   | { type: 'REPORT'; playerId: string }

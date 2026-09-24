@@ -7,6 +7,7 @@ import { weatherOn } from './weather';
 import { pullSeeded } from './seeded';
 import { alignmentOn, stepAlignment, commitCrimes, addStars, groundClosedTo } from './alignment';
 import { bonusDraws, pollute } from './upgrades';
+import { capCheck } from './patrol';
 
 // A reference "book price" for valuing stolen catch (report bounty), independent
 // of which port the loot might eventually sell at: the best market base around.
@@ -150,7 +151,7 @@ function settleHaul(d: GameState, playerId: string, r: { illegalKept: number; no
   }
 }
 
-export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean', eggers?: EggerChoice): void {
+export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy: HaulPolicy = 'clean', eggers?: EggerChoice, bribeDice = 0): void {
   const p = d.players[playerId];
   const idx = p.deployed.findIndex((b) => b.buoyId === buoyId);
   if (idx < 0) throw new Error('Not your buoy / not deployed');
@@ -166,7 +167,7 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
     if (d.config.heat.poachHaulIsCrime) commitCrimes(d, p, 1, 'poaching');
   }
   // Closed water is still fishable — at a price in stars per pot pulled.
-  if (groundClosedTo(d, rec.ground, p)) addStars(d, p, d.config.closure.starsPerHaul, `hauled closed ${rec.ground} water`);
+  if (groundClosedTo(d, rec.ground, p)) addStars(d, p, d.config.closure.starsPerHaul, `hauled closed ${rec.ground} water`, true);
   pullSeeded(d, playerId, buoy.node); // the space's seeded pile comes up first, then the bag
   settleHaul(d, playerId, resolveDraw(d, playerId, rec.ground, stage, policy, d.stormed.includes(buoy.node), eggers));
   if (bonusDraws(d, p) > 0 && d.config.heat.netIsCrime) commitCrimes(d, p, 1, 'hauled with an illegal net');
@@ -175,9 +176,10 @@ export function haulBuoy(d: GameState, playerId: string, buoyId: string, policy:
   p.deployed.splice(idx, 1);
   delete p.soak[buoyId];
   p.buoysAvailable += 1;
+  capCheck(d, p, bribeDice); // a crime at 5★ is checked on the spot
 }
 
-export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId: string, policy: HaulPolicy = 'clean', eggers?: EggerChoice): void {
+export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId: string, policy: HaulPolicy = 'clean', eggers?: EggerChoice, bribeDice = 0): void {
   const thief = d.players[thiefId];
   const owner = d.players[ownerId];
   const idx = owner.deployed.findIndex((b) => b.buoyId === buoyId);
@@ -203,4 +205,5 @@ export function stealBuoy(d: GameState, thiefId: string, ownerId: string, buoyId
   commitCrimes(d, thief, 1, 'theft');
   d.thefts.push({ victimId: ownerId, thiefId, value });
   d.log.push(`${thief.name} STEALS buoy ${buoyId} from ${owner.name} (value ~${value})`);
+  capCheck(d, thief, bribeDice);
 }

@@ -52,8 +52,32 @@ export function patrolCheck(d: GameState, p: PlayerState, node: string, bribeDic
     if (check.nerves) coolStars(d, p, 1, 'nerves of steel at sea');
     return false;
   }
+  bust(d, p, 'busted by a warden patrol');
+  return true;
+}
+
+// THE CAP CHECK: a crime at 5★ can't add a star, so instead the captain is checked on
+// the spot, where they stand — bribable on the band scale like every other check. A
+// bust is the same as a bust at sea. Without it, a captain at the cap (and at the dark
+// end of the track) committed crimes for free, and said so (opus16-18).
+export function capCheck(d: GameState, p: PlayerState, bribeDice = 0): boolean {
+  if (!p.overCap) return false;
+  p.overCap = false;
+  if (!alignmentOn(d) || p.tracks.heat <= 0) return false;
+  const check = heatCheck(d, p, bribeDice, `${p.name} is caught red-handed at ${p.tracks.heat}★ — a heat check on the spot`);
+  if (!check.failed) {
+    if (check.nerves) coolStars(d, p, 1, 'nerves of steel');
+    return false;
+  }
+  bust(d, p, 'caught red-handed');
+  return true;
+}
+
+// Busted away from the counter (by a patrol, or red-handed): the catch is seized, the
+// day is over, and they are escorted home to launch last tomorrow.
+function bust(d: GameState, p: PlayerState, why: string): void {
   const wasParagon = bandOf(d, p).name === 'paragon';
-  stepAlignment(d, p, d.config.alignment.step.caught, 'busted by a warden patrol');
+  stepAlignment(d, p, d.config.alignment.step.caught, why);
   if (wasParagon && p.tracks.alignment > d.config.alignment.paragonFallTo) p.tracks.alignment = d.config.alignment.paragonFallTo;
   // The warden seizes the catch. Seized lobsters go to their grounds' traps, as landed
   // catch does (seeded ones leave the world), so the census stays closed.
@@ -70,5 +94,4 @@ export function patrolCheck(d: GameState, p: PlayerState, node: string, bribeDic
   p.patrolBustSeq = d.patrolBusts ?? 0;
   d.patrolBusts = (d.patrolBusts ?? 0) + 1;
   d.log.push(`${p.name} is escorted home to ${d.config.map.startPort} — their day is over, and they launch last tomorrow`);
-  return true;
 }

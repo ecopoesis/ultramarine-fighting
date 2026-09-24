@@ -60,7 +60,7 @@ function describeAction(state: GameState, a: Action): string {
       return `STEAM ${a.to}${state.stormed.includes(a.to) ? ' (STORM)' : ''}${warden ? ` (WARDEN: ${me.tracks.heat} ${me.tracks.heat === 1 ? 'die' : 'dice'}${offers ? `; ${offers}` : ''})` : ''}`;
     }
     case 'DROP': return `DROP (${potCapacity(state) - potsOnNode(state, state.players[a.playerId].node)} of ${potCapacity(state)} berths left on this ground)`;
-    case 'HAUL': return `HAUL ${a.buoyId}`;
+    case 'HAUL': { const me = state.players[a.playerId]; return `HAUL ${a.buoyId}${alignmentOn(state) && state.config.heat.capCheck && me.tracks.heat >= state.config.heat.max ? ` (you are at ${me.tracks.heat}★: any crime here is a check on the spot)` : ''}`; }
     case 'STEAL': return `STEAL ${a.buoyId} (${state.players[a.ownerId].name}'s)`;
     case 'SELL': {
       const me = state.players[a.playerId];
@@ -237,7 +237,7 @@ export type Parsed =
 
 const POLICIES: HaulPolicy[] = ['clean', 'highgrade', 'greedy'];
 const EGGER_WORDS: Record<string, EggerChoice> = { 'keep-eggers': 'keep', keepeggers: 'keep', 'notch-eggers': 'notch', notcheggers: 'notch' };
-const isModifier = (tok?: string) => !!tok && (POLICIES.includes(tok.toLowerCase() as HaulPolicy) || tok.toLowerCase() in EGGER_WORDS);
+const isModifier = (tok?: string) => !!tok && (POLICIES.includes(tok.toLowerCase() as HaulPolicy) || tok.toLowerCase() in EGGER_WORDS || tok.toUpperCase() === 'BRIBE');
 
 // Resolve one command string against the legal action set. GOTO resolves to its
 // first STEAM hop (the caller keeps the macro alive across turns).
@@ -250,6 +250,12 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
     legal.find((a) => a.type === type && (!pred || pred(a as Extract<Action, { type: T }>))) as Extract<Action, { type: T }> | undefined;
   const policyOf = (toks: string[]): HaulPolicy => (toks.map((t) => t.toLowerCase()).find((t) => POLICIES.includes(t as HaulPolicy)) as HaulPolicy) ?? 'clean';
   const eggersOf = (toks: string[]): EggerChoice | undefined => toks.map((t) => EGGER_WORDS[t.toLowerCase()]).find(Boolean);
+  // `BRIBE <n>` on a HAUL/STEAL: dice to buy off a check on the spot, if a crime there runs past 5★.
+  const bribeOf = (toks: string[]): { bribeDice?: number } => {
+    const i = toks.findIndex((t) => t.toUpperCase() === 'BRIBE');
+    const n = i >= 0 ? Number(toks[i + 1] ?? 1) : 0;
+    return Number.isFinite(n) && n > 0 ? { bribeDice: Math.floor(n) } : {};
+  };
   const tokenOf = (toks: string[]) => toks.some((t) => t.toLowerCase() === 'token');
 
   if (state.phase === 'AUCTION') {
@@ -298,13 +304,13 @@ export function parseCommand(state: GameState, pid: string, cmd: string, legal: 
       const id = isModifier(args[0]) ? undefined : args[0];
       const a = id ? find('HAUL', (h) => h.buoyId === id) : find('HAUL');
       if (!a) return { ok: false, error: `cannot HAUL ${id ?? ''} (not your ripe pot here, or no action points)` };
-      return { ok: true, action: { ...a, policy: policyOf(args), eggers: eggersOf(args) } };
+      return { ok: true, action: { ...a, policy: policyOf(args), eggers: eggersOf(args), ...bribeOf(args) } };
     }
     case 'STEAL': {
       const id = isModifier(args[0]) ? undefined : args[0];
       const a = id ? find('STEAL', (s) => s.buoyId === id) : find('STEAL');
       if (!a) return { ok: false, error: `cannot STEAL ${id ?? ''} (no ripe rival pot of that id here, or fewer than 2 action points)` };
-      return { ok: true, action: { ...a, policy: policyOf(args), eggers: eggersOf(args) } };
+      return { ok: true, action: { ...a, policy: policyOf(args), eggers: eggersOf(args), ...bribeOf(args) } };
     }
     case 'SELL': {
       const a = find('SELL');

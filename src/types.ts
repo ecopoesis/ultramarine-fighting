@@ -65,6 +65,9 @@ export interface PlayerState {
   // Stopped by a warden patrol today (flags.patrols): the day is over and they launch
   // last tomorrow, in the order they were stopped. Cleared at the day rollover.
   patrolBustSeq?: number;
+  // A crime this action would have pushed them past the heat cap: they face a heat check
+  // on the spot when the action settles (see engine/patrol.capCheck).
+  overCap?: boolean;
 }
 
 export type UpgradeSlot = 'stern' | 'midPrimary' | 'midSecondary';
@@ -415,6 +418,7 @@ export interface HeatConfig {
   poachHaulIsCrime: boolean;  // does an unlicensed haul add stars, or only alignment?
   reportedStars: number;      // stars on a thief a victim reports (flat: the harbour now knows)
   netIsCrime: boolean;        // is every haul with the illegal net a crime?
+  capCheck: boolean;          // a crime at the star cap triggers a heat check on the spot (no free crime at 5★)
 }
 
 export interface ClosureConfig {

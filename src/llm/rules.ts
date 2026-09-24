@@ -113,6 +113,7 @@ You can cross in either direction, any time. Neutral is a real place to live, bu
 ${odds.join('\n')}
 - **Bribing the warden:** when you SELL you may buy dice off THIS roll only: \`SELL BRIBE <n>\`. Your BAND sets the price and how far down you can go (the band card): each die costs more than the last, the darker you are the more each costs, and ${a.bands.filter((b) => b.bribeFloor > 1).map((b) => `${/^[aeiou]/i.test(b.name) ? 'an' : 'a'} ${b.name.toUpperCase()} captain can never go below ${b.bribeFloor} dice`).join(' and ')}. So a hot outlaw always rolls with a real chance of a bust. Bribing steps you ${-st.bribe} darker. Your stars stay.
 - **Cooling off:** every day you do NOT sell, you lose ${h.coolPerDayUnsold}★ at nightfall. Lying low costs you a day's sales and lets the hold lose weight.
+${h.capCheck ? `- **No free crime at the cap:** if a crime would take you past ${h.max}★ (it can't add a star), you are caught red-handed and take a heat check ON THE SPOT, bribable on your band's scale (\`HAUL <pot> ... BRIBE <n>\`, \`STEAL <pot> ... BRIBE <n>\`). A bust there is the same as a bust at sea: the catch in your hold is seized, your day is over, you are escorted home to ${cfg.map.startPort} and launch last tomorrow.` : ''}
 
 ${cfg.flags.patrols ? `### Warden patrols
 Every morning ${cfg.patrol.base === 1 ? 'one card' : `${cfg.patrol.base} cards`}, plus one for every captain on the dark side (Shady or Outlaw) that morning, up to ${cfg.patrol.max}, come off the patrol deck (one card per ocean space), and a WARDEN BOAT goes on each drawn space. Their positions are public.
@@ -286,7 +287,7 @@ Commands (one per string, uppercase keyword first):
 - STEAM <NODE> [BRIBE <n>] — move to an adjacent node (with a bigger engine, up to 2 nodes away). BRIBE only matters if a warden boat stops you there.
 - GOTO <NODE> — macro: steam step by step toward NODE across as many turns as needed (spends 1 action per hop). Stops if fuel runs out or the day ends.
 - DROP — place a pot on this fishing ground.
-- HAUL <potId> [clean|highgrade|greedy] [keep-eggers|notch-eggers] — haul your ripe pot here (default clean; eggers follow the policy unless you say).
+- HAUL <potId> [clean|highgrade|greedy] [keep-eggers|notch-eggers]${cfg.flags.alignment ? ' [BRIBE <n>]' : ''} — haul your ripe pot here (default clean; eggers follow the policy unless you say).${cfg.flags.alignment ? ' BRIBE only matters if a crime here runs you past the star cap.' : ''}
 - STEAL <potId> [clean|highgrade|greedy] [keep-eggers|notch-eggers] — steal a rival's ripe pot here.
 - SELL — sell your whole hold at this market port.${al ? ' `SELL BRIBE <n>` buys n dice off the warden’s check first.' : ''}
 - REFUEL [units] — buy fuel here (default: fill the tank or spend what you can).

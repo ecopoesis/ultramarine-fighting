@@ -245,6 +245,7 @@ export const defaultConfig: Config = {
     poachHaulIsCrime: false,      // an unlicensed haul costs alignment; the warden cares what's in the hold
     reportedStars: 1,
     netIsCrime: true,             // the net is the crime: every haul with it adds stars
+    capCheck: true,               // at 5★ a crime can't add a star, so it is checked on the spot instead: "heat is capped, so extra crimes cost nothing" (opus16-18)
   },
   closure: {
     // Per-ground health (bag fullness, %). Below the line the ground closes to these

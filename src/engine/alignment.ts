@@ -38,7 +38,7 @@ export function stepAlignment(d: GameState, p: PlayerState, delta: number, why: 
     const perCrime = -delta / crimes;
     const room = p.tracks.alignment - min;             // steps left before the end of the track
     const overflowCrimes = Math.max(0, crimes - Math.floor(room / perCrime));
-    if (overflowCrimes > 0) addStars(d, p, overflowCrimes * d.config.alignment.floorStarsPerCrime, 'nowhere darker to go');
+    if (overflowCrimes > 0) addStars(d, p, overflowCrimes * d.config.alignment.floorStarsPerCrime, 'nowhere darker to go', true);
   }
   p.tracks.alignment = Math.max(min, Math.min(max, p.tracks.alignment + delta));
   const after = bandOf(d, p).name;
@@ -46,8 +46,11 @@ export function stepAlignment(d: GameState, p: PlayerState, delta: number, why: 
 }
 
 // Add heat stars, capped at five. Public: the star track is on the board.
-export function addStars(d: GameState, p: PlayerState, stars: number, why: string): void {
+// A CRIME whose stars would run past the cap marks the captain for a check on the spot
+// (engine/patrol.capCheck) — otherwise a captain at 5★ commits crimes for free.
+export function addStars(d: GameState, p: PlayerState, stars: number, why: string, crime = false): void {
   if (!alignmentOn(d) || stars <= 0) return;
+  if (crime && d.config.heat.capCheck && p.tracks.heat + stars > d.config.heat.max) p.overCap = true;
   const was = p.tracks.heat;
   p.tracks.heat = Math.min(d.config.heat.max, p.tracks.heat + stars);
   if (p.tracks.heat !== was) d.log.push(`${p.name}'s heat rises to ${p.tracks.heat}★ (${why})`);
@@ -56,7 +59,7 @@ export function addStars(d: GameState, p: PlayerState, stars: number, why: strin
 // A crime lands by your band: an outlaw is expected to cheat, a paragon is not.
 export function commitCrimes(d: GameState, p: PlayerState, crimes: number, why: string): void {
   if (!alignmentOn(d) || crimes <= 0) return;
-  addStars(d, p, crimes * bandOf(d, p).starsPerCrime, why);
+  addStars(d, p, crimes * bandOf(d, p).starsPerCrime, why, true);
 }
 
 export function coolStars(d: GameState, p: PlayerState, stars: number, why: string): void {
