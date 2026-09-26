@@ -66,7 +66,7 @@ const frames = `<figure class="frames" aria-label="The structure of a game">
 </figure>`;
 
 const actionsTable = `<div class="table-wrap"><table class="actions"><thead><tr><th>action</th><th>cost</th><th>where</th><th>what it does</th></tr></thead><tbody>
-${actions.map((a) => `<tr><td class="an">${esc(a.name)}</td><td class="ac">${a.cost}</td><td class="aw">${esc(a.where)}</td><td>${esc(a.does)}${a.freeWith ? ` <span class="free">Free with the ${esc(a.freeWith.toLowerCase())}.</span>` : ''}</td></tr>`).join('\n')}
+${actions.map((a) => `<tr><td class="an">${esc(a.name)}</td><td class="ac">${a.cost}</td><td class="aw">${esc(a.where)}</td><td>${esc(a.does)}${a.freeWith ? ` <span class="free">With the ${esc(a.freeWith.toLowerCase())} it costs no actions, as many times as you like.</span>` : ''}</td></tr>`).join('\n')}
 </tbody></table></div>`;
 
 const reserves = cfg.licensePerSeason.map((r, i) => (i === 0 ? null : `season ${i + 1}: ${r}`)).filter(Boolean).join(', ');
@@ -121,6 +121,7 @@ const chapters: { id: string; title: string; body: string }[] = [
 <section class="edge" id="turn"><h3>Your turn</h3>
 <p>You have <strong>${cfg.actionsPerTurn} actions</strong>. Spend them on anything below, in any order, as long as you can pay each one's cost. Your turn ends when your actions are spent, or when you <em>Pass</em>, <em>Berth</em> or <em>Bribe</em>. Actions you don't spend are lost.</p>
 ${actionsTable}
+<p><strong>Refits that make an action free</strong> make it free every time, not once a turn. With the pot rack you can drop every pot in your hand onto the space you're on and still have both your actions to spend; with the hauling crane you can pull every ripe pot of yours on the space the same way.</p>
 <p class="aside">This list is printed along the bottom of every captain mat. The chapters that follow explain each action in full.</p></section>
 
 <section class="edge" id="night"><h3>Each night</h3>

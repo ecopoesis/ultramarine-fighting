@@ -178,7 +178,7 @@ export function buildRulesPrompt(cfg: Config, players: number): string {
     if (u.stepsPerSteam) fx.push(`STEAM moves up to ${u.stepsPerSteam} nodes per action`);
     if (u.stormImmune) fx.push('immune to the storm entry hazard');
     if (u.whittleMult !== undefined) fx.push(`your pots are ${Math.round((1 - u.whittleMult) * 100)}% less likely to be parted by a storm overnight`);
-    if (u.freeAction) fx.push(`${u.freeAction} costs 0 actions`);
+    if (u.freeAction) fx.push(`${u.freeAction} costs 0 actions, every time — as many as you like in a turn`);
     if (u.fuelBonus) fx.push(`+${u.fuelBonus} fuel capacity`);
     if (u.buoyBonus) fx.push(`+${u.buoyBonus} pot`);
     return `- ${u.id} "${u.label}" — slot ${u.slot}, cost ${u.cost}: ${fx.join('; ')}`;

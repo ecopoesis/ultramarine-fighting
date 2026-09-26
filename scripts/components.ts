@@ -26,6 +26,7 @@ const SLOT: Record<string, string> = { stern: 'stern', midPrimary: 'amidships', 
 const deckRefits = cfg.upgrades.catalog.filter((u) => !u.dark || !al);
 const scale = MAX_PLAYERS / cfg.referencePlayers;
 const GROUNDS: Ground[] = ['inshore', 'mid', 'offshore', 'deep'];
+const cap = (s: string) => s[0] + s.slice(1).toLowerCase();
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 interface Row { qty: string; part: string; text?: string; note?: string }
@@ -159,7 +160,7 @@ const refitRows: Row[] = deckRefits.map((u) => {
   if (u.stormImmune) fx.push('no storm entry hazard');
   if (u.whittleRecover) fx.push('a pot the storm parts comes back to your hand');
   if (u.whittleMult !== undefined) fx.push(`storms part your gear ${Math.round((1 - u.whittleMult) * 100)}% less often`);
-  if (u.freeAction) fx.push(`${u.freeAction} costs no action`);
+  if (u.freeAction) fx.push(`${cap(u.freeAction)} costs no actions, as many times as you like`);
   if (u.fuelBonus) fx.push(`+${u.fuelBonus} fuel capacity`);
   if (u.buoyBonus) fx.push(`+${u.buoyBonus} pot`);
   if (u.bonusDraws) fx.push(`draw and keep +${u.bonusDraws} per haul — every haul with it is a crime`);
@@ -234,7 +235,7 @@ const cardRows: Row[] = [
   { qty: `${MAX_PLAYERS}`, part: 'Captain mats — actions', text: [
       `${cfg.actionsPerTurn} actions a turn · one turn an hour · ${cfg.hoursPerDay} hours a day`,
       '',
-      ...actionLines(cfg).map((a) => `${a.name.toUpperCase().padEnd(12)} ${String(a.cost)}  ${a.where.padEnd(18)} ${a.does}${a.freeWith ? ` (free with ${a.freeWith.toLowerCase()})` : ''}`),
+      ...actionLines(cfg).map((a) => `${a.name.toUpperCase().padEnd(12)} ${String(a.cost)}  ${a.where.padEnd(18)} ${a.does}${a.freeWith ? ` (${a.freeWith.toLowerCase()}: no actions, any number of times)` : ''}`),
     ].join('\n'), note: 'Printed along the bottom of every mat, so nobody has to ask what a turn can do.' },
   { qty: '1', part: 'Tow card', text: `Caught at sea at day's end${al ? ', or at a port shut to you' : ''}: towed to the nearest port${al ? ' that will have you' : ''}, −${cfg.tow.fee} money${al ? '' : `, ${cfg.tow.rep} reputation`}, fuel topped up to at least ${cfg.tow.emergencyFuel}, and you lose your next ${cfg.tow.lostTurns} turns.` },
 ];
