@@ -17,6 +17,7 @@
     "preview": "vite preview",
     "components": "tsx scripts/components.ts",
     "rulebook": "tsx scripts/rulebook.ts",
+    "meeples": "tsx scripts/meeples.ts",
     "check-integers": "tsx scripts/checkIntegers.ts"
   },
   "devDependencies": {
@@ -26,7 +27,9 @@
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
+    "fflate": "^0.8.3",
     "jsdom": "^29.1.1",
+    "manifold-3d": "^3.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsx": "^4.19.2",
